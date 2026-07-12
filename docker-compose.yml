@@ -27,3 +27,17 @@ services:
       llama:
         condition: service_healthy
     command: python main.py
+  comfyui:
+    image: yanwk/comfyui-boot:latest
+    ports:
+      - "8188:8188"
+    volumes:
+      - ./models/checkpoints:/root/comfyui/models/checkpoints
+      - ./outputs:/root/comfyui/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
