@@ -1,6 +1,6 @@
 services:
   llama:
-    image: ghcr.io/ggerganov/llama.cpp:server-cuda
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
     ports:
       - "${API_PORT}:8080"
     volumes:
