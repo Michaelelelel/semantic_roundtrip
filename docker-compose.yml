@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  llama:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    ports:
+      - "${API_PORT}:8080"
+    volumes:
+      - "${MODEL_DIR}:/models"
+    command: -m /models/${MODEL_FILE} -c 2048 --host 0.0.0.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  python_app:
+    build: .
+    volumes:
+      - .:/app
+    depends_on:
+      llama:
+        condition: service_healthy
+    command: python main.py

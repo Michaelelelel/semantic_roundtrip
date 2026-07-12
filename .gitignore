@@ -1,0 +1,20 @@
+# Virtuelle Umgebungen
+.venv/
+venv/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+
+# PyCharm
+.idea/
+
+# Mac OS
+.DS_Store
+
+# Environment
+.env
+
+# Models
+models/
+*.gguf
