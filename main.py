@@ -1,7 +1,7 @@
 import requests
 import time
 
-url = "http://llama:8080/completion"
+url = "http://llama:8080/v1/chat/completions"
 
 system_prompt = """You create visual prompts for a text-to-image model.
 Return exactly 3 distinct prompts as a JSON array of strings.
@@ -28,7 +28,7 @@ for prompt in user_prompts:
         response = requests.post(url, json=payload)
         if response.status_code == 200:
             result = response.json()
-            print("Antwort:", result["content"])
+            print("Antwort:", result["choices"][0]["message"]["content"])
         else:
             print("Fehler beim Abruf:", response.status_code)
     except Exception as e:
