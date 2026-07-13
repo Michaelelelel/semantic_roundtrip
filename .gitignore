@@ -15,7 +15,29 @@ __pycache__/
 # Environment
 .env
 
-# Models
-models/
+# Model weights stay local; only category roots and documentation are tracked.
+models/*
+!models/README.md
+!models/text/
+!models/image/
+!models/vision/
+models/text/*
+models/image/*
+models/vision/*
+!models/text/.gitkeep
+!models/image/.gitkeep
+!models/vision/.gitkeep
 models_vlm/
 *.gguf
+*.safetensors
+*.ckpt
+
+# Runtime data stays local, but mount roots must exist before Docker starts.
+basedir/**
+!basedir/.gitkeep
+comfy_run/**
+!comfy_run/.gitkeep
+outputs/**
+!outputs/.gitkeep
+
+*.egg-info/
