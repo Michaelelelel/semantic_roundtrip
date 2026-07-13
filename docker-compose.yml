@@ -19,6 +19,37 @@ services:
       timeout: 5s
       retries: 5
 
+  vlm:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    ports:
+      - "${VLM_PORT:-18182}:8080"
+    volumes:
+      - "${VLM_MODEL_DIR:-./models_vlm}:/models:ro"
+    command:
+      - -m
+      - /models/${VLM_MODEL_FILE:-ggml-model-q4_k.gguf}
+      - --mmproj
+      - /models/${VLM_MMPROJ_FILE:-mmproj-model-f16.gguf}
+      - --chat-template
+      - ${VLM_CHAT_TEMPLATE:-vicuna}
+      - -c
+      - "4096"
+      - --host
+      - 0.0.0.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
   python_app:
     build: .
     volumes:
@@ -26,7 +57,12 @@ services:
     depends_on:
       llama:
         condition: service_healthy
+      vlm:
+        condition: service_healthy
+      comfyui:
+        condition: service_started
     command: python main.py
+
   comfyui:
     image: mmartial/comfyui-nvidia-docker:ubuntu24_cuda13.1-dgx-latest
     ports:
