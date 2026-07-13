@@ -6,10 +6,9 @@ import urllib.request
 TEXT_TO_TEXT_MODEL_URL = "http://llama:8080/v1/chat/completions"
 COMFY_URL = "http://comfyui:8188/prompt"
 
-# Wir zwingen das Modell zu striktem JSON mit einem einzigen Key "prompt"
-system_prompt = """You create visual prompts for a text-to-image model.
-Return exactly ONE distinct prompt as a JSON object with the key "prompt".
-Do not include markdown."""
+# Das Modell liefert freien Text, der direkt als Bild-Prompt verwendet wird.
+system_prompt = """Create one visual prompt for a text-to-image model.
+Return only the prompt text, without a label, JSON, markdown, or explanation."""
 
 user_prompts = [
     "Domain: bands \nTitle: Queen",
@@ -24,8 +23,7 @@ for prompt in user_prompts:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.2,
-        "response_format": {"type": "json_object"}
+        "temperature": 0.2
     }
 
     try:
@@ -36,10 +34,7 @@ for prompt in user_prompts:
             raw_content = result["choices"][0]["message"]["content"]
 
             print("Rohe Llama-Antwort:", repr(raw_content))
-
-            # JSON parsen
-            json_data = json.loads(raw_content)
-            final_image_prompt = json_data["prompt"]
+            final_image_prompt = raw_content.strip()
             print("Llama hat generiert:", final_image_prompt)
 
             # 2. COMFYUI: Text zu Bild Standard Settings
