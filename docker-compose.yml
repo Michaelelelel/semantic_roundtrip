@@ -25,6 +25,8 @@ services:
       - "${VLM_PORT:-18182}:8080"
     volumes:
       - "${VLM_MODEL_DIR:-./models_vlm}:/models:ro"
+    environment:
+      LLAMA_MEDIA_MARKER: "<__media__>"
     command:
       - -m
       - /models/${VLM_MODEL_FILE:-ggml-model-q4_k.gguf}
