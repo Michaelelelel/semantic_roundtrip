@@ -34,6 +34,8 @@ services:
     volumes:
       - ./comfy_run:/comfy/mnt
       - ./basedir:/basedir
+      - ./models:/basedir/models
+      - ./outputs:/basedir/output
     environment:
       WANTED_UID: "1000"
       WANTED_GID: "1000"
