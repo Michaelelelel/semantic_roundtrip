@@ -35,6 +35,8 @@ for prompt in user_prompts:
             result = response.json()
             raw_content = result["choices"][0]["message"]["content"]
 
+            print("Rohe Llama-Antwort:", repr(raw_content))
+
             # JSON parsen
             json_data = json.loads(raw_content)
             final_image_prompt = json_data["prompt"]
