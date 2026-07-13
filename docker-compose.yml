@@ -28,12 +28,18 @@ services:
         condition: service_healthy
     command: python main.py
   comfyui:
-    image: yanwk/comfyui-boot:latest
+    image: mmartial/comfyui-nvidia-docker:ubuntu24_cuda13.1-dgx-latest
     ports:
-      - "8188:8188"
+      - "${COMFYUI_PORT}:8188"
     volumes:
-      - ./models/checkpoints:/root/comfyui/models/checkpoints
-      - ./outputs:/root/comfyui/output
+      - ./comfy_run:/comfy/mnt
+      - ./models:/basedir/models
+      - ./outputs:/basedir/output
+    environment:
+      WANTED_UID: "1000"
+      WANTED_GID: "1000"
+      BASE_DIRECTORY: /basedir
+      SECURITY_LEVEL: normal
     deploy:
       resources:
         reservations:
