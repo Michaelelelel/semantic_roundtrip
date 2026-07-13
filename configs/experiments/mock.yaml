@@ -1,0 +1,31 @@
+run:
+  name: mock_smoke
+  output_directory: runs
+
+dataset:
+  items:
+    - domain: songs
+      title: Imagine
+    - domain: movies
+      title: The Matrix
+
+experiment:
+  prompts_per_title: 2
+  seeds_per_prompt: 1
+  retry_limit: 0
+
+stages:
+  prompt_generation:
+    adapter: mock
+
+  image_generation:
+    adapter: mock
+
+  verification:
+    adapter: mock
+
+  title_guessing:
+    adapter: mock
+
+evaluation:
+  failed_verification: count_as_failure

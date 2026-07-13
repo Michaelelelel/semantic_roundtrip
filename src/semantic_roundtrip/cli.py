@@ -1,6 +1,8 @@
 import typer
 from pathlib import Path
 
+from semantic_roundtrip.config import load_config
+
 app = typer.Typer(
     help="Run semantic round-trip experiments."
 )
@@ -16,7 +18,13 @@ def run(
     ),
 ) -> None:
     """Run an experiment."""
-    typer.echo(f"Would run experiment using {config}")
+
+    config = load_config(config)
+
+
+
+    typer.echo("Configuration is valid.")
+    typer.echo(f"Experiment name: {config.run.name}")
 
 
 @app.command()
