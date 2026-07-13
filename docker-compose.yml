@@ -33,8 +33,7 @@ services:
       - "${COMFYUI_PORT}:8188"
     volumes:
       - ./comfy_run:/comfy/mnt
-      - ./models:/basedir/models
-      - ./outputs:/basedir/output
+      - ./basedir:/basedir
     environment:
       WANTED_UID: "1000"
       WANTED_GID: "1000"
