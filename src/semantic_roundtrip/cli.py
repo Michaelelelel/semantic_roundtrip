@@ -1,7 +1,9 @@
-import typer
 from pathlib import Path
 
+import typer
+
 from semantic_roundtrip.config import load_config
+from semantic_roundtrip.persistence.run_manager import create_run
 
 app = typer.Typer(
     help="Run semantic round-trip experiments."
@@ -10,21 +12,27 @@ app = typer.Typer(
 
 @app.command()
 def run(
-    config: Path = typer.Option(
+    config_file: Path = typer.Option(
         ...,
         "--config",
         "-c",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
         help="Experiment configuration file.",
     ),
 ) -> None:
     """Run an experiment."""
-
-    config = load_config(config)
-
-
+    config = load_config(config_file)
+    run_context = create_run(
+        config.run.output_directory,
+        config.run.name,
+    )
 
     typer.echo("Configuration is valid.")
     typer.echo(f"Experiment name: {config.run.name}")
+    typer.echo(f"Run ID: {run_context.run_id}")
+    typer.echo(f"Run directory: {run_context.directory}")
 
 
 @app.command()

@@ -33,6 +33,9 @@ models_vlm/
 *.ckpt
 
 # Runtime data stays local, but mount roots must exist before Docker starts.
+runs/
+*.sqlite
+*.db
 basedir/**
 !basedir/.gitkeep
 comfy_run/**
