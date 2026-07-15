@@ -21,7 +21,7 @@ class DatasetConfig(BaseModel):
 
 class ExperimentConfig(BaseModel):
     prompts_per_title: int = Field(gt=0)
-    seeds_per_prompt: int = Field(gt=0)
+    seeds: list[int] = Field(min_length=1)
     retry_limit: int = Field(ge=0)
 
 

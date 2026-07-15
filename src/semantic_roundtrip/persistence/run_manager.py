@@ -15,6 +15,7 @@ class RunContext:
     directory: Path
     created_at: datetime
 
+
 def create_run_id(name: str, created_at: datetime) -> str:
     """Create a readable, unique identifier for a new experiment run.
 
@@ -22,15 +23,17 @@ def create_run_id(name: str, created_at: datetime) -> str:
     multiple runs start at the same time.
     """
 
-    timestamp = datetime.now()
+    timestamp_text = created_at.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
-    timestamp_text = timestamp.strftime("%Y%m%dT%H%M%SZ")
-
-    readable_name = re.sub(
-        r"[^a-zA-Z0-9]+",
-        "-",
-        name,
-    ).strip("-").lower()
+    readable_name = (
+        re.sub(
+            r"[^a-zA-Z0-9]+",
+            "-",
+            name,
+        )
+        .strip("-")
+        .lower()
+    )
 
     random_suffix = uuid4().hex[:8]
 
