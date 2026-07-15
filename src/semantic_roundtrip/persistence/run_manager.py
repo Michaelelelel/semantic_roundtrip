@@ -6,10 +6,6 @@ from pathlib import Path
 import re
 from uuid import uuid4
 
-import yaml
-
-from semantic_roundtrip.config import AppConfig
-
 
 @dataclass(frozen=True)
 class RunContext:
@@ -17,8 +13,9 @@ class RunContext:
 
     run_id: str
     directory: Path
+    created_at: datetime
 
-def create_run_id(name: str) -> str:
+def create_run_id(name: str, created_at: datetime) -> str:
     """Create a readable, unique identifier for a new experiment run.
 
     The timestamp is always UTC. The random suffix prevents collisions when
@@ -50,27 +47,19 @@ def create_run_directory(base_path: Path, run_id: str) -> Path:
 
 def create_run(base_path: Path, name: str) -> RunContext:
     """Create a new run and return its identity and directory."""
+    created_at = datetime.now(timezone.utc)
+
     for _ in range(5):
-        run_id = create_run_id(name)
+        run_id = create_run_id(name, created_at)
         try:
             directory = create_run_directory(base_path, run_id)
-            return RunContext(run_id=run_id, directory=directory)
+            return RunContext(
+                run_id=run_id,
+                directory=directory,
+                created_at=created_at,
+            )
         except FileExistsError:
             # A UUID collision is unlikely, but retry.
             continue
 
     raise RuntimeError("Could not create a unique run directory.")
-
-def create_config_snapshot(config: AppConfig, run_directory: Path,):
-    """Create a snapshot of the current configuration in the run directory."""
-    snapshot_path = run_directory / "config_snapshot.yaml"
-
-    with snapshot_path.open("x", encoding="utf-8") as file:
-        yaml.safe_dump(
-            config.model_dump(mode="json"),
-            file,
-            sort_keys=False,
-            allow_unicode=True,
-        )
-
-    return snapshot_path

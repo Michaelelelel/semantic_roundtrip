@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, Field
@@ -35,11 +36,16 @@ class StagesConfig(BaseModel):
     title_guessing: StageConfig
 
 
+class EvaluationConfig(BaseModel):
+    failed_verification: Literal["count_as_failure", "exclude"]
+
+
 class AppConfig(BaseModel):
     run: RunConfig
     dataset: DatasetConfig
     experiment: ExperimentConfig
     stages: StagesConfig
+    evaluation: EvaluationConfig
 
 
 def load_config(path: Path) -> AppConfig:
