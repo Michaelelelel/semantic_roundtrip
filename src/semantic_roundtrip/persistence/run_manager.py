@@ -6,6 +6,10 @@ from pathlib import Path
 import re
 from uuid import uuid4
 
+import yaml
+
+from semantic_roundtrip.config import AppConfig
+
 
 @dataclass(frozen=True)
 class RunContext:
@@ -44,7 +48,6 @@ def create_run_directory(base_path: Path, run_id: str) -> Path:
     run_directory.mkdir(parents=True, exist_ok=False)
     return run_directory
 
-
 def create_run(base_path: Path, name: str) -> RunContext:
     """Create a new run and return its identity and directory."""
     for _ in range(5):
@@ -57,3 +60,17 @@ def create_run(base_path: Path, name: str) -> RunContext:
             continue
 
     raise RuntimeError("Could not create a unique run directory.")
+
+def create_config_snapshot(config: AppConfig, run_directory: Path,):
+    """Create a snapshot of the current configuration in the run directory."""
+    snapshot_path = run_directory / "config_snapshot.yaml"
+
+    with snapshot_path.open("x", encoding="utf-8") as file:
+        yaml.safe_dump(
+            config.model_dump(mode="json"),
+            file,
+            sort_keys=False,
+            allow_unicode=True,
+        )
+
+    return snapshot_path
