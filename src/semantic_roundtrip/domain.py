@@ -18,7 +18,7 @@ class GeneratedPrompt:
 
     index: int
     text: str
-    raw_response: str | None = None
+    raw_response: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,6 +27,7 @@ class ImageArtifact:
 
     path: Path
     seed: int
+    raw_response: str
     backend_job_id: str | None = None
 
 
@@ -35,8 +36,8 @@ class VerificationResult:
     """The verifier's decision for one generated image."""
 
     passed: bool
+    raw_response: str
     reason: str | None = None
-    raw_response: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +45,6 @@ class TitlePrediction:
     """A title guess and its optional model-reported confidence."""
 
     title: str
+    raw_response: str
     confidence: float | None = None
     confidence_type: str | None = None
-    raw_response: str | None = None
