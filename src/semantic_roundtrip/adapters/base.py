@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Protocol
 
 from semantic_roundtrip.domain import (
-    GeneratedPrompt,
     ImageArtifact,
+    PromptBatchResult,
     TitlePrediction,
     VerificationResult,
 )
@@ -20,8 +20,8 @@ class PromptGenerator(Protocol):
         title: str,
         domain: str | None,
         count: int,
-    ) -> list[GeneratedPrompt]:
-        """Return exactly ``count`` visual prompts."""
+    ) -> PromptBatchResult:
+        """Return one model response and all prompts parsed from it."""
         ...
 
 

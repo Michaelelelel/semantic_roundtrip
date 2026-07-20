@@ -18,7 +18,20 @@ class GeneratedPrompt:
 
     index: int
     text: str
+
+
+@dataclass(frozen=True, slots=True)
+class PromptBatchResult:
+    """One prompt-model response and the prompts parsed from it."""
+
+    requested_count: int
+    returned_count: int
+    prompts: tuple[GeneratedPrompt, ...]
     raw_response: str
+    format_valid: bool
+    parser_version: str
+    parser_error: str | None = None
+    backend_request_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

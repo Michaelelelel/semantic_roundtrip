@@ -1,0 +1,8 @@
+Create exactly $count distinct visual prompts that represent the following title.
+
+Domain: $domain
+Title: $title
+
+Each prompt must describe one image and must avoid written words, captions,
+logos, or the literal title. Return only one valid JSON array containing exactly
+$count non-empty strings. Do not add markdown or an explanation.

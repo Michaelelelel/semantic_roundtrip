@@ -1,0 +1,2 @@
+This image represents an item from the domain "$domain". Guess its exact title
+or name. Return only your single best guess without quotes or an explanation.

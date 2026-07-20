@@ -4,8 +4,8 @@ services:
     ports:
       - "${API_PORT}:8080"
     volumes:
-      - "${MODEL_DIR}:/models"
-    command: -m /models/${MODEL_FILE} -c 2048 --host 0.0.0.0
+      - "${MODEL_DIR}:/models:ro"
+    command: -m /models/${MODEL_FILE} --alias prompt-model -c 2048 --host 0.0.0.0
     deploy:
       resources:
         reservations:
@@ -17,7 +17,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 30
+      start_period: 20s
 
   vlm:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda
@@ -62,8 +63,12 @@ services:
       vlm:
         condition: service_healthy
       comfyui:
-        condition: service_started
-    command: python main.py
+        condition: service_healthy
+    command:
+      - semantic-roundtrip
+      - run
+      - --config
+      - ${EXPERIMENT_CONFIG:-configs/experiments/dgx_smoke.yaml}
 
   comfyui:
     image: mmartial/comfyui-nvidia-docker:ubuntu24_cuda13.1-dgx-latest
@@ -72,17 +77,30 @@ services:
     volumes:
       - ./comfy_run:/comfy/mnt
       - ./basedir:/basedir
-      - ./models:/basedir/models
+      - ${COMFYUI_MODEL_DIR:-./models}:/basedir/models
       - ./outputs:/basedir/output
     environment:
-      WANTED_UID: "1000"
-      WANTED_GID: "1000"
+      WANTED_UID: "${COMFYUI_UID:-1000}"
+      WANTED_GID: "${COMFYUI_GID:-1000}"
       BASE_DIRECTORY: /basedir
       SECURITY_LEVEL: normal
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen(
+          'http://127.0.0.1:8188/system_stats', timeout=4).read()
+      interval: 10s
+      timeout: 5s
+      retries: 120
+      start_period: 2m
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
               count: all
-              capabilities: [ gpu ]
+              capabilities: [gpu]

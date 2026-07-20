@@ -1,21 +1,35 @@
-"""Deterministic adapters for local tests without models or network services."""
+"""Deterministic adapters for local runs without models or network services."""
 
 import json
+import time
 from hashlib import sha256
 from pathlib import Path
+from typing import Any
 
 from PIL import Image
+from pydantic import Field
 
+from semantic_roundtrip.config import ConfigModel
 from semantic_roundtrip.domain import (
     GeneratedPrompt,
     ImageArtifact,
+    PromptBatchResult,
     TitlePrediction,
     VerificationResult,
 )
 
 
+class MockAdapterSettings(ConfigModel):
+    """Settings shared by all deterministic mock adapters."""
+
+    delay_seconds: float = Field(default=0.0, ge=0)
+
+
 class MockPromptGenerator:
     """Generate deterministic visual prompts without calling a text model."""
+
+    def __init__(self, delay_seconds: float = 0.0) -> None:
+        self._delay_seconds = delay_seconds
 
     def generate_prompts(
         self,
@@ -23,32 +37,37 @@ class MockPromptGenerator:
         title: str,
         domain: str | None,
         count: int,
-    ) -> list[GeneratedPrompt]:
-        """Return exactly ``count`` mock visual prompts."""
+    ) -> PromptBatchResult:
+        """Return one mock batch containing exactly ``count`` prompts."""
+        time.sleep(self._delay_seconds)
         domain_context = f" in the {domain} domain" if domain else ""
+        texts = [
+            f"Mock visual prompt {index + 1} for {title}{domain_context}"
+            for index in range(count)
+        ]
+        backend_request_id = sha256(f"{title}\0{domain}\0{count}".encode()).hexdigest()[
+            :16
+        ]
 
-        prompts = []
-        for index in range(count):
-            text = f"Mock visual prompt {index + 1} for {title}{domain_context}"
-            raw_response = json.dumps(
-                {
-                    "index": index,
-                    "text": text,
-                }
-            )
-            prompts.append(
-                GeneratedPrompt(
-                    index=index,
-                    text=text,
-                    raw_response=raw_response,
-                )
-            )
-
-        return prompts
+        return PromptBatchResult(
+            requested_count=count,
+            returned_count=count,
+            prompts=tuple(
+                GeneratedPrompt(index=index, text=text)
+                for index, text in enumerate(texts)
+            ),
+            raw_response=json.dumps({"prompts": texts}),
+            format_valid=True,
+            parser_version="mock_json_list_v1",
+            backend_request_id=f"mock-{backend_request_id}",
+        )
 
 
 class MockImageGenerator:
     """Create small deterministic PNG images without an image model."""
+
+    def __init__(self, delay_seconds: float = 0.0) -> None:
+        self._delay_seconds = delay_seconds
 
     def generate_image(
         self,
@@ -57,19 +76,12 @@ class MockImageGenerator:
         seed: int,
         output_directory: Path,
     ) -> ImageArtifact:
-        """Create one PNG whose filename and colour depend on prompt and seed."""
+        """Create one deterministic blue PNG."""
+        time.sleep(self._delay_seconds)
         output_directory.mkdir(parents=True, exist_ok=True)
 
         identifier = sha256(f"{prompt}\0{seed}".encode()).hexdigest()[:16]
         image_path = output_directory / f"mock_{identifier}_seed_{seed}.png"
-
-        if image_path.exists():
-            raise FileExistsError(f"Mock image already exists: {image_path}")
-
-        colour = (0, 0, 255)
-        image = Image.new("RGB", (64, 64), color=colour)
-        image.save(image_path, format="PNG")
-
         backend_job_id = f"mock-{identifier}"
         raw_response = json.dumps(
             {
@@ -78,6 +90,10 @@ class MockImageGenerator:
                 "seed": seed,
             }
         )
+
+        if not image_path.exists():
+            image = Image.new("RGB", (64, 64), color=(0, 0, 255))
+            image.save(image_path, format="PNG")
 
         return ImageArtifact(
             path=image_path,
@@ -88,14 +104,14 @@ class MockImageGenerator:
 
 
 class MockImageVerifier:
-    """Return a configured verification decision for any valid image file."""
+    """Accept any valid image without calling a vision model."""
 
-    def verify_image(
-        self,
-        *,
-        image_path: Path,
-    ) -> VerificationResult:
-        """Validate that the image exists, then return the configured result."""
+    def __init__(self, delay_seconds: float = 0.0) -> None:
+        self._delay_seconds = delay_seconds
+
+    def verify_image(self, *, image_path: Path) -> VerificationResult:
+        """Validate the image and return a successful decision."""
+        time.sleep(self._delay_seconds)
         with Image.open(image_path) as image:
             image.verify()
 
@@ -114,7 +130,10 @@ class MockImageVerifier:
 
 
 class MockTitleGuesser:
-    """Return a configured title prediction without calling a vision model."""
+    """Return a fixed prediction without calling a vision model."""
+
+    def __init__(self, delay_seconds: float = 0.0) -> None:
+        self._delay_seconds = delay_seconds
 
     def guess_title(
         self,
@@ -122,7 +141,8 @@ class MockTitleGuesser:
         image_path: Path,
         domain: str | None,
     ) -> TitlePrediction:
-        """Validate the image, then return the configured prediction."""
+        """Validate the image and return the fixed mock prediction."""
+        time.sleep(self._delay_seconds)
         with Image.open(image_path) as image:
             image.verify()
 
@@ -133,10 +153,41 @@ class MockTitleGuesser:
                 "domain": domain,
             }
         )
-
         return TitlePrediction(
             title="Mock Title",
             confidence=0.5,
             confidence_type="mock_probability",
             raw_response=raw_response,
         )
+
+
+def _load_mock_settings(raw_settings: dict[str, Any]) -> MockAdapterSettings:
+    return MockAdapterSettings.model_validate(raw_settings)
+
+
+def build_mock_prompt_generator(
+    raw_settings: dict[str, Any],
+) -> MockPromptGenerator:
+    settings = _load_mock_settings(raw_settings)
+    return MockPromptGenerator(settings.delay_seconds)
+
+
+def build_mock_image_generator(
+    raw_settings: dict[str, Any],
+) -> MockImageGenerator:
+    settings = _load_mock_settings(raw_settings)
+    return MockImageGenerator(settings.delay_seconds)
+
+
+def build_mock_image_verifier(
+    raw_settings: dict[str, Any],
+) -> MockImageVerifier:
+    settings = _load_mock_settings(raw_settings)
+    return MockImageVerifier(settings.delay_seconds)
+
+
+def build_mock_title_guesser(
+    raw_settings: dict[str, Any],
+) -> MockTitleGuesser:
+    settings = _load_mock_settings(raw_settings)
+    return MockTitleGuesser(settings.delay_seconds)

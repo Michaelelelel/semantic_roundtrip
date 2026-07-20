@@ -1,6 +1,8 @@
-"""Create configured adapters without exposing provider logic to the pipeline."""
+"""Create independently configured provider adapters."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from semantic_roundtrip.adapters.base import (
     ImageGenerator,
@@ -8,13 +10,21 @@ from semantic_roundtrip.adapters.base import (
     PromptGenerator,
     TitleGuesser,
 )
-from semantic_roundtrip.adapters.mock import (
-    MockImageGenerator,
-    MockImageVerifier,
-    MockPromptGenerator,
-    MockTitleGuesser,
+from semantic_roundtrip.adapters.comfyui import build_comfyui_image_generator
+from semantic_roundtrip.adapters.llama_cpp_vision import (
+    build_llama_cpp_image_verifier,
+    build_llama_cpp_title_guesser,
 )
-from semantic_roundtrip.config import StageConfig, StagesConfig
+from semantic_roundtrip.adapters.mock import (
+    build_mock_image_generator,
+    build_mock_image_verifier,
+    build_mock_prompt_generator,
+    build_mock_title_guesser,
+)
+from semantic_roundtrip.adapters.openai_compatible import (
+    build_openai_compatible_prompt_generator,
+)
+from semantic_roundtrip.config import AdapterSelection, StagesConfig
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,36 +37,95 @@ class AdapterBundle:
     title_guesser: TitleGuesser
 
 
-def create_prompt_generator(prompt_generation: StageConfig) -> PromptGenerator:
-    """Create the configured title-to-prompt adapter."""
-    if prompt_generation.adapter == "mock":
-        return MockPromptGenerator()
-
-    raise ValueError(f"Unsupported prompt-generation adapter: {prompt_generation.adapter}")
+PromptGeneratorBuilder = Callable[[dict[str, Any]], PromptGenerator]
+ImageGeneratorBuilder = Callable[[dict[str, Any]], ImageGenerator]
+ImageVerifierBuilder = Callable[[dict[str, Any]], ImageVerifier]
+TitleGuesserBuilder = Callable[[dict[str, Any]], TitleGuesser]
 
 
-def create_image_generator(image_generation: StageConfig) -> ImageGenerator:
-    """Create the configured prompt-to-image adapter."""
-    if image_generation.adapter == "mock":
-        return MockImageGenerator()
+PROMPT_GENERATORS: dict[str, PromptGeneratorBuilder] = {
+    "mock": build_mock_prompt_generator,
+    "openai_compatible": build_openai_compatible_prompt_generator,
+}
 
-    raise ValueError(f"Unsupported verification adapter: {image_generation.adapter}")
+IMAGE_GENERATORS: dict[str, ImageGeneratorBuilder] = {
+    "mock": build_mock_image_generator,
+    "comfyui": build_comfyui_image_generator,
+}
+
+IMAGE_VERIFIERS: dict[str, ImageVerifierBuilder] = {
+    "mock": build_mock_image_verifier,
+    "llama_cpp_vision": build_llama_cpp_image_verifier,
+}
+
+TITLE_GUESSERS: dict[str, TitleGuesserBuilder] = {
+    "mock": build_mock_title_guesser,
+    "llama_cpp_vision": build_llama_cpp_title_guesser,
+}
 
 
-def create_image_verifier(verification: StageConfig) -> ImageVerifier:
-    """Create the configured image-verification adapter."""
-    if verification.adapter == "mock":
-        return MockImageVerifier()
+def _unsupported_adapter(
+    *,
+    stage: str,
+    adapter: str,
+    registry: dict[str, object],
+) -> ValueError:
+    available = ", ".join(sorted(registry))
+    return ValueError(
+        f"Unknown {stage} adapter '{adapter}'. Available adapters: {available}"
+    )
 
-    raise ValueError(f"Unsupported verification adapter: {verification.adapter}")
+
+def create_prompt_generator(
+    selection: AdapterSelection,
+) -> PromptGenerator:
+    builder = PROMPT_GENERATORS.get(selection.adapter)
+    if builder is None:
+        raise _unsupported_adapter(
+            stage="prompt-generation",
+            adapter=selection.adapter,
+            registry=PROMPT_GENERATORS,
+        )
+    return builder(selection.settings)
 
 
-def create_title_guesser(title_guessing: StageConfig) -> TitleGuesser:
-    """Create the configured image-to-title adapter."""
-    if title_guessing.adapter == "mock":
-        return MockTitleGuesser()
+def create_image_generator(
+    selection: AdapterSelection,
+) -> ImageGenerator:
+    builder = IMAGE_GENERATORS.get(selection.adapter)
+    if builder is None:
+        raise _unsupported_adapter(
+            stage="image-generation",
+            adapter=selection.adapter,
+            registry=IMAGE_GENERATORS,
+        )
+    return builder(selection.settings)
 
-    raise ValueError(f"Unsupported title-guessing adapter: {title_guessing.adapter}")
+
+def create_image_verifier(
+    selection: AdapterSelection,
+) -> ImageVerifier:
+    builder = IMAGE_VERIFIERS.get(selection.adapter)
+    if builder is None:
+        raise _unsupported_adapter(
+            stage="verification",
+            adapter=selection.adapter,
+            registry=IMAGE_VERIFIERS,
+        )
+    return builder(selection.settings)
+
+
+def create_title_guesser(
+    selection: AdapterSelection,
+) -> TitleGuesser:
+    builder = TITLE_GUESSERS.get(selection.adapter)
+    if builder is None:
+        raise _unsupported_adapter(
+            stage="title-guessing",
+            adapter=selection.adapter,
+            registry=TITLE_GUESSERS,
+        )
+    return builder(selection.settings)
 
 
 def create_adapters(config: StagesConfig) -> AdapterBundle:
