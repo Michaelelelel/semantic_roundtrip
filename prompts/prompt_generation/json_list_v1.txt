@@ -3,6 +3,17 @@ Create exactly $count distinct visual prompts that represent the following title
 Domain: $domain
 Title: $title
 
-Each prompt must describe one image and must avoid written words, captions,
-logos, or the literal title. Return only one valid JSON array containing exactly
-$count non-empty strings. Do not add markdown or an explanation.
+Output rules:
+- Return one JSON array containing exactly $count elements.
+- Every array element must be a JSON string directly.
+- Never return objects, keys, nested arrays, markdown, or explanations.
+- Each string must describe exactly one visual scene.
+- Do not mention or request visible words, letters, captions, signs, logos,
+  watermarks, or the literal title.
+
+Correct element structure:
+["A detailed visual scene without any visible writing"]
+
+Incorrect element structures:
+[{"image": "A visual scene"}]
+{"prompts": ["A visual scene"]}

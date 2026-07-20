@@ -24,7 +24,7 @@ stages:
       require_exact_count: true
       temperature: 0.2
       top_p: 0.95
-      max_tokens: 1024
+      max_tokens: 256
       timeout_seconds: 300
 
   image_generation:
