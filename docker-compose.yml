@@ -1,15 +1,24 @@
 services:
   llama:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda
-    ports:
-      - "${API_PORT}:8080"
     volumes:
       - "${MODEL_DIR}:/models:ro"
-    command: >-
-      -m /models/${MODEL_FILE}
-      --alias prompt-model
-      -c 2048
-      --host 0.0.0.0
+      - "./chat_templates:/chat_templates:ro"
+
+    command:
+      - -m
+      - /models/${MODEL_FILE}
+      - --alias
+      - prompt-model
+      - --jinja
+      - --chat-template-file
+      - /chat_templates/mistral-7b-instruct-v0.1.jinja
+      - -c
+      - "2048"
+      - --host
+      - 0.0.0.0
+    ports:
+      - "${API_PORT}:8080"
     deploy:
       resources:
         reservations:
