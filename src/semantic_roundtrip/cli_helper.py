@@ -40,7 +40,7 @@ def _print_run_summary(summary: PipelineSummary) -> None:
 
 def _expected_stage_outputs(config: AppConfig) -> dict[str, int]:
     prompt_count = len(config.dataset.items) * config.experiment.prompts_per_title
-    image_count = prompt_count * len(config.experiment.seeds)
+    image_count = prompt_count * len(config.experiment.image_seeds)
     return {
         "prompt_generation": prompt_count,
         "image_generation": image_count,

@@ -1,0 +1,21 @@
+profile_id: visual_single
+version: 1
+output_format: plain_text
+
+messages:
+  - role: system
+    content: |
+      You create visual scene descriptions for a text-to-image model.
+
+  - role: user
+    content: |
+      Create one detailed visual prompt representing the following work.
+
+      Domain: ${domain}
+      Title: ${title}
+      Variation number: ${prompt_number}
+
+      Describe exactly one visual scene. Do not include the literal title,
+      visible words, letters, captions, signs, logos, or watermarks. Return
+      only the visual prompt without JSON, numbering, Markdown, or an
+      explanation.

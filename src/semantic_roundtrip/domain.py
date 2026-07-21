@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 
 @dataclass(frozen=True, slots=True)
@@ -13,25 +14,28 @@ class BenchmarkItem:
 
 
 @dataclass(frozen=True, slots=True)
-class GeneratedPrompt:
-    """One visual prompt generated for a benchmark item."""
+class PromptMessage:
+    """One provider-independent message used to generate an image prompt."""
 
-    index: int
-    text: str
+    role: Literal["system", "user", "assistant"]
+    content: str
 
 
 @dataclass(frozen=True, slots=True)
-class PromptBatchResult:
-    """One prompt-model response and the prompts parsed from it."""
+class PromptResponse:
+    """One generated image prompt and its raw provider response."""
 
-    requested_count: int
-    returned_count: int
-    prompts: tuple[GeneratedPrompt, ...]
+    text: str
     raw_response: str
-    format_valid: bool
-    parser_version: str
-    parser_error: str | None = None
     backend_request_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedPrompt:
+    """One parsed visual prompt generated for a benchmark item."""
+
+    index: int
+    text: str
 
 
 @dataclass(frozen=True, slots=True)

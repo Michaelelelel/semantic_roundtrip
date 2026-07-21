@@ -15,6 +15,7 @@ from semantic_roundtrip.evaluation import (
 )
 from semantic_roundtrip.persistence.database import RunDatabase, TaskRecord
 from semantic_roundtrip.persistence.run_manager import RunContext
+from semantic_roundtrip.prompting import PromptProfile, render_prompt_profile
 
 
 ResultType = TypeVar("ResultType")
@@ -140,47 +141,84 @@ def _load_or_run_single(
     )
 
 
-def _load_or_generate_prompts(
+def _load_or_generate_prompt(
     *,
     database: RunDatabase,
     adapters: AdapterBundle,
-    config: AppConfig,
+    prompt_profile: PromptProfile,
     item: BenchmarkItem,
     item_index: int,
     item_id: int,
-) -> list[tuple[int, GeneratedPrompt]]:
+    prompt_index: int,
+    retry_limit: int,
+) -> tuple[int, GeneratedPrompt]:
     task = database.get_or_create_task(
-        task_key=f"prompt_generation:{item_index}",
+        task_key=f"prompt_generation:{item_index}:{prompt_index}",
         stage="prompt_generation",
-        expected_outputs=config.experiment.prompts_per_title,
+        expected_outputs=1,
         item_id=item_id,
     )
-    prompts = database.get_prompts(item_id)
+    existing = database.get_prompt(item_id, prompt_index)
 
-    if database.has_prompt_batch(item_id):
+    if existing is not None:
         if task.status != "completed":
-            database.mark_task_completed(task.task_id, len(prompts))
-        return prompts
+            database.mark_task_completed(task.task_id, 1)
+        return existing
 
     if task.status == "completed":
-        raise RuntimeError(f"Task {task.task_key} is completed but has no batch.")
+        raise RuntimeError(f"Task {task.task_key} is completed but has no prompt.")
 
-    def generate(attempt: int) -> list[tuple[int, GeneratedPrompt]]:
-        batch = adapters.prompt_generator.generate_prompts(
-            title=item.title,
-            domain=item.domain,
-            count=config.experiment.prompts_per_title,
+    messages = render_prompt_profile(
+        prompt_profile,
+        title=item.title,
+        domain=item.domain,
+        prompt_index=prompt_index,
+    )
+
+    def generate(attempt: int) -> tuple[int, GeneratedPrompt]:
+        response = adapters.prompt_generator.generate_prompt(messages=messages)
+        prompt = GeneratedPrompt(index=prompt_index, text=response.text)
+        prompt_id = database.add_prompt_response(
+            item_id,
+            prompt,
+            response,
+            attempt,
         )
-        return database.add_prompt_batch(item_id, batch, attempt)
+        return prompt_id, prompt
 
     return _run_task(
         generate,
         database=database,
         task=task,
-        retry_limit=config.experiment.retry_limit,
-        output_count=len,
+        retry_limit=retry_limit,
+        output_count=lambda _: 1,
         item_id=item_id,
     )
+
+
+def _load_or_generate_prompts(
+    *,
+    database: RunDatabase,
+    adapters: AdapterBundle,
+    config: AppConfig,
+    prompt_profile: PromptProfile,
+    item: BenchmarkItem,
+    item_index: int,
+    item_id: int,
+) -> list[tuple[int, GeneratedPrompt]]:
+    return [
+        _load_or_generate_prompt(
+            database=database,
+            adapters=adapters,
+            prompt_profile=prompt_profile,
+            item=item,
+            item_index=item_index,
+            item_id=item_id,
+            prompt_index=prompt_index,
+            retry_limit=config.experiment.retry_limit,
+        )
+        for prompt_index in range(config.experiment.prompts_per_title)
+    ]
 
 
 def _execute(
@@ -189,6 +227,7 @@ def _execute(
     database: RunDatabase,
     images_directory: Path,
     adapters: AdapterBundle,
+    prompt_profile: PromptProfile,
 ) -> None:
     """Execute all missing work in dataset, prompt, and seed order."""
     retry_limit = config.experiment.retry_limit
@@ -203,13 +242,14 @@ def _execute(
             database=database,
             adapters=adapters,
             config=config,
+            prompt_profile=prompt_profile,
             item=item,
             item_index=item_index,
             item_id=item_id,
         )
 
         for prompt_id, prompt in prompts:
-            for seed in config.experiment.seeds:
+            for seed in config.experiment.image_seeds:
                 task_suffix = f"{item_index}:{prompt.index}:{seed}"
 
                 image_id, image = _load_or_run_single(
@@ -285,6 +325,7 @@ def run_pipeline(
     database_path: Path,
     images_directory: Path,
     adapters: AdapterBundle,
+    prompt_profile: PromptProfile,
     resume: bool = False,
 ) -> PipelineSummary:
     """Run a new experiment or continue a paused, interrupted, or failed run."""
@@ -299,6 +340,7 @@ def run_pipeline(
                 database=database,
                 images_directory=images_directory,
                 adapters=adapters,
+                prompt_profile=prompt_profile,
             )
         except PauseRequested:
             database.update_run_status("paused")

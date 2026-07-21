@@ -9,7 +9,8 @@ dataset:
 
 experiment:
   prompts_per_title: 1
-  seeds:
+  prompt_profile: prompts/prompt_generation/visual_single_v1.yaml
+  image_seeds:
     - 8566257
   retry_limit: 1
 
@@ -18,10 +19,8 @@ stages:
     adapter: openai_compatible
     settings:
       endpoint: http://llama:8080/v1/chat/completions
-      model_id: prompt-model
-      template_path: prompts/prompt_generation/json_list_v1.txt
-      parser_version: json_list_v1
-      require_exact_count: true
+      model_id: mistral-7b-instruct-v0.1-q4_k_m
+      request_model: prompt-model
       temperature: 0.2
       top_p: 0.95
       max_tokens: 256

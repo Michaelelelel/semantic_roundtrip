@@ -11,7 +11,7 @@ from semantic_roundtrip.domain import (
     BenchmarkItem,
     GeneratedPrompt,
     ImageArtifact,
-    PromptBatchResult,
+    PromptResponse,
     TitlePrediction,
     VerificationResult,
 )
@@ -520,38 +520,34 @@ class RunDatabase:
             ),
         )
 
-    def has_prompt_batch(self, item_id: int) -> bool:
+    def get_prompt(
+        self,
+        item_id: int,
+        prompt_index: int,
+    ) -> tuple[int, GeneratedPrompt] | None:
         row = self._connection.execute(
-            "SELECT 1 FROM prompt_batches WHERE item_id = ? LIMIT 1",
-            (item_id,),
-        ).fetchone()
-        return row is not None
-
-    def get_prompts(self, item_id: int) -> list[tuple[int, GeneratedPrompt]]:
-        rows = self._connection.execute(
             """
             SELECT prompt_id, prompt_index, text
             FROM prompts
-            WHERE item_id = ?
-            ORDER BY prompt_index
+            WHERE item_id = ? AND prompt_index = ?
             """,
-            (item_id,),
-        ).fetchall()
-        return [
-            (
-                int(row["prompt_id"]),
-                GeneratedPrompt(index=int(row["prompt_index"]), text=row["text"]),
-            )
-            for row in rows
-        ]
+            (item_id, prompt_index),
+        ).fetchone()
+        if row is None:
+            return None
+        return (
+            int(row["prompt_id"]),
+            GeneratedPrompt(index=int(row["prompt_index"]), text=row["text"]),
+        )
 
-    def add_prompt_batch(
+    def add_prompt_response(
         self,
         item_id: int,
-        result: PromptBatchResult,
+        prompt: GeneratedPrompt,
+        response: PromptResponse,
         attempt: int,
-    ) -> list[tuple[int, GeneratedPrompt]]:
-        """Atomically persist one raw batch response and all parsed prompts."""
+    ) -> int:
+        """Persist one prompt response using the temporary schema-v3 table."""
         with self._connection:
             cursor = self._connection.execute(
                 """
@@ -573,34 +569,31 @@ class RunDatabase:
                 (
                     item_id,
                     attempt,
-                    result.requested_count,
-                    result.returned_count,
-                    len(result.prompts),
-                    int(result.format_valid),
-                    result.parser_version,
-                    result.parser_error,
-                    result.backend_request_id,
-                    result.raw_response,
+                    1,
+                    1,
+                    1,
+                    1,
+                    "single_plain_text_v1",
+                    None,
+                    response.backend_request_id,
+                    response.raw_response,
                     _utc_now(),
                 ),
             )
             batch_id = int(cursor.lastrowid)
-            stored: list[tuple[int, GeneratedPrompt]] = []
-            for prompt in result.prompts:
-                prompt_cursor = self._connection.execute(
-                    """
-                    INSERT INTO prompts (
-                        batch_id,
-                        item_id,
-                        prompt_index,
-                        text
-                    )
-                    VALUES (?, ?, ?, ?)
-                    """,
-                    (batch_id, item_id, prompt.index, prompt.text),
+            prompt_cursor = self._connection.execute(
+                """
+                INSERT INTO prompts (
+                    batch_id,
+                    item_id,
+                    prompt_index,
+                    text
                 )
-                stored.append((int(prompt_cursor.lastrowid), prompt))
-        return stored
+                VALUES (?, ?, ?, ?)
+                """,
+                (batch_id, item_id, prompt.index, prompt.text),
+            )
+        return int(prompt_cursor.lastrowid)
 
     def get_image(
         self,

@@ -5,23 +5,22 @@ from typing import Protocol
 
 from semantic_roundtrip.domain import (
     ImageArtifact,
-    PromptBatchResult,
+    PromptMessage,
+    PromptResponse,
     TitlePrediction,
     VerificationResult,
 )
 
 
 class PromptGenerator(Protocol):
-    """Generate visual prompts from a title and optional domain context."""
+    """Generate one image prompt from provider-independent messages."""
 
-    def generate_prompts(
+    def generate_prompt(
         self,
         *,
-        title: str,
-        domain: str | None,
-        count: int,
-    ) -> PromptBatchResult:
-        """Return one model response and all prompts parsed from it."""
+        messages: tuple[PromptMessage, ...],
+    ) -> PromptResponse:
+        """Return one image prompt and its raw provider response."""
         ...
 
 

@@ -11,9 +11,9 @@ from pydantic import Field
 
 from semantic_roundtrip.config import ConfigModel
 from semantic_roundtrip.domain import (
-    GeneratedPrompt,
     ImageArtifact,
-    PromptBatchResult,
+    PromptMessage,
+    PromptResponse,
     TitlePrediction,
     VerificationResult,
 )
@@ -26,40 +26,26 @@ class MockAdapterSettings(ConfigModel):
 
 
 class MockPromptGenerator:
-    """Generate deterministic visual prompts without calling a text model."""
+    """Generate one simple image prompt without calling a model."""
 
     def __init__(self, delay_seconds: float = 0.0) -> None:
         self._delay_seconds = delay_seconds
 
-    def generate_prompts(
+    def generate_prompt(
         self,
         *,
-        title: str,
-        domain: str | None,
-        count: int,
-    ) -> PromptBatchResult:
-        """Return one mock batch containing exactly ``count`` prompts."""
+        messages: tuple[PromptMessage, ...],
+    ) -> PromptResponse:
+        """Return one fixed mock prompt."""
         time.sleep(self._delay_seconds)
-        domain_context = f" in the {domain} domain" if domain else ""
-        texts = [
-            f"Mock visual prompt {index + 1} for {title}{domain_context}"
-            for index in range(count)
-        ]
-        backend_request_id = sha256(f"{title}\0{domain}\0{count}".encode()).hexdigest()[
-            :16
-        ]
+        text = "Mock visual prompt"
+        request_id = "mock-prompt"
+        raw_response = json.dumps({"prompt": text})
 
-        return PromptBatchResult(
-            requested_count=count,
-            returned_count=count,
-            prompts=tuple(
-                GeneratedPrompt(index=index, text=text)
-                for index, text in enumerate(texts)
-            ),
-            raw_response=json.dumps({"prompts": texts}),
-            format_valid=True,
-            parser_version="mock_json_list_v1",
-            backend_request_id=f"mock-{backend_request_id}",
+        return PromptResponse(
+            text=text,
+            raw_response=raw_response,
+            backend_request_id=request_id,
         )
 
 

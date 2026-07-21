@@ -11,7 +11,8 @@ dataset:
 
 experiment:
   prompts_per_title: 5
-  seeds:
+  prompt_profile: prompts/prompt_generation/visual_single_v1.yaml
+  image_seeds:
     - 41
     - 42
   retry_limit: 0

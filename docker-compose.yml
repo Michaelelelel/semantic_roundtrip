@@ -5,7 +5,12 @@ services:
       - "${API_PORT}:8080"
     volumes:
       - "${MODEL_DIR}:/models:ro"
-    command: -m /models/${MODEL_FILE} --alias prompt-model -c 2048 --host 0.0.0.0
+    command: >-
+      -m /models/${MODEL_FILE}
+      --alias prompt-model
+      --chat-template ${MODEL_CHAT_TEMPLATE:-mistral-v1}
+      -c 2048
+      --host 0.0.0.0
     deploy:
       resources:
         reservations:

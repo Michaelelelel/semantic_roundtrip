@@ -6,10 +6,12 @@ from shutil import copy2
 import yaml
 
 from semantic_roundtrip.config import AppConfig
+from semantic_roundtrip.prompting import LoadedPromptProfile
 
 
 INPUT_CONFIG_FILENAME = "config_input.yaml"
 EFFECTIVE_CONFIG_FILENAME = "config_snapshot.yaml"
+PROMPT_PROFILE_FILENAME = "prompt_profile.yaml"
 
 
 def create_input_config_snapshot(
@@ -42,5 +44,18 @@ def create_effective_config_snapshot(
             sort_keys=False,
             allow_unicode=True,
         )
+
+    return snapshot_path
+
+
+def create_prompt_profile_snapshot(
+    loaded_profile: LoadedPromptProfile,
+    run_directory: Path,
+) -> Path:
+    """Write the exact validated prompt profile used by the run."""
+    snapshot_path = run_directory / PROMPT_PROFILE_FILENAME
+
+    with snapshot_path.open("xb") as file:
+        file.write(loaded_profile.source_bytes)
 
     return snapshot_path

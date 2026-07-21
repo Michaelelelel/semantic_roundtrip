@@ -16,8 +16,10 @@ from semantic_roundtrip.config import load_config
 from semantic_roundtrip.pipeline import run_pipeline
 from semantic_roundtrip.persistence.config_snapshot import (
     EFFECTIVE_CONFIG_FILENAME,
+    PROMPT_PROFILE_FILENAME,
     create_effective_config_snapshot,
     create_input_config_snapshot,
+    create_prompt_profile_snapshot,
 )
 from semantic_roundtrip.persistence.database import (
     database_path_for_run,
@@ -28,6 +30,7 @@ from semantic_roundtrip.persistence.database import (
 )
 from semantic_roundtrip.persistence.manifest import create_manifest
 from semantic_roundtrip.persistence.run_manager import create_run
+from semantic_roundtrip.prompting import load_prompt_profile
 
 app = typer.Typer(help="Run and monitor semantic round-trip experiments.")
 
@@ -60,6 +63,7 @@ def run(
 ) -> None:
     """Run an experiment."""
     config = load_config(config_file)
+    loaded_prompt_profile = load_prompt_profile(config.experiment.prompt_profile)
     adapters = create_adapters(config.stages)
 
     run_context = create_run(
@@ -73,6 +77,10 @@ def run(
     )
     effective_config_path = create_effective_config_snapshot(
         config,
+        run_context.directory,
+    )
+    prompt_profile_path = create_prompt_profile_snapshot(
+        loaded_prompt_profile,
         run_context.directory,
     )
     images_directory = run_context.directory / "images"
@@ -90,6 +98,8 @@ def run(
         effective_config_path,
         database_path,
         images_directory,
+        prompt_profile_path,
+        loaded_prompt_profile,
     )
 
     _print_run_info(config, database_path, manifest_path, run_context)
@@ -100,6 +110,7 @@ def run(
         database_path=database_path,
         images_directory=images_directory,
         adapters=adapters,
+        prompt_profile=loaded_prompt_profile.profile,
     )
     _print_run_summary(summary)
 
@@ -158,6 +169,9 @@ def resume(
             raise ValueError(f"Cannot resume a run with status '{record.status}'.")
 
         config = load_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
+        loaded_prompt_profile = load_prompt_profile(
+            run_directory / PROMPT_PROFILE_FILENAME
+        )
         adapters = create_adapters(config.stages)
         run_context = load_run_context(run_directory)
         summary = run_pipeline(
@@ -166,6 +180,7 @@ def resume(
             database_path=database_path,
             images_directory=run_directory / "images",
             adapters=adapters,
+            prompt_profile=loaded_prompt_profile.profile,
             resume=True,
         )
     except (OSError, ValueError) as error:

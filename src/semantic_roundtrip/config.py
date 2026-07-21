@@ -29,14 +29,15 @@ class DatasetConfig(ConfigModel):
 
 class ExperimentConfig(ConfigModel):
     prompts_per_title: int = Field(gt=0)
-    seeds: list[Annotated[int, Field(ge=0)]] = Field(min_length=1)
+    prompt_profile: Path
+    image_seeds: list[Annotated[int, Field(ge=0)]] = Field(min_length=1)
     retry_limit: int = Field(ge=0)
 
-    @field_validator("seeds")
+    @field_validator("image_seeds")
     @classmethod
-    def require_unique_seeds(cls, seeds: list[int]) -> list[int]:
+    def require_unique_image_seeds(cls, seeds: list[int]) -> list[int]:
         if len(seeds) != len(set(seeds)):
-            raise ValueError("Every configured seed must be unique.")
+            raise ValueError("Every configured image seed must be unique.")
         return seeds
 
 
