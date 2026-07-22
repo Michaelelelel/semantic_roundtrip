@@ -112,7 +112,9 @@ def run(
         adapters=adapters,
         prompt_profile=loaded_prompt_profile.profile,
     )
+    _print_run_info(config, database_path, manifest_path, run_context)
     _print_run_summary(summary)
+
 
 
 @app.command()
