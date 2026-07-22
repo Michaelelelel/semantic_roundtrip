@@ -5,7 +5,7 @@ import json
 import math
 from pathlib import Path
 from string import Template
-from typing import Any, Literal
+from typing import Any
 
 import requests
 from pydantic import Field
@@ -15,58 +15,56 @@ from semantic_roundtrip.config import ConfigModel
 from semantic_roundtrip.domain import TitlePrediction, VerificationResult
 
 
-class LlamaCppVisionVerifierSettings(ConfigModel):
-    """Settings for llama.cpp image verification."""
+class LlamaCppVisionSettings(ConfigModel):
+    """Settings shared by llama.cpp vision stage adapters."""
 
     endpoint: str = Field(min_length=1)
     model_id: str = Field(min_length=1)
     template_path: Path
-    parser_version: Literal["json_object_v1"] = "json_object_v1"
+    chat_template_path: Path
     media_marker: str = "<__media__>"
     temperature: float = Field(default=0.0, ge=0)
     top_k: int = Field(default=1, gt=0)
-    max_tokens: int = Field(default=128, gt=0)
+    max_tokens: int = Field(gt=0)
     timeout_seconds: float = Field(default=300, gt=0)
+    stop_sequences: list[str] = Field(default_factory=lambda: ["USER:"])
 
 
-class LlamaCppTitleGuesserSettings(ConfigModel):
-    """Settings for llama.cpp title guessing."""
-
-    endpoint: str = Field(min_length=1)
-    model_id: str = Field(min_length=1)
-    template_path: Path
-    media_marker: str = "<__media__>"
-    temperature: float = Field(default=0.0, ge=0)
-    top_k: int = Field(default=1, gt=0)
-    max_tokens: int = Field(default=64, gt=0)
-    timeout_seconds: float = Field(default=300, gt=0)
-
-
-VisionSettings = LlamaCppVisionVerifierSettings | LlamaCppTitleGuesserSettings
+VERIFICATION_RESPONSE_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "passed": {"type": "boolean"},
+        "reason": {"type": ["string", "null"]},
+    },
+    "required": ["passed", "reason"],
+    "additionalProperties": False,
+}
 
 
 class LlamaCppVisionClient:
-    """Send one image and question to llama.cpp's multimodal endpoint."""
+    """Send one image and rendered instruction to llama.cpp."""
 
-    def __init__(self, settings: VisionSettings) -> None:
+    def __init__(self, settings: LlamaCppVisionSettings) -> None:
         self._config = settings
+        self._chat_template = Template(
+            Path(settings.chat_template_path).read_text(encoding="utf-8")
+        )
         self._session = requests.Session()
 
     def complete(
         self,
         *,
         image_path: Path,
-        question: str,
+        instruction: str,
+        include_token_probabilities: bool = False,
+        json_schema: dict[str, Any] | None = None,
     ) -> tuple[dict[str, Any], str]:
         image_base64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
-        prompt = (
-            "A chat between a curious user and an artificial intelligence "
-            "assistant. The assistant gives helpful, detailed, and polite "
-            "answers to the user's questions. "
-            f"USER: {self._config.media_marker}\n"
-            f"{question}\nASSISTANT:"
+        prompt = self._chat_template.substitute(
+            media_marker=self._config.media_marker,
+            instruction=instruction,
         )
-        payload = {
+        payload: dict[str, Any] = {
             "prompt": {
                 "prompt_string": prompt,
                 "multimodal_data": [image_base64],
@@ -74,9 +72,12 @@ class LlamaCppVisionClient:
             "temperature": self._config.temperature,
             "top_k": self._config.top_k,
             "n_predict": self._config.max_tokens,
-            "n_probs": 1,
-            "stop": ["USER:"],
+            "stop": self._config.stop_sequences,
         }
+        if include_token_probabilities:
+            payload["n_probs"] = 1
+        if json_schema is not None:
+            payload["json_schema"] = json_schema
 
         try:
             response = self._session.post(
@@ -107,23 +108,25 @@ class LlamaCppVisionClient:
 class LlamaCppImageVerifier:
     """Verify image suitability with a llama.cpp vision model."""
 
-    def __init__(self, settings: LlamaCppVisionVerifierSettings) -> None:
-        self._config = settings
+    def __init__(self, settings: LlamaCppVisionSettings) -> None:
         self._template = Template(
             Path(settings.template_path).read_text(encoding="utf-8")
         )
         self._client = LlamaCppVisionClient(settings)
 
     def verify_image(self, *, image_path: Path) -> VerificationResult:
-        question = self._template.substitute()
+        instruction = self._template.substitute()
         result, raw_response = self._client.complete(
             image_path=image_path,
-            question=question,
+            instruction=instruction,
+            json_schema=VERIFICATION_RESPONSE_SCHEMA,
         )
         content = result["content"].strip()
 
         try:
             parsed = json.loads(content)
+            if not isinstance(parsed, dict):
+                raise TypeError("response is not an object")
             passed = parsed["passed"]
             reason = parsed.get("reason")
             if not isinstance(passed, bool):
@@ -132,7 +135,7 @@ class LlamaCppImageVerifier:
                 raise TypeError("'reason' is not text or null")
         except (KeyError, TypeError, json.JSONDecodeError) as error:
             raise AdapterError(
-                "Verifier response is not valid json_object_v1.",
+                "Verifier response is not valid verification JSON.",
                 raw_response,
             ) from error
 
@@ -146,7 +149,7 @@ class LlamaCppImageVerifier:
 class LlamaCppTitleGuesser:
     """Guess a title and retain llama.cpp token confidence metadata."""
 
-    def __init__(self, settings: LlamaCppTitleGuesserSettings) -> None:
+    def __init__(self, settings: LlamaCppVisionSettings) -> None:
         self._template = Template(
             Path(settings.template_path).read_text(encoding="utf-8")
         )
@@ -158,10 +161,11 @@ class LlamaCppTitleGuesser:
         image_path: Path,
         domain: str | None,
     ) -> TitlePrediction:
-        question = self._template.substitute(domain=domain or "")
+        instruction = self._template.substitute(domain=domain or "")
         result, raw_response = self._client.complete(
             image_path=image_path,
-            question=question,
+            instruction=instruction,
+            include_token_probabilities=True,
         )
         guessed_title = result["content"].strip()
         if not guessed_title:
@@ -191,12 +195,12 @@ class LlamaCppTitleGuesser:
 def build_llama_cpp_image_verifier(
     raw_settings: dict[str, Any],
 ) -> LlamaCppImageVerifier:
-    settings = LlamaCppVisionVerifierSettings.model_validate(raw_settings)
+    settings = LlamaCppVisionSettings.model_validate(raw_settings)
     return LlamaCppImageVerifier(settings)
 
 
 def build_llama_cpp_title_guesser(
     raw_settings: dict[str, Any],
 ) -> LlamaCppTitleGuesser:
-    settings = LlamaCppTitleGuesserSettings.model_validate(raw_settings)
+    settings = LlamaCppVisionSettings.model_validate(raw_settings)
     return LlamaCppTitleGuesser(settings)

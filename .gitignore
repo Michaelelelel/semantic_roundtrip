@@ -25,12 +25,22 @@ models/text/*
 models/image/*
 models/vision/*
 !models/text/.gitkeep
+!models/text/download.sh
 !models/image/.gitkeep
+!models/image/download.sh
+!models/image/checkpoints/
+models/image/checkpoints/*
+!models/image/checkpoints/.gitkeep
 !models/vision/.gitkeep
+!models/vision/download.sh
 models_vlm/
 *.gguf
 *.safetensors
 *.ckpt
+
+# Downloaded chat templates stay local; only their download scripts are tracked.
+chat_templates/*
+!chat_templates/download.sh
 
 # Runtime data stays local, but mount roots must exist before Docker starts.
 runs/

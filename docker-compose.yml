@@ -2,7 +2,7 @@ services:
   llama:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda
     volumes:
-      - "${MODEL_DIR}:/models:ro"
+      - "${MODEL_DIR:-./models/text}:/models:ro"
       - "./chat_templates:/chat_templates:ro"
 
     command:
@@ -38,7 +38,7 @@ services:
     ports:
       - "${VLM_PORT:-18182}:8080"
     volumes:
-      - "${VLM_MODEL_DIR:-./models_vlm}:/models:ro"
+      - "${VLM_MODEL_DIR:-./models/vision}:/models:ro"
     environment:
       LLAMA_MEDIA_MARKER: "<__media__>"
     command:
@@ -46,8 +46,6 @@ services:
       - /models/${VLM_MODEL_FILE:-ggml-model-q4_k.gguf}
       - --mmproj
       - /models/${VLM_MMPROJ_FILE:-mmproj-model-f16.gguf}
-      - --chat-template
-      - ${VLM_CHAT_TEMPLATE:-vicuna}
       - -c
       - "4096"
       - --host
@@ -91,7 +89,7 @@ services:
     volumes:
       - ./comfy_run:/comfy/mnt
       - ./basedir:/basedir
-      - ${COMFYUI_MODEL_DIR:-./models}:/basedir/models
+      - ${COMFYUI_MODEL_DIR:-./models/image}:/basedir/models
       - ./outputs:/basedir/output
     environment:
       WANTED_UID: "${HOST_UID:-1000}"

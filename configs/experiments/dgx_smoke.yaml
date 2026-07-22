@@ -42,8 +42,9 @@ stages:
       endpoint: http://vlm:8080/completion
       model_id: llava-v1.5-7b
       template_path: prompts/verification/json_v1.txt
-      parser_version: json_object_v1
+      chat_template_path: prompts/llama_cpp_vision/vicuna_v1.txt
       media_marker: <__media__>
+      max_tokens: 128
       timeout_seconds: 300
 
   title_guessing:
@@ -52,7 +53,9 @@ stages:
       endpoint: http://vlm:8080/completion
       model_id: llava-v1.5-7b
       template_path: prompts/title_guessing/plain_v1.txt
+      chat_template_path: prompts/llama_cpp_vision/vicuna_v1.txt
       media_marker: <__media__>
+      max_tokens: 64
       timeout_seconds: 300
 
 evaluation:
