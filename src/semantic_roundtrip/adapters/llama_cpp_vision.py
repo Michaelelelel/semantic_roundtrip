@@ -164,6 +164,11 @@ class LlamaCppTitleGuesser:
             question=question,
         )
         guessed_title = result["content"].strip()
+        if not guessed_title:
+            raise AdapterError(
+                "Title guesser returned an empty response.",
+                raw_response,
+            )
         token_logprobs = [
             token["logprob"]
             for token in result.get("completion_probabilities", [])

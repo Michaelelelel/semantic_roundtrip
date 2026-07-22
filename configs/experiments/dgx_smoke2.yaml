@@ -12,6 +12,7 @@ dataset:
 experiment:
   prompts_per_title: 10
   prompt_profile: prompts/prompt_generation/visual_single_v1.yaml
+  prompt_seed: 1000
   image_seeds:
     - 8566257
   retry_limit: 1
@@ -23,9 +24,9 @@ stages:
       endpoint: http://llama:8080/v1/chat/completions
       model_id: mistral-7b-instruct-v0.1-q4_k_m
       request_model: prompt-model
-      temperature: 0.2
+      temperature: 0.7
       top_p: 0.95
-      max_tokens: 256
+      max_tokens: 512
       timeout_seconds: 300
 
   image_generation:

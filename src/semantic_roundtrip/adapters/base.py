@@ -19,6 +19,7 @@ class PromptGenerator(Protocol):
         self,
         *,
         messages: tuple[PromptMessage, ...],
+        seed: int,
     ) -> PromptResponse:
         """Return one image prompt and its raw provider response."""
         ...

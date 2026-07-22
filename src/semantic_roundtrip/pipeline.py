@@ -150,6 +150,7 @@ def _load_or_generate_prompt(
     item_index: int,
     item_id: int,
     prompt_index: int,
+    sampling_seed: int,
     retry_limit: int,
 ) -> tuple[int, GeneratedPrompt]:
     task = database.get_or_create_task(
@@ -157,6 +158,7 @@ def _load_or_generate_prompt(
         stage="prompt_generation",
         expected_outputs=1,
         item_id=item_id,
+        seed=sampling_seed,
     )
     existing = database.get_prompt(item_id, prompt_index)
 
@@ -176,7 +178,10 @@ def _load_or_generate_prompt(
     )
 
     def generate(attempt: int) -> tuple[int, GeneratedPrompt]:
-        response = adapters.prompt_generator.generate_prompt(messages=messages)
+        response = adapters.prompt_generator.generate_prompt(
+            messages=messages,
+            seed=sampling_seed,
+        )
         prompt = GeneratedPrompt(index=prompt_index, text=response.text)
         prompt_id = database.add_prompt_response(
             item_id,
@@ -215,6 +220,7 @@ def _load_or_generate_prompts(
             item_index=item_index,
             item_id=item_id,
             prompt_index=prompt_index,
+            sampling_seed=config.experiment.prompt_seed + prompt_index,
             retry_limit=config.experiment.retry_limit,
         )
         for prompt_index in range(config.experiment.prompts_per_title)

@@ -30,6 +30,7 @@ class DatasetConfig(ConfigModel):
 class ExperimentConfig(ConfigModel):
     prompts_per_title: int = Field(gt=0)
     prompt_profile: Path
+    prompt_seed: int = Field(default=0, ge=0)
     image_seeds: list[Annotated[int, Field(ge=0)]] = Field(min_length=1)
     retry_limit: int = Field(ge=0)
 

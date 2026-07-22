@@ -33,6 +33,7 @@ class OpenAICompatiblePromptGenerator:
         self,
         *,
         messages: tuple[PromptMessage, ...],
+        seed: int,
     ) -> PromptResponse:
         payload: dict[str, Any] = {
             "model": self._config.request_model or self._config.model_id,
@@ -43,6 +44,7 @@ class OpenAICompatiblePromptGenerator:
             "temperature": self._config.temperature,
             "top_p": self._config.top_p,
             "max_tokens": self._config.max_tokens,
+            "seed": seed,
         }
         try:
             response = self._session.post(

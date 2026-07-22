@@ -35,12 +35,13 @@ class MockPromptGenerator:
         self,
         *,
         messages: tuple[PromptMessage, ...],
+        seed: int,
     ) -> PromptResponse:
         """Return one fixed mock prompt."""
         time.sleep(self._delay_seconds)
         text = "Mock visual prompt"
         request_id = "mock-prompt"
-        raw_response = json.dumps({"prompt": text})
+        raw_response = json.dumps({"prompt": text, "seed": seed})
 
         return PromptResponse(
             text=text,
