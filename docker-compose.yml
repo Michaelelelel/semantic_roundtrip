@@ -65,8 +65,9 @@ services:
       timeout: 5s
       retries: 30
       start_period: 20s
-
   python_app:
+    profiles: [ "experiment" ]
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     build: .
     volumes:
       - .:/app
@@ -93,8 +94,8 @@ services:
       - ${COMFYUI_MODEL_DIR:-./models}:/basedir/models
       - ./outputs:/basedir/output
     environment:
-      WANTED_UID: "${COMFYUI_UID:-1000}"
-      WANTED_GID: "${COMFYUI_GID:-1000}"
+      WANTED_UID: "${HOST_UID:-1000}"
+      WANTED_GID: "${HOST_GID:-1000}"
       BASE_DIRECTORY: /basedir
       SECURITY_LEVEL: normal
     healthcheck:
