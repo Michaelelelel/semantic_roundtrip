@@ -1,0 +1,63 @@
+run:
+  name: dgx_smoke
+  output_directory: runs
+
+dataset:
+  items:
+    - domain: songs
+      title: yellow submarine
+    - domain: movie
+      title: Iron Man
+
+experiment:
+  prompts_per_title: 3
+  prompt_profile: prompts/prompt_generation/visual_single_v1.yaml
+  prompt_seed: 1000
+  image_seeds:
+    - 8566257
+    - 12315
+    - 151
+  retry_limit: 1
+
+stages:
+  prompt_generation:
+    adapter: openai_compatible
+    settings:
+      endpoint: http://llama:8080/v1/chat/completions
+      model_id: mistral-7b-instruct-v0.1-q4_k_m
+      request_model: prompt-model
+      temperature: 0.7
+      top_p: 0.95
+      max_tokens: 512
+      timeout_seconds: 300
+
+  image_generation:
+    adapter: comfyui
+    settings:
+      base_url: http://comfyui:8188
+      model_id: stable-diffusion-v1-5
+      workflow_path: workflows/sd15_api.json
+      checkpoint: v1-5-pruned-emaonly.safetensors
+      generation_timeout_seconds: 300
+
+  verification:
+    adapter: llama_cpp_vision
+    settings:
+      endpoint: http://vlm:8080/completion
+      model_id: llava-v1.5-7b
+      template_path: prompts/verification/json_v1.txt
+      parser_version: json_object_v1
+      media_marker: <__media__>
+      timeout_seconds: 300
+
+  title_guessing:
+    adapter: llama_cpp_vision
+    settings:
+      endpoint: http://vlm:8080/completion
+      model_id: llava-v1.5-7b
+      template_path: prompts/title_guessing/plain_v1.txt
+      media_marker: <__media__>
+      timeout_seconds: 300
+
+evaluation:
+  failed_verification: count_as_failure
