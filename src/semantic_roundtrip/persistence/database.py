@@ -19,7 +19,7 @@ from semantic_roundtrip.persistence.run_manager import RunContext
 
 
 DATABASE_FILENAME = "pipeline_state.sqlite"
-DATABASE_SCHEMA_VERSION = 3
+DATABASE_SCHEMA_VERSION = 4
 
 RunStatus = Literal[
     "created",
@@ -96,11 +96,25 @@ def _connect(
     database_path: Path,
     *,
     create: bool = False,
+    read_only: bool = False,
 ) -> sqlite3.Connection:
+    if create and read_only:
+        raise ValueError("A database connection cannot create and be read-only.")
+
     if not create and not database_path.is_file():
         raise FileNotFoundError(f"Run database does not exist: {database_path}")
 
-    connection = sqlite3.connect(database_path, timeout=5)
+    if read_only:
+        database_uri = f"{database_path.resolve().as_uri()}?mode=ro"
+        connection = sqlite3.connect(
+            database_uri,
+            timeout=5,
+            uri=True,
+        )
+        connection.execute("PRAGMA query_only = ON")
+    else:
+        connection = sqlite3.connect(database_path, timeout=5)
+
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute("PRAGMA busy_timeout = 5000")
@@ -122,7 +136,7 @@ def initialize_database(
     input_config_path: Path,
     effective_config_path: Path,
 ) -> Path:
-    """Create a schema-v3 database for a new experiment run."""
+    """Create a schema-v4 database for a new experiment run."""
     database_path = run_context.directory / DATABASE_FILENAME
 
     if database_path.exists():
@@ -168,30 +182,16 @@ def initialize_database(
                 UNIQUE (run_id, item_index)
             );
 
-            CREATE TABLE prompt_batches (
-                batch_id INTEGER PRIMARY KEY,
-                item_id INTEGER NOT NULL REFERENCES dataset_items(item_id)
-                    ON DELETE CASCADE,
-                attempt INTEGER NOT NULL CHECK (attempt > 0),
-                requested_count INTEGER NOT NULL CHECK (requested_count > 0),
-                returned_count INTEGER NOT NULL CHECK (returned_count >= 0),
-                stored_count INTEGER NOT NULL CHECK (stored_count >= 0),
-                format_valid INTEGER NOT NULL CHECK (format_valid IN (0, 1)),
-                parser_version TEXT NOT NULL,
-                parser_error TEXT,
-                backend_request_id TEXT,
-                raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
-                created_at TEXT NOT NULL
-            );
-
             CREATE TABLE prompts (
                 prompt_id INTEGER PRIMARY KEY,
-                batch_id INTEGER NOT NULL REFERENCES prompt_batches(batch_id)
-                    ON DELETE CASCADE,
                 item_id INTEGER NOT NULL REFERENCES dataset_items(item_id)
                     ON DELETE CASCADE,
                 prompt_index INTEGER NOT NULL,
-                text TEXT NOT NULL,
+                sampling_seed INTEGER NOT NULL CHECK (sampling_seed >= 0),
+                text TEXT NOT NULL CHECK (length(text) > 0),
+                backend_request_id TEXT,
+                raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
+                created_at TEXT NOT NULL,
                 UNIQUE (item_id, prompt_index)
             );
 
@@ -286,8 +286,6 @@ def initialize_database(
                 created_at TEXT NOT NULL
             );
 
-            CREATE INDEX prompt_batches_item_id_idx
-                ON prompt_batches(item_id);
             CREATE INDEX prompts_item_id_idx ON prompts(item_id);
             CREATE INDEX images_prompt_id_idx ON images(prompt_id);
             CREATE INDEX stage_tasks_run_stage_status_idx
@@ -332,7 +330,7 @@ def initialize_database(
 
 def read_run_record(database_path: Path) -> RunRecord:
     """Read the single run metadata record."""
-    connection = _connect(database_path)
+    connection = _connect(database_path, read_only=True)
     try:
         _require_current_schema(connection)
         row = connection.execute("SELECT * FROM run_metadata").fetchone()
@@ -352,7 +350,7 @@ def read_run_record(database_path: Path) -> RunRecord:
 
 
 def load_run_context(run_directory: Path) -> RunContext:
-    """Reconstruct a run context from an existing schema-v3 database."""
+    """Reconstruct a run context from an existing schema-v4 database."""
     record = read_run_record(database_path_for_run(run_directory))
     return RunContext(
         run_id=record.run_id,
@@ -363,7 +361,7 @@ def load_run_context(run_directory: Path) -> RunContext:
 
 def read_stage_progress(database_path: Path) -> list[StageProgress]:
     """Aggregate task progress for status displays."""
-    connection = _connect(database_path)
+    connection = _connect(database_path, read_only=True)
     try:
         _require_current_schema(connection)
         rows = connection.execute(
@@ -424,7 +422,7 @@ def request_run_pause(database_path: Path) -> RunRecord:
 
 
 class RunDatabase:
-    """Read and write one experiment's schema-v3 SQLite database."""
+    """Read and write one experiment's schema-v4 SQLite database."""
 
     def __init__(self, database_path: Path, run_context: RunContext) -> None:
         self._run_context = run_context
@@ -540,60 +538,38 @@ class RunDatabase:
             GeneratedPrompt(index=int(row["prompt_index"]), text=row["text"]),
         )
 
-    def add_prompt_response(
+    def add_prompt(
         self,
+        *,
         item_id: int,
         prompt: GeneratedPrompt,
+        sampling_seed: int,
         response: PromptResponse,
-        attempt: int,
     ) -> int:
-        """Persist one prompt response using the temporary schema-v3 table."""
-        with self._connection:
-            cursor = self._connection.execute(
-                """
-                INSERT INTO prompt_batches (
-                    item_id,
-                    attempt,
-                    requested_count,
-                    returned_count,
-                    stored_count,
-                    format_valid,
-                    parser_version,
-                    parser_error,
-                    backend_request_id,
-                    raw_response,
-                    created_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    item_id,
-                    attempt,
-                    1,
-                    1,
-                    1,
-                    1,
-                    "single_plain_text_v1",
-                    None,
-                    response.backend_request_id,
-                    response.raw_response,
-                    _utc_now(),
-                ),
+        """Persist one successful prompt-generation response."""
+        return self._insert(
+            """
+            INSERT INTO prompts (
+                item_id,
+                prompt_index,
+                sampling_seed,
+                text,
+                backend_request_id,
+                raw_response,
+                created_at
             )
-            batch_id = int(cursor.lastrowid)
-            prompt_cursor = self._connection.execute(
-                """
-                INSERT INTO prompts (
-                    batch_id,
-                    item_id,
-                    prompt_index,
-                    text
-                )
-                VALUES (?, ?, ?, ?)
-                """,
-                (batch_id, item_id, prompt.index, prompt.text),
-            )
-        return int(prompt_cursor.lastrowid)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                item_id,
+                prompt.index,
+                sampling_seed,
+                prompt.text,
+                response.backend_request_id,
+                response.raw_response,
+                _utc_now(),
+            ),
+        )
 
     def get_image(
         self,

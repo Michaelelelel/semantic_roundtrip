@@ -52,12 +52,11 @@ def _summary(database: RunDatabase, status: str) -> PipelineSummary:
 
 
 def _run_task(
-    operation: Callable[[int], ResultType],
+    operation: Callable[[], ResultType],
     *,
     database: RunDatabase,
     task: TaskRecord,
     retry_limit: int,
-    output_count: Callable[[ResultType], int],
     item_id: int | None = None,
     prompt_id: int | None = None,
     image_id: int | None = None,
@@ -69,7 +68,7 @@ def _run_task(
 
         attempt = database.mark_task_running(task.task_id)
         try:
-            result = operation(attempt)
+            result = operation()
         except Exception as error:
             raw_response = getattr(error, "raw_response", None)
             database.add_stage_error(
@@ -86,7 +85,7 @@ def _run_task(
                 database.mark_task_failed(task.task_id)
                 raise
         else:
-            database.mark_task_completed(task.task_id, output_count(result))
+            database.mark_task_completed(task.task_id, 1)
             return result
 
     raise RuntimeError("Task retry loop ended unexpectedly.")
@@ -125,7 +124,7 @@ def _load_or_run_single(
     if task.status == "completed":
         raise RuntimeError(f"Task {task.task_key} is completed but has no result.")
 
-    def execute(_: int) -> tuple[int, ResultType]:
+    def execute() -> tuple[int, ResultType]:
         result = operation()
         return save(result), result
 
@@ -134,7 +133,6 @@ def _load_or_run_single(
         database=database,
         task=task,
         retry_limit=retry_limit,
-        output_count=lambda _: 1,
         item_id=item_id,
         prompt_id=prompt_id,
         image_id=image_id,
@@ -177,17 +175,17 @@ def _load_or_generate_prompt(
         prompt_index=prompt_index,
     )
 
-    def generate(attempt: int) -> tuple[int, GeneratedPrompt]:
+    def generate() -> tuple[int, GeneratedPrompt]:
         response = adapters.prompt_generator.generate_prompt(
             messages=messages,
             seed=sampling_seed,
         )
         prompt = GeneratedPrompt(index=prompt_index, text=response.text)
-        prompt_id = database.add_prompt_response(
-            item_id,
-            prompt,
-            response,
-            attempt,
+        prompt_id = database.add_prompt(
+            item_id=item_id,
+            prompt=prompt,
+            sampling_seed=sampling_seed,
+            response=response,
         )
         return prompt_id, prompt
 
@@ -196,7 +194,6 @@ def _load_or_generate_prompt(
         database=database,
         task=task,
         retry_limit=retry_limit,
-        output_count=lambda _: 1,
         item_id=item_id,
     )
 

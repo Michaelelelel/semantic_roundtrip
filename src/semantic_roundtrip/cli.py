@@ -125,6 +125,54 @@ def run(
     """Run an experiment."""
     _run_new_experiment(config_file)
 
+
+@app.command("matrix")
+def run_matrix(
+    config_file: Path = typer.Option(
+        ...,
+        "--config",
+        "-c",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        resolve_path=True,
+        help="Matrix configuration file.",
+    ),
+) -> None:
+    """Run an explicit list of experiment configurations sequentially."""
+    try:
+        matrix_config = load_matrix_config(config_file)
+    except (OSError, ValueError) as error:
+        typer.echo(str(error), err=True)
+        raise typer.Exit(code=1) from error
+
+    typer.echo(f"Matrix: {matrix_config.name}")
+    failures: list[str] = []
+
+    for index, experiment in enumerate(matrix_config.experiments, start=1):
+        typer.echo(
+            f"\n[{index}/{len(matrix_config.experiments)}] "
+            f"{experiment.name}: {experiment.config}"
+        )
+        try:
+            _run_new_experiment(experiment.config)
+        except Exception as error:
+            failures.append(experiment.name)
+            typer.echo(
+                f"Experiment '{experiment.name}' failed: {error}",
+                err=True,
+            )
+            if not matrix_config.continue_on_error:
+                break
+
+    if failures:
+        typer.echo(f"Failed matrix experiments: {', '.join(failures)}", err=True)
+        raise typer.Exit(code=1)
+
+    typer.echo("Matrix completed successfully.")
+
+
+
 @app.command()
 def status(
     run_directory: Path = _run_directory_option(),
@@ -171,7 +219,7 @@ def pause(
 def resume(
     run_directory: Path = _run_directory_option(),
 ) -> None:
-    """Resume a paused, interrupted, or failed schema-v3 run."""
+    """Resume a paused, interrupted, or failed run."""
     database_path = database_path_for_run(run_directory)
     try:
         record = read_run_record(database_path)
