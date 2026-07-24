@@ -1,0 +1,12 @@
+services:
+  text_runtime:
+    ports:
+      - "127.0.0.1:18181:8080"
+
+  vision_runtime:
+    ports:
+      - "127.0.0.1:18189:8080"
+
+  image_runtime:
+    ports:
+      - "127.0.0.1:18188:8188"

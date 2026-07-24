@@ -65,6 +65,7 @@ class LlamaCppVisionClient:
             instruction=instruction,
         )
         payload: dict[str, Any] = {
+            "model": self._config.model_id,
             "prompt": {
                 "prompt_string": prompt,
                 "multimodal_data": [image_base64],
@@ -82,7 +83,6 @@ class LlamaCppVisionClient:
         try:
             response = self._session.post(
                 self._config.endpoint,
-                params={"model": self._config.model_id},
                 json=payload,
                 timeout=self._config.timeout_seconds,
             )

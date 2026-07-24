@@ -1,0 +1,91 @@
+services:
+  text_runtime:
+    image: >-
+      ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:f96be8dfd1c1eb533e09f42fc4d92311150dc63ecd568284c9199cacae5a9e26
+    volumes:
+      - "${MODEL_ROOT:?MODEL_ROOT must be set}/text:/models:ro"
+      - ./chat_templates:/chat_templates:ro
+      - ./configs/deployments/text-models.ini:/config/models.ini:ro
+    command:
+      - --models-preset
+      - /config/models.ini
+      - --models-max
+      - "1"
+      - --host
+      - 0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  vision_runtime:
+    image: >-
+      ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:f96be8dfd1c1eb533e09f42fc4d92311150dc63ecd568284c9199cacae5a9e26
+    volumes:
+      - "${MODEL_ROOT:?MODEL_ROOT must be set}/vision:/models:ro"
+      - ./configs/deployments/vision-models.ini:/config/models.ini:ro
+    environment:
+      LLAMA_MEDIA_MARKER: "<__media__>"
+    command:
+      - --models-preset
+      - /config/models.ini
+      - --models-max
+      - "1"
+      - --host
+      - 0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  image_runtime:
+    image: >-
+      mmartial/comfyui-nvidia-docker:ubuntu24_cuda13.1-dgx-latest@sha256:7a3f25b0f1563974bd19459bfe884d2a6e86df55a703da291a3668ed0aeb42ce
+    volumes:
+      - "${RUNTIME_ROOT:?RUNTIME_ROOT must be set}/comfyui/mnt:/comfy/mnt"
+      - "${RUNTIME_ROOT:?RUNTIME_ROOT must be set}/comfyui/base:/basedir"
+      - "${MODEL_ROOT:?MODEL_ROOT must be set}/image:/basedir/models"
+    environment:
+      WANTED_UID: "${HOST_UID:?HOST_UID must be set}"
+      WANTED_GID: "${HOST_GID:?HOST_GID must be set}"
+      BASE_DIRECTORY: /basedir
+      SECURITY_LEVEL: normal
+      USE_UV: "true"
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen(
+          'http://127.0.0.1:8188/system_stats', timeout=4).read()
+      interval: 10s
+      timeout: 5s
+      retries: 120
+      start_period: 2m
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

@@ -1,0 +1,17 @@
+services:
+  runner:
+    profiles: ["runner"]
+    build:
+      context: .
+    init: true
+    user: "${HOST_UID:?HOST_UID must be set}:${HOST_GID:?HOST_GID must be set}"
+    working_dir: /app
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONPATH: /app/src
+    volumes:
+      - .:/app:ro
+      - "${RUN_ROOT:?RUN_ROOT must be set}:/app/runs"
+    command:
+      - semantic-roundtrip
+      - --help
