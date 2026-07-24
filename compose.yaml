@@ -8,9 +8,7 @@ services:
     working_dir: /app
     environment:
       PYTHONDONTWRITEBYTECODE: "1"
-      PYTHONPATH: /app/src
     volumes:
-      - .:/app:ro
       - "${RUN_ROOT:?RUN_ROOT must be set}:/app/runs"
     command:
       - semantic-roundtrip
