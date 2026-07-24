@@ -1,0 +1,15 @@
+schema_version: 1
+
+adapter: llama_cpp_vision
+
+settings:
+  endpoint: http://vision_runtime:8080/completion
+  model_id: llava-v1.5-7b-q4_k
+  chat_template_path: prompts/llama_cpp_vision/vicuna_v1.txt
+  media_marker: <__media__>
+  timeout_seconds: 300
+
+runtime:
+  controller: llama_cpp_router
+  control_url: http://vision_runtime:8080
+  resource_group: dgx-main

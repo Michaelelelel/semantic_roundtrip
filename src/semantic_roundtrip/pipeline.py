@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TypeVar
 
 from semantic_roundtrip.adapters.factory import AdapterBundle
-from semantic_roundtrip.config import AppConfig
+from semantic_roundtrip.config import ResolvedAppConfig
 from semantic_roundtrip.domain import BenchmarkItem, GeneratedPrompt
 from semantic_roundtrip.evaluation import (
     EVALUATION_METHOD,
@@ -205,7 +205,7 @@ def _load_or_generate_prompts(
     *,
     database: RunDatabase,
     adapters: AdapterBundle,
-    config: AppConfig,
+    config: ResolvedAppConfig,
     prompt_profile: PromptProfile,
     item: BenchmarkItem,
     item_index: int,
@@ -229,7 +229,7 @@ def _load_or_generate_prompts(
 
 def _execute(
     *,
-    config: AppConfig,
+    config: ResolvedAppConfig,
     database: RunDatabase,
     images_directory: Path,
     adapters: AdapterBundle,
@@ -326,7 +326,7 @@ def _execute(
 
 def run_pipeline(
     *,
-    config: AppConfig,
+    config: ResolvedAppConfig,
     run_context: RunContext,
     database_path: Path,
     images_directory: Path,

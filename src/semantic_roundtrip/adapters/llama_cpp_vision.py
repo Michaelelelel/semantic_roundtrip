@@ -82,6 +82,7 @@ class LlamaCppVisionClient:
         try:
             response = self._session.post(
                 self._config.endpoint,
+                params={"model": self._config.model_id},
                 json=payload,
                 timeout=self._config.timeout_seconds,
             )

@@ -1,0 +1,15 @@
+schema_version: 1
+
+adapter: comfyui
+
+settings:
+  base_url: http://image_runtime:8188
+  model_id: stable-diffusion-v1-5
+  workflow_path: workflows/sd15_api.json
+  checkpoint: v1-5-pruned-emaonly.safetensors
+  generation_timeout_seconds: 300
+
+runtime:
+  controller: comfyui
+  control_url: http://image_runtime:8188
+  resource_group: dgx-main

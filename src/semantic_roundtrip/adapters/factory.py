@@ -24,7 +24,8 @@ from semantic_roundtrip.adapters.mock import (
 from semantic_roundtrip.adapters.openai_compatible import (
     build_openai_compatible_prompt_generator,
 )
-from semantic_roundtrip.config import AdapterSelection, StagesConfig
+from semantic_roundtrip.config import ResolvedAppConfig, StageAdapterConfig
+from semantic_roundtrip.config_resolution import resolve_stage_adapter
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,7 +78,7 @@ def _unsupported_adapter(
 
 
 def create_prompt_generator(
-    selection: AdapterSelection,
+    selection: StageAdapterConfig,
 ) -> PromptGenerator:
     builder = PROMPT_GENERATORS.get(selection.adapter)
     if builder is None:
@@ -90,7 +91,7 @@ def create_prompt_generator(
 
 
 def create_image_generator(
-    selection: AdapterSelection,
+    selection: StageAdapterConfig,
 ) -> ImageGenerator:
     builder = IMAGE_GENERATORS.get(selection.adapter)
     if builder is None:
@@ -103,7 +104,7 @@ def create_image_generator(
 
 
 def create_image_verifier(
-    selection: AdapterSelection,
+    selection: StageAdapterConfig,
 ) -> ImageVerifier:
     builder = IMAGE_VERIFIERS.get(selection.adapter)
     if builder is None:
@@ -116,7 +117,7 @@ def create_image_verifier(
 
 
 def create_title_guesser(
-    selection: AdapterSelection,
+    selection: StageAdapterConfig,
 ) -> TitleGuesser:
     builder = TITLE_GUESSERS.get(selection.adapter)
     if builder is None:
@@ -128,11 +129,19 @@ def create_title_guesser(
     return builder(selection.settings)
 
 
-def create_adapters(config: StagesConfig) -> AdapterBundle:
-    """Create all adapters."""
+def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
+    """Create all stage adapters from resolved backend settings."""
     return AdapterBundle(
-        prompt_generator=create_prompt_generator(config.prompt_generation),
-        image_generator=create_image_generator(config.image_generation),
-        image_verifier=create_image_verifier(config.verification),
-        title_guesser=create_title_guesser(config.title_guessing),
+        prompt_generator=create_prompt_generator(
+            resolve_stage_adapter(config, "prompt_generation")
+        ),
+        image_generator=create_image_generator(
+            resolve_stage_adapter(config, "image_generation")
+        ),
+        image_verifier=create_image_verifier(
+            resolve_stage_adapter(config, "verification")
+        ),
+        title_guesser=create_title_guesser(
+            resolve_stage_adapter(config, "title_guessing")
+        ),
     )

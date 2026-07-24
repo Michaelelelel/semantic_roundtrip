@@ -5,7 +5,7 @@ from shutil import copy2
 
 import yaml
 
-from semantic_roundtrip.config import AppConfig
+from semantic_roundtrip.config import ResolvedAppConfig
 from semantic_roundtrip.prompting import LoadedPromptProfile
 
 
@@ -31,7 +31,7 @@ def create_input_config_snapshot(
 
 
 def create_effective_config_snapshot(
-    config: AppConfig,
+    config: ResolvedAppConfig,
     run_directory: Path,
 ) -> Path:
     """Write the validated configuration, including default values."""
@@ -39,7 +39,7 @@ def create_effective_config_snapshot(
 
     with snapshot_path.open("x", encoding="utf-8") as file:
         yaml.safe_dump(
-            config.model_dump(mode="json"),
+            config.model_dump(mode="json", exclude_none=True),
             file,
             sort_keys=False,
             allow_unicode=True,

@@ -1,0 +1,9 @@
+schema_version: 1
+
+adapter: mock
+
+settings: {}
+
+runtime:
+  controller: none
+  resource_group: cpu

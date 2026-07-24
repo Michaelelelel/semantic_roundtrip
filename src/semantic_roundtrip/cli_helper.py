@@ -4,7 +4,8 @@ import typer
 from rich.table import Table
 from rich.console import Console
 
-from semantic_roundtrip.config import AppConfig, load_config
+from semantic_roundtrip.config import ResolvedAppConfig
+from semantic_roundtrip.config_resolution import load_effective_config
 from semantic_roundtrip.persistence.config_snapshot import EFFECTIVE_CONFIG_FILENAME
 from semantic_roundtrip.persistence.database import (
     database_path_for_run,
@@ -19,7 +20,10 @@ console = Console()
 
 
 def _print_run_info(
-    config: AppConfig, database_path: Path, manifest_path: Path, run_context: RunContext
+    config: ResolvedAppConfig,
+    database_path: Path,
+    manifest_path: Path,
+    run_context: RunContext,
 ):
     typer.echo(f"Experiment name: {config.run.name}")
     typer.echo(f"Run ID: {run_context.run_id}")
@@ -38,7 +42,7 @@ def _print_run_summary(summary: PipelineSummary) -> None:
     typer.echo(f"Evaluations: {summary.evaluations}")
 
 
-def _expected_stage_outputs(config: AppConfig) -> dict[str, int]:
+def _expected_stage_outputs(config: ResolvedAppConfig) -> dict[str, int]:
     prompt_count = len(config.dataset.items) * config.experiment.prompts_per_title
     image_count = prompt_count * len(config.experiment.image_seeds)
     return {
@@ -52,7 +56,7 @@ def _expected_stage_outputs(config: AppConfig) -> dict[str, int]:
 def _show_status(run_directory: Path) -> str:
     database_path = database_path_for_run(run_directory)
     record = read_run_record(database_path)
-    config = load_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
+    config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
     expected = _expected_stage_outputs(config)
     progress = {stage.stage: stage for stage in read_stage_progress(database_path)}
 

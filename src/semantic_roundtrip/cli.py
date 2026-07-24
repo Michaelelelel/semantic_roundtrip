@@ -13,6 +13,11 @@ from semantic_roundtrip.cli_helper import (
     console,
 )
 from semantic_roundtrip.config import load_config
+
+from semantic_roundtrip.config_resolution import (
+    load_effective_config,
+    load_input_config,
+)
 from semantic_roundtrip.pipeline import run_pipeline
 from semantic_roundtrip.persistence.config_snapshot import (
     EFFECTIVE_CONFIG_FILENAME,
@@ -48,23 +53,12 @@ def _run_directory_option() -> Path:
     )
 
 
-@app.command()
-def run(
-    config_file: Path = typer.Option(
-        ...,
-        "--config",
-        "-c",
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        resolve_path=True,
-        help="Experiment configuration file.",
-    ),
-) -> None:
-    """Run an experiment."""
-    config = load_config(config_file)
-    loaded_prompt_profile = load_prompt_profile(config.experiment.prompt_profile)
-    adapters = create_adapters(config.stages)
+def _run_new_experiment(config_file: Path) -> None:
+    config = load_input_config(config_file)
+    loaded_prompt_profile = load_prompt_profile(
+        config.stages.prompt_generation.prompt_profile
+    )
+    adapters = create_adapters(config)
 
     run_context = create_run(
         config.run.output_directory,
@@ -116,6 +110,21 @@ def run(
     _print_run_summary(summary)
 
 
+@app.command()
+def run(
+    config_file: Path = typer.Option(
+        ...,
+        "--config",
+        "-c",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        resolve_path=True,
+        help="Experiment configuration file.",
+    ),
+) -> None:
+    """Run an experiment."""
+    _run_new_experiment(config_file)
 
 @app.command()
 def status(
@@ -170,11 +179,13 @@ def resume(
         if record.status not in {"paused", "failed", "interrupted"}:
             raise ValueError(f"Cannot resume a run with status '{record.status}'.")
 
-        config = load_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
+        config = load_effective_config(
+            run_directory / EFFECTIVE_CONFIG_FILENAME
+        )
         loaded_prompt_profile = load_prompt_profile(
             run_directory / PROMPT_PROFILE_FILENAME
         )
-        adapters = create_adapters(config.stages)
+        adapters = create_adapters(config)
         run_context = load_run_context(run_directory)
         summary = run_pipeline(
             config=config,

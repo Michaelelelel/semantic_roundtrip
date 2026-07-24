@@ -15,7 +15,6 @@ class OpenAICompatiblePromptSettings(ConfigModel):
 
     endpoint: str = Field(min_length=1)
     model_id: str = Field(min_length=1)
-    request_model: str | None = None
     temperature: float = Field(default=0.8, ge=0)
     top_p: float = Field(default=0.95, gt=0, le=1)
     max_tokens: int = Field(default=2048, gt=0)
@@ -36,7 +35,7 @@ class OpenAICompatiblePromptGenerator:
         seed: int,
     ) -> PromptResponse:
         payload: dict[str, Any] = {
-            "model": self._config.request_model or self._config.model_id,
+            "model": self._config.model_id,
             "messages": [
                 {"role": message.role, "content": message.content}
                 for message in messages
