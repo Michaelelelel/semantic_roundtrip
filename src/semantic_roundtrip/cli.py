@@ -12,7 +12,6 @@ from semantic_roundtrip.cli_helper import (
     _show_status,
     console,
 )
-from semantic_roundtrip.config import load_config
 
 from semantic_roundtrip.config_resolution import (
     load_effective_config,
