@@ -1,0 +1,17 @@
+schema_version: 1
+
+job:
+  name: dgx_job_smoke
+  output_directory: runs
+  continue_on_error: false
+
+execution:
+  max_parallel_experiments: 1
+
+experiments:
+  - name: dgx_smoke
+    config: ../experiments/dgx_smoke.yaml
+  - name: dgx_smoke
+    config: ../experiments/dgx_smoke4.yaml
+  - name: dgx_smoke
+    config: ../experiments/dgx_smoke.yaml
