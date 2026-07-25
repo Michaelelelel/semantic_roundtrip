@@ -9,9 +9,9 @@ execution:
   max_parallel_experiments: 1
 
 experiments:
-  - name: dgx_smoke
+  - name: dgx_smoke_1
     config: ../experiments/dgx_smoke.yaml
-  - name: dgx_smoke
+  - name: dgx_smoke4
     config: ../experiments/dgx_smoke4.yaml
-  - name: dgx_smoke
+  - name: dgx_smoke_2
     config: ../experiments/dgx_smoke.yaml
