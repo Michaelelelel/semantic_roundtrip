@@ -6,7 +6,6 @@ import typer
 
 from semantic_roundtrip.cli.common import (
     EXPECTED_COMMAND_ERRORS,
-    exit_for_unavailable_feature,
     exit_with_error,
     watch_status,
 )
