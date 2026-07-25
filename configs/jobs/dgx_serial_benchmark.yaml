@@ -1,0 +1,16 @@
+schema_version: 1
+
+job:
+  name: dgx_serial_benchmark
+  output_directory: runs
+  continue_on_error: false
+
+execution:
+  max_parallel_experiments: 1
+
+experiments:
+  - name: imagine_matrix
+    config: ../experiments/dgx_smoke3.yaml
+
+  - name: yellow_submarine_iron_man
+    config: ../experiments/dgx_smoke4.yaml
