@@ -6,7 +6,6 @@ import typer
 from rich.table import Table
 
 from semantic_roundtrip.cli.common import console
-from semantic_roundtrip.config import ResolvedAppConfig
 from semantic_roundtrip.config_resolution import (
     expected_stage_outputs,
     load_effective_config,
@@ -14,16 +13,16 @@ from semantic_roundtrip.config_resolution import (
 from semantic_roundtrip.experiment_runner import PreparedExperiment
 from semantic_roundtrip.persistence.config_snapshot import EFFECTIVE_CONFIG_FILENAME
 from semantic_roundtrip.persistence.database import (
+    RunRecord,
     database_path_for_run,
     read_run_record,
     read_stage_progress,
 )
-from semantic_roundtrip.persistence.run_manager import RunContext
 from semantic_roundtrip.pipeline import PipelineSummary
 
 
-def print_run_info(prepared: PreparedExperiment
-) -> None:
+def print_run_info(prepared: PreparedExperiment) -> None:
+    """Print artifacts created while preparing a new run."""
     typer.echo(f"Experiment name: {prepared.config.run.name}")
     typer.echo(f"Run ID: {prepared.run_context.run_id}")
     typer.echo(f"Run directory: {prepared.run_context.directory}")
@@ -32,6 +31,7 @@ def print_run_info(prepared: PreparedExperiment
 
 
 def print_run_summary(summary: PipelineSummary) -> None:
+    """Print final result counts for one run invocation."""
     typer.echo(f"Run status: {summary.status}")
     typer.echo(f"Dataset items: {summary.dataset_items}")
     typer.echo(f"Prompts: {summary.prompts}")
@@ -41,7 +41,17 @@ def print_run_summary(summary: PipelineSummary) -> None:
     typer.echo(f"Evaluations: {summary.evaluations}")
 
 
+def print_run_pause_summary(record: RunRecord) -> None:
+    """Print the persisted state after requesting a cooperative pause."""
+    typer.echo(f"Run status: {record.status}")
+    if record.status == "paused":
+        typer.echo("The run is safely paused and can be resumed.")
+    else:
+        typer.echo("The pipeline will pause before starting its next task.")
+
+
 def show_run_status(run_directory: Path) -> str:
+    """Print persisted run progress and return its lifecycle state."""
     database_path = database_path_for_run(run_directory)
     record = read_run_record(database_path)
     config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)

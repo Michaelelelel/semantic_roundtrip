@@ -47,9 +47,7 @@ def _validate_templates(profile: PromptProfile) -> None:
                 f"Invalid template syntax in {message.role!r} profile message."
             )
 
-        unknown_variables = (
-            set(template.get_identifiers()) - ALLOWED_TEMPLATE_VARIABLES
-        )
+        unknown_variables = set(template.get_identifiers()) - ALLOWED_TEMPLATE_VARIABLES
         if unknown_variables:
             names = ", ".join(sorted(unknown_variables))
             raise ValueError(f"Unknown prompt-profile variables: {names}")

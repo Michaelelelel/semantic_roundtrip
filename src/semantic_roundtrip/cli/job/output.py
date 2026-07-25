@@ -7,7 +7,11 @@ from rich.table import Table
 
 from semantic_roundtrip.cli.common import console
 from semantic_roundtrip.job import JOB_SNAPSHOT_FILENAME, JobPlan, load_job_snapshot
-from semantic_roundtrip.job_runner import JobExecutionSummary, PreparedJob
+from semantic_roundtrip.job_runner import (
+    JobExecutionSummary,
+    JobPauseSummary,
+    PreparedJob,
+)
 from semantic_roundtrip.persistence.database import (
     database_path_for_run,
     read_run_record,
@@ -95,6 +99,20 @@ def print_job_execution_summary(summary: JobExecutionSummary) -> None:
     typer.echo(f"Interrupted entries: {summary.interrupted}")
 
 
+def print_job_pause_summary(summary: JobPauseSummary) -> None:
+    """Print the child run that will cooperatively pause the job."""
+    typer.echo(f"Job ID: {summary.job_id}")
+    typer.echo(f"Job directory: {summary.job_directory}")
+    typer.echo(f"Active entry: {summary.entry_index + 1} ({summary.entry_name})")
+    typer.echo(f"Child run: {summary.child_run_id}")
+    typer.echo(f"Child directory: {summary.child_directory}")
+    typer.echo(f"Child run status: {summary.child_status}")
+    if summary.child_status == "paused":
+        typer.echo("The job is safely paused and can be resumed.")
+    else:
+        typer.echo("The job will stop before starting another child run.")
+
+
 def show_job_status(job_directory: Path) -> str:
     """Print job and child-run states from their read-only databases."""
     database_path = job_database_path(job_directory)
@@ -123,7 +141,7 @@ def show_job_status(job_directory: Path) -> str:
             child_status = read_run_record(
                 database_path_for_run(entry.run_directory)
             ).status
-        except (OSError, ValueError):
+        except OSError, ValueError:
             child_status = "unavailable"
 
         models = ", ".join(

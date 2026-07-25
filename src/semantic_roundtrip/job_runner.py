@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from shutil import copy2
+from typing import Literal
 
 import yaml
 
@@ -18,6 +19,7 @@ from semantic_roundtrip.job import (
     JobContext,
     LoadedJobConfig,
     ResolvedJobConfig,
+    ResolvedJobEntry,
     create_resolved_job_config,
     load_job_config,
     load_job_snapshot,
@@ -26,6 +28,7 @@ from semantic_roundtrip.job import (
 from semantic_roundtrip.persistence.database import (
     database_path_for_run,
     read_run_record,
+    request_run_pause,
 )
 from semantic_roundtrip.persistence.job_database import (
     JobDatabase,
@@ -38,6 +41,7 @@ from semantic_roundtrip.persistence.run_manager import create_run
 
 
 Report = Callable[[str], None]
+EntryOutcome = Literal["continue", "paused", "failed"]
 CHILD_RESUMABLE_STATUSES = frozenset({"created", "paused", "failed", "interrupted"})
 JOB_RESUMABLE_STATUSES = frozenset({"created", "paused", "failed", "interrupted"})
 
@@ -70,6 +74,19 @@ class JobExecutionSummary:
     completed: int
     failed: int
     interrupted: int
+
+
+@dataclass(frozen=True, slots=True)
+class JobPauseSummary:
+    """The active child run that received a cooperative pause request."""
+
+    job_id: str
+    job_directory: Path
+    entry_index: int
+    entry_name: str
+    child_run_id: str
+    child_directory: Path
+    child_status: str
 
 
 def _report(callback: Report | None, message: str) -> None:
@@ -175,6 +192,41 @@ def load_prepared_job(job_directory: Path) -> PreparedJob:
     )
 
 
+def request_job_pause(job_directory: Path) -> JobPauseSummary:
+    """Pause a sequential job by requesting a pause from its active child."""
+    prepared = load_prepared_job(job_directory)
+    record = read_job_record(prepared.database_path)
+    if record.status not in {"running", "paused"}:
+        raise ValueError(f"Cannot pause a job with status '{record.status}'.")
+
+    active_entries = [
+        entry
+        for entry in read_job_entries(
+            prepared.database_path,
+            prepared.context.directory,
+        )
+        if entry.status in {"running", "paused"}
+    ]
+    if len(active_entries) != 1:
+        raise JobStateError(
+            "The job does not have exactly one active child run. "
+            "Wait for execution to start and try again."
+        )
+
+    entry = active_entries[0]
+    child_record = request_run_pause(database_path_for_run(entry.run_directory))
+    configured_entry = prepared.config.entries[entry.entry_index]
+    return JobPauseSummary(
+        job_id=prepared.context.job_id,
+        job_directory=prepared.context.directory,
+        entry_index=entry.entry_index,
+        entry_name=configured_entry.name,
+        child_run_id=child_record.run_id,
+        child_directory=entry.run_directory,
+        child_status=child_record.status,
+    )
+
+
 def _execution_summary(
     prepared: PreparedJob,
     database: JobDatabase,
@@ -203,6 +255,72 @@ def _execution_summary(
     )
 
 
+def _execute_job_entry(
+    *,
+    prepared: PreparedJob,
+    database: JobDatabase,
+    configured_entry: ResolvedJobEntry,
+    report: Report | None,
+) -> EntryOutcome:
+    """Execute or synchronize one child run and return its job-level outcome."""
+    entry = database.get_entry(configured_entry.index)
+    position = configured_entry.index + 1
+    total = len(prepared.config.entries)
+    prefix = f"[{position}/{total}] {configured_entry.name}:"
+
+    if entry.status == "completed":
+        _report(report, f"{prefix} already completed, skipping")
+        return "continue"
+
+    child_directory = entry.run_directory
+    try:
+        child_record = read_run_record(database_path_for_run(child_directory))
+        if child_record.status == "completed":
+            database.mark_entry_status(entry.entry_index, "completed")
+            _report(report, f"{prefix} child run already completed, skipping")
+            return "continue"
+        if child_record.status == "running":
+            raise JobStateError(
+                f"Child run for job entry '{configured_entry.name}' is still "
+                "marked running. Refusing to start a duplicate process."
+            )
+
+        database.mark_entry_running(entry.entry_index)
+        action = "starting" if child_record.status == "created" else "resuming"
+        _report(report, f"{prefix} {action} {child_directory.name}")
+        summary = resume_experiment(
+            child_directory,
+            allowed_statuses=CHILD_RESUMABLE_STATUSES,
+        )
+
+        if summary.status == "paused":
+            database.mark_entry_status(entry.entry_index, "paused")
+            _report(report, f"{prefix} paused")
+            return "paused"
+        if summary.status != "completed":
+            raise RuntimeError(
+                f"Child run ended with unexpected status '{summary.status}'."
+            )
+
+        database.mark_entry_status(entry.entry_index, "completed")
+        _report(report, f"{prefix} completed")
+        return "continue"
+    except KeyboardInterrupt:
+        database.mark_entry_status(entry.entry_index, "interrupted")
+        _report(report, f"{prefix} interrupted")
+        raise
+    except JobStateError:
+        raise
+    except Exception as error:
+        database.mark_entry_status(
+            entry.entry_index,
+            "failed",
+            error=error,
+        )
+        _report(report, f"{prefix} failed: {error}")
+        return "failed"
+
+
 def execute_job(
     prepared: PreparedJob,
     *,
@@ -221,99 +339,26 @@ def execute_job(
         database.update_job_status("running")
 
         for configured_entry in prepared.config.entries:
-            entry = database.get_entry(configured_entry.index)
-            position = configured_entry.index + 1
-            total = len(prepared.config.entries)
-
-            if entry.status == "completed":
-                _report(
-                    report,
-                    f"[{position}/{total}] {configured_entry.name}: "
-                    "already completed, skipping",
-                )
-                continue
-
-            child_directory = entry.run_directory
             try:
-                child_record = read_run_record(database_path_for_run(child_directory))
-                if child_record.status == "completed":
-                    database.mark_entry_status(
-                        entry.entry_index,
-                        "completed",
-                    )
-                    _report(
-                        report,
-                        f"[{position}/{total}] {configured_entry.name}: "
-                        "child run already completed, skipping",
-                    )
-                    continue
-                if child_record.status == "running":
-                    raise JobStateError(
-                        f"Child run for job entry '{configured_entry.name}' is still "
-                        "marked running. Refusing to start a duplicate process."
-                    )
-
-                database.mark_entry_running(entry.entry_index)
-                if child_record.status == "created":
-                    _report(
-                        report,
-                        f"[{position}/{total}] {configured_entry.name}: starting "
-                        f"{child_directory.name}",
-                    )
-                else:
-                    _report(
-                        report,
-                        f"[{position}/{total}] {configured_entry.name}: resuming "
-                        f"{child_directory.name}",
-                    )
-                summary = resume_experiment(
-                    child_directory,
-                    allowed_statuses=CHILD_RESUMABLE_STATUSES,
-                )
-
-                if summary.status == "paused":
-                    database.mark_entry_status(entry.entry_index, "paused")
-                    database.update_job_status("paused")
-                    _report(
-                        report,
-                        f"[{position}/{total}] {configured_entry.name}: paused",
-                    )
-                    return _execution_summary(prepared, database, "paused")
-
-                if summary.status != "completed":
-                    raise RuntimeError(
-                        f"Child run ended with unexpected status '{summary.status}'."
-                    )
-
-                database.mark_entry_status(entry.entry_index, "completed")
-                _report(
-                    report,
-                    f"[{position}/{total}] {configured_entry.name}: completed",
+                outcome = _execute_job_entry(
+                    prepared=prepared,
+                    database=database,
+                    configured_entry=configured_entry,
+                    report=report,
                 )
             except KeyboardInterrupt:
-                database.mark_entry_status(entry.entry_index, "interrupted")
                 database.update_job_status("interrupted")
-                _report(
-                    report,
-                    f"[{position}/{total}] {configured_entry.name}: interrupted",
-                )
                 raise
             except JobStateError:
                 database.update_job_status("interrupted")
                 raise
-            except Exception as error:
-                database.mark_entry_status(
-                    entry.entry_index,
-                    "failed",
-                    error=error,
-                )
-                _report(
-                    report,
-                    f"[{position}/{total}] {configured_entry.name}: failed: {error}",
-                )
-                if not prepared.config.job.continue_on_error:
-                    database.update_job_status("failed")
-                    return _execution_summary(prepared, database, "failed")
+
+            if outcome == "paused":
+                database.update_job_status("paused")
+                return _execution_summary(prepared, database, "paused")
+            if outcome == "failed" and not prepared.config.job.continue_on_error:
+                database.update_job_status("failed")
+                return _execution_summary(prepared, database, "failed")
 
         failed = any(entry.status == "failed" for entry in database.entries())
         final_status = "failed" if failed else "completed"

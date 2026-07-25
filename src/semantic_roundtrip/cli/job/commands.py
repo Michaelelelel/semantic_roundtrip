@@ -1,14 +1,19 @@
 """Commands for planning and managing persisted experiment jobs."""
 
-import time
 from pathlib import Path
 
 import typer
 
-from semantic_roundtrip.cli.common import console
+from semantic_roundtrip.cli.common import (
+    EXPECTED_COMMAND_ERRORS,
+    exit_for_unavailable_feature,
+    exit_with_error,
+    watch_status,
+)
 from semantic_roundtrip.cli.job.output import (
     print_job_execution_summary,
     print_job_info,
+    print_job_pause_summary,
     print_job_plan,
     show_job_status,
 )
@@ -17,6 +22,7 @@ from semantic_roundtrip.job_runner import (
     execute_job,
     load_prepared_job,
     prepare_job,
+    request_job_pause,
 )
 
 
@@ -60,9 +66,8 @@ def plan(config_path: Path = _job_config_option()) -> None:
     try:
         loaded = load_job_config(config_path)
         job_plan = plan_job(loaded)
-    except (OSError, ValueError) as error:
-        typer.echo(str(error), err=True)
-        raise typer.Exit(code=1) from error
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
 
     if print_job_plan(job_plan):
         raise typer.Exit(code=1)
@@ -76,11 +81,13 @@ def start(config_path: Path = _job_config_option()) -> None:
         print_job_info(prepared)
         summary = execute_job(prepared, report=typer.echo)
     except KeyboardInterrupt as error:
-        typer.echo("Job interrupted safely.", err=True)
-        raise typer.Exit(code=130) from error
-    except (OSError, ValueError) as error:
-        typer.echo(str(error), err=True)
-        raise typer.Exit(code=1) from error
+        exit_with_error(
+            error,
+            code=130,
+            message="Job interrupted safely.",
+        )
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
 
     print_job_execution_summary(summary)
     if summary.status == "failed":
@@ -98,25 +105,31 @@ def status(
     ),
 ) -> None:
     """Show persisted job and child-run states."""
-    terminal_states = {"paused", "completed", "failed", "interrupted"}
-    while True:
-        if watch_seconds is not None:
-            console.clear()
-        try:
-            current_status = show_job_status(job_directory)
-        except (OSError, ValueError) as error:
-            typer.echo(str(error), err=True)
-            raise typer.Exit(code=1) from error
-
-        if watch_seconds is None or current_status in terminal_states:
-            return
-        time.sleep(watch_seconds)
+    try:
+        watch_status(
+            job_directory,
+            render=show_job_status,
+            interval_seconds=watch_seconds,
+        )
+    except KeyboardInterrupt as error:
+        exit_with_error(
+            error,
+            code=130,
+            message="Job status watch stopped.",
+        )
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
 
 
 @app.command("pause")
 def pause(job_directory: Path = _job_directory_option()) -> None:
-    """Placeholder for pausing a job at a safe boundary."""
-    typer.echo(f"Would pause {job_directory}")
+    """Request a cooperative pause from the job's active child run."""
+    try:
+        summary = request_job_pause(job_directory)
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
+
+    print_job_pause_summary(summary)
 
 
 @app.command("resume")
@@ -130,11 +143,13 @@ def resume(job_directory: Path = _job_directory_option()) -> None:
             report=typer.echo,
         )
     except KeyboardInterrupt as error:
-        typer.echo("Job interrupted safely.", err=True)
-        raise typer.Exit(code=130) from error
-    except (OSError, ValueError) as error:
-        typer.echo(str(error), err=True)
-        raise typer.Exit(code=1) from error
+        exit_with_error(
+            error,
+            code=130,
+            message="Job interrupted safely.",
+        )
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
 
     print_job_execution_summary(summary)
     if summary.status == "failed":
@@ -143,5 +158,5 @@ def resume(job_directory: Path = _job_directory_option()) -> None:
 
 @app.command("evaluate")
 def evaluate(job_directory: Path = _job_directory_option()) -> None:
-    """Placeholder for evaluating all completed runs in a job."""
-    typer.echo(f"Would evaluate {job_directory}")
+    """Evaluate"""
+    print("Evaluating job...")

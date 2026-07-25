@@ -1,13 +1,18 @@
 """Commands for starting and managing individual experiment runs."""
 
-import time
 from pathlib import Path
 
 import typer
 
-from semantic_roundtrip.cli.common import console
+from semantic_roundtrip.cli.common import (
+    EXPECTED_COMMAND_ERRORS,
+    exit_for_unavailable_feature,
+    exit_with_error,
+    watch_status,
+)
 from semantic_roundtrip.cli.run.output import (
     print_run_info,
+    print_run_pause_summary,
     print_run_summary,
     show_run_status,
 )
@@ -44,7 +49,7 @@ def _run_directory_option() -> Path:
 
 @app.command("start")
 def start(
-    config_file: Path = typer.Option(
+    config_path: Path = typer.Option(
         ...,
         "--config",
         "-c",
@@ -56,13 +61,19 @@ def start(
     ),
 ) -> None:
     """Start a new experiment run."""
-    prepared = prepare_experiment_from_file(config_file)
+    try:
+        prepared = prepare_experiment_from_file(config_path)
+        print_run_info(prepared)
+        summary = execute_prepared_experiment(prepared)
+    except KeyboardInterrupt as error:
+        exit_with_error(
+            error,
+            code=130,
+            message="Run interrupted safely.",
+        )
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
 
-    print_run_info(prepared)
-
-    summary = execute_prepared_experiment(prepared)
-
-    print_run_info(prepared)
     print_run_summary(summary)
 
 
@@ -77,20 +88,20 @@ def status(
     ),
 ) -> None:
     """Show persisted progress for an experiment run."""
-    terminal_states = {"paused", "completed", "failed", "interrupted"}
-
-    while True:
-        if watch_seconds is not None:
-            console.clear()
-        try:
-            current_status = show_run_status(run_directory)
-        except (OSError, ValueError) as error:
-            typer.echo(str(error), err=True)
-            raise typer.Exit(code=1) from error
-
-        if watch_seconds is None or current_status in terminal_states:
-            return
-        time.sleep(watch_seconds)
+    try:
+        watch_status(
+            run_directory,
+            render=show_run_status,
+            interval_seconds=watch_seconds,
+        )
+    except KeyboardInterrupt as error:
+        exit_with_error(
+            error,
+            code=130,
+            message="Run status watch stopped.",
+        )
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
 
 
 @app.command("pause")
@@ -100,12 +111,10 @@ def pause(
     """Request a cooperative pause after the current adapter call."""
     try:
         record = request_run_pause(database_path_for_run(run_directory))
-    except (OSError, ValueError) as error:
-        typer.echo(str(error), err=True)
-        raise typer.Exit(code=1) from error
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
 
-    typer.echo(f"Run status: {record.status}")
-    typer.echo("The pipeline will pause before starting its next task.")
+    print_run_pause_summary(record)
 
 
 @app.command("resume")
@@ -115,9 +124,14 @@ def resume(
     """Resume a paused, interrupted, or failed run."""
     try:
         summary = resume_experiment(run_directory)
-    except (OSError, ValueError) as error:
-        typer.echo(str(error), err=True)
-        raise typer.Exit(code=1) from error
+    except KeyboardInterrupt as error:
+        exit_with_error(
+            error,
+            code=130,
+            message="Run interrupted safely.",
+        )
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
 
     print_run_summary(summary)
 
@@ -126,5 +140,5 @@ def resume(
 def evaluate(
     run_directory: Path = _run_directory_option(),
 ) -> None:
-    """Placeholder for evaluating a completed experiment run."""
-    typer.echo(f"Would evaluate {run_directory}")
+    """ Evalute"""
+    print("Evaluate")
