@@ -24,7 +24,7 @@ dev = [
 ]
 
 [project.scripts]
-semantic-roundtrip = "semantic_roundtrip.cli:app"
+semantic-roundtrip = "semantic_roundtrip.cli.main:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]

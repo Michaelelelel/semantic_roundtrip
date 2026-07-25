@@ -1,11 +1,16 @@
+"""Terminal presentation for individual experiment runs."""
+
 from pathlib import Path
 
 import typer
 from rich.table import Table
-from rich.console import Console
 
+from semantic_roundtrip.cli.common import console
 from semantic_roundtrip.config import ResolvedAppConfig
-from semantic_roundtrip.config_resolution import load_effective_config
+from semantic_roundtrip.config_resolution import (
+    expected_stage_outputs,
+    load_effective_config,
+)
 from semantic_roundtrip.persistence.config_snapshot import EFFECTIVE_CONFIG_FILENAME
 from semantic_roundtrip.persistence.database import (
     database_path_for_run,
@@ -16,15 +21,12 @@ from semantic_roundtrip.persistence.run_manager import RunContext
 from semantic_roundtrip.pipeline import PipelineSummary
 
 
-console = Console()
-
-
-def _print_run_info(
+def print_run_info(
     config: ResolvedAppConfig,
     database_path: Path,
     manifest_path: Path,
     run_context: RunContext,
-):
+) -> None:
     typer.echo(f"Experiment name: {config.run.name}")
     typer.echo(f"Run ID: {run_context.run_id}")
     typer.echo(f"Run directory: {run_context.directory}")
@@ -32,7 +34,7 @@ def _print_run_info(
     typer.echo(f"Manifest: {manifest_path}")
 
 
-def _print_run_summary(summary: PipelineSummary) -> None:
+def print_run_summary(summary: PipelineSummary) -> None:
     typer.echo(f"Run status: {summary.status}")
     typer.echo(f"Dataset items: {summary.dataset_items}")
     typer.echo(f"Prompts: {summary.prompts}")
@@ -42,22 +44,11 @@ def _print_run_summary(summary: PipelineSummary) -> None:
     typer.echo(f"Evaluations: {summary.evaluations}")
 
 
-def _expected_stage_outputs(config: ResolvedAppConfig) -> dict[str, int]:
-    prompt_count = len(config.dataset.items) * config.experiment.prompts_per_title
-    image_count = prompt_count * len(config.experiment.image_seeds)
-    return {
-        "prompt_generation": prompt_count,
-        "image_generation": image_count,
-        "verification": image_count,
-        "title_guessing": image_count,
-    }
-
-
-def _show_status(run_directory: Path) -> str:
+def show_run_status(run_directory: Path) -> str:
     database_path = database_path_for_run(run_directory)
     record = read_run_record(database_path)
     config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
-    expected = _expected_stage_outputs(config)
+    expected = expected_stage_outputs(config)
     progress = {stage.stage: stage for stage in read_stage_progress(database_path)}
 
     console.print(f"[bold]Run:[/bold] {record.name} ({record.run_id})")

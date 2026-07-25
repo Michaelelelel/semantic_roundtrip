@@ -110,3 +110,15 @@ def load_effective_config(path: Path) -> ResolvedAppConfig:
     config = ResolvedAppConfig.model_validate(_read_yaml(path))
     _validate_resolved_config(config)
     return config
+
+
+def expected_stage_outputs(config: ResolvedAppConfig) -> dict[StageName, int]:
+    """Calculate the number of adapter outputs expected from one experiment."""
+    prompt_count = len(config.dataset.items) * config.experiment.prompts_per_title
+    image_count = prompt_count * len(config.experiment.image_seeds)
+    return {
+        "prompt_generation": prompt_count,
+        "image_generation": image_count,
+        "verification": image_count,
+        "title_guessing": image_count,
+    }
