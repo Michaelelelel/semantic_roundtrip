@@ -12,12 +12,12 @@ from semantic_roundtrip.config_resolution import (
 )
 from semantic_roundtrip.experiment_runner import PreparedExperiment
 from semantic_roundtrip.persistence.config_snapshot import EFFECTIVE_CONFIG_FILENAME
-from semantic_roundtrip.persistence.database import (
+from semantic_roundtrip.persistence.run_database import (
     RunRecord,
-    database_path_for_run,
     read_run_record,
     read_stage_progress,
 )
+from semantic_roundtrip.persistence.run_schema import database_path_for_run
 from semantic_roundtrip.pipeline import PipelineSummary
 
 

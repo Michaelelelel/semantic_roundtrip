@@ -20,10 +20,8 @@ from semantic_roundtrip.experiment_runner import (
     prepare_experiment_from_file,
     resume_experiment,
 )
-from semantic_roundtrip.persistence.database import (
-    database_path_for_run,
-    request_run_pause,
-)
+from semantic_roundtrip.persistence.run_database import request_run_pause
+from semantic_roundtrip.persistence.run_schema import database_path_for_run
 
 
 app = typer.Typer(
@@ -139,5 +137,5 @@ def resume(
 def evaluate(
     run_directory: Path = _run_directory_option(),
 ) -> None:
-    """ Evalute"""
+    """Evalute"""
     print("Evaluate")

@@ -13,7 +13,8 @@ from semantic_roundtrip.evaluation import (
     apply_verification_policy,
     title_exact_match,
 )
-from semantic_roundtrip.persistence.database import RunDatabase, TaskRecord
+from semantic_roundtrip.persistence.run_database import RunDatabase
+from semantic_roundtrip.persistence.run_tasks import TaskRecord
 from semantic_roundtrip.persistence.run_manager import RunContext
 from semantic_roundtrip.prompting import PromptProfile, render_prompt_profile
 
@@ -39,7 +40,7 @@ class PipelineSummary:
 
 
 def _summary(database: RunDatabase, status: str) -> PipelineSummary:
-    counts = database.result_counts()
+    counts = database.results.counts()
     return PipelineSummary(
         status=status,
         dataset_items=counts.dataset_items,
@@ -66,12 +67,12 @@ def _run_task(
         if database.pause_requested():
             raise PauseRequested
 
-        attempt = database.mark_task_running(task.task_id)
+        attempt = database.tasks.mark_running(task.task_id)
         try:
             result = operation()
         except Exception as error:
             raw_response = getattr(error, "raw_response", None)
-            database.add_stage_error(
+            database.tasks.add_error(
                 task_id=task.task_id,
                 stage=task.stage,
                 attempt=attempt,
@@ -82,10 +83,10 @@ def _run_task(
                 raw_response=(raw_response if isinstance(raw_response, str) else None),
             )
             if retry == retry_limit:
-                database.mark_task_failed(task.task_id)
+                database.tasks.mark_failed(task.task_id)
                 raise
         else:
-            database.mark_task_completed(task.task_id, 1)
+            database.tasks.mark_completed(task.task_id, 1)
             return result
 
     raise RuntimeError("Task retry loop ended unexpectedly.")
@@ -106,7 +107,7 @@ def _load_or_run_single(
     image_id: int | None = None,
 ) -> tuple[int, ResultType]:
     """Reuse one stored result or execute and persist its adapter task."""
-    task = database.get_or_create_task(
+    task = database.tasks.get_or_create(
         task_key=f"{stage}:{task_suffix}",
         stage=stage,
         expected_outputs=1,
@@ -118,7 +119,7 @@ def _load_or_run_single(
 
     if existing is not None:
         if task.status != "completed":
-            database.mark_task_completed(task.task_id, 1)
+            database.tasks.mark_completed(task.task_id, 1)
         return existing
 
     if task.status == "completed":
@@ -151,18 +152,18 @@ def _load_or_generate_prompt(
     sampling_seed: int,
     retry_limit: int,
 ) -> tuple[int, GeneratedPrompt]:
-    task = database.get_or_create_task(
+    task = database.tasks.get_or_create(
         task_key=f"prompt_generation:{item_index}:{prompt_index}",
         stage="prompt_generation",
         expected_outputs=1,
         item_id=item_id,
         seed=sampling_seed,
     )
-    existing = database.get_prompt(item_id, prompt_index)
+    existing = database.results.get_prompt(item_id, prompt_index)
 
     if existing is not None:
         if task.status != "completed":
-            database.mark_task_completed(task.task_id, 1)
+            database.tasks.mark_completed(task.task_id, 1)
         return existing
 
     if task.status == "completed":
@@ -181,7 +182,7 @@ def _load_or_generate_prompt(
             seed=sampling_seed,
         )
         prompt = GeneratedPrompt(index=prompt_index, text=response.text)
-        prompt_id = database.add_prompt(
+        prompt_id = database.results.add_prompt(
             item_id=item_id,
             prompt=prompt,
             sampling_seed=sampling_seed,
@@ -240,7 +241,7 @@ def _execute(
             domain=configured_item.domain,
             title=configured_item.title,
         )
-        item_id = database.get_or_add_dataset_item(item_index, item)
+        item_id = database.results.get_or_add_dataset_item(item_index, item)
         prompts = _load_or_generate_prompts(
             database=database,
             adapters=adapters,
@@ -259,13 +260,13 @@ def _execute(
                     database=database,
                     stage="image_generation",
                     task_suffix=task_suffix,
-                    existing=database.get_image(prompt_id, seed),
+                    existing=database.results.get_image(prompt_id, seed),
                     operation=lambda: adapters.image_generator.generate_image(
                         prompt=prompt.text,
                         seed=seed,
                         output_directory=images_directory / f"prompt_{prompt_id}",
                     ),
-                    save=lambda result: database.add_image(prompt_id, result),
+                    save=lambda result: database.results.add_image(prompt_id, result),
                     retry_limit=retry_limit,
                     item_id=item_id,
                     prompt_id=prompt_id,
@@ -276,11 +277,14 @@ def _execute(
                     database=database,
                     stage="verification",
                     task_suffix=task_suffix,
-                    existing=database.get_verification(image_id),
+                    existing=database.results.get_verification(image_id),
                     operation=lambda: adapters.image_verifier.verify_image(
                         image_path=image.path
                     ),
-                    save=lambda result: database.add_verification(image_id, result),
+                    save=lambda result: database.results.add_verification(
+                        image_id,
+                        result,
+                    ),
                     retry_limit=retry_limit,
                     item_id=item_id,
                     prompt_id=prompt_id,
@@ -292,12 +296,15 @@ def _execute(
                     database=database,
                     stage="title_guessing",
                     task_suffix=task_suffix,
-                    existing=database.get_prediction(image_id),
+                    existing=database.results.get_prediction(image_id),
                     operation=lambda: adapters.title_guesser.guess_title(
                         image_path=image.path,
                         domain=item.domain,
                     ),
-                    save=lambda result: database.add_prediction(image_id, result),
+                    save=lambda result: database.results.add_prediction(
+                        image_id,
+                        result,
+                    ),
                     retry_limit=retry_limit,
                     item_id=item_id,
                     prompt_id=prompt_id,
@@ -311,7 +318,7 @@ def _execute(
                     verification_passed=verification.passed,
                     failed_verification=config.evaluation.failed_verification,
                 )
-                database.add_evaluation_if_missing(
+                database.results.add_evaluation_if_missing(
                     verification_id=verification_id,
                     prediction_id=prediction_id,
                     title_exact_match=title_matches,
@@ -335,7 +342,7 @@ def run_pipeline(
     with RunDatabase(database_path, run_context) as database:
         if resume:
             database.clear_pause_request()
-        database.update_run_status("running")
+        database.update_status("running")
 
         try:
             _execute(
@@ -346,14 +353,14 @@ def run_pipeline(
                 prompt_profile=prompt_profile,
             )
         except PauseRequested:
-            database.update_run_status("paused")
+            database.update_status("paused")
             return _summary(database, "paused")
         except KeyboardInterrupt:
-            database.update_run_status("interrupted")
+            database.update_status("interrupted")
             raise
         except Exception:
-            database.update_run_status("failed")
+            database.update_status("failed")
             raise
 
-        database.update_run_status("completed")
+        database.update_status("completed")
         return _summary(database, "completed")

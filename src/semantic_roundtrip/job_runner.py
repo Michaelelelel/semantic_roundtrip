@@ -25,19 +25,21 @@ from semantic_roundtrip.job import (
     load_job_snapshot,
     plan_job,
 )
-from semantic_roundtrip.persistence.database import (
-    database_path_for_run,
+from semantic_roundtrip.persistence.run_database import (
     read_run_record,
     request_run_pause,
 )
 from semantic_roundtrip.persistence.job_database import (
     JobDatabase,
-    initialize_job_database,
-    job_database_path,
     read_job_entries,
     read_job_record,
 )
+from semantic_roundtrip.persistence.job_schema import (
+    initialize_job_database,
+    job_database_path,
+)
 from semantic_roundtrip.persistence.run_manager import create_run
+from semantic_roundtrip.persistence.run_schema import database_path_for_run
 
 
 Report = Callable[[str], None]

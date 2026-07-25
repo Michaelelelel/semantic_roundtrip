@@ -16,14 +16,16 @@ from semantic_roundtrip.persistence.config_snapshot import (
     create_input_config_snapshot,
     create_prompt_profile_snapshot,
 )
-from semantic_roundtrip.persistence.database import (
-    database_path_for_run,
-    initialize_database,
+from semantic_roundtrip.persistence.run_database import (
     load_run_context,
     read_run_record,
 )
 from semantic_roundtrip.persistence.manifest import create_manifest
 from semantic_roundtrip.persistence.run_manager import RunContext, create_run
+from semantic_roundtrip.persistence.run_schema import (
+    database_path_for_run,
+    initialize_database,
+)
 from semantic_roundtrip.pipeline import PipelineSummary, run_pipeline
 from semantic_roundtrip.prompting import PromptProfile, load_prompt_profile
 

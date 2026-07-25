@@ -30,7 +30,6 @@ def exit_with_error(
     raise typer.Exit(code=code) from error
 
 
-
 def watch_status(
     directory: Path,
     *,

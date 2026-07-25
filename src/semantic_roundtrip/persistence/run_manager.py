@@ -48,6 +48,7 @@ def create_run_directory(base_path: Path, run_id: str) -> Path:
     run_directory.mkdir(parents=True, exist_ok=False)
     return run_directory
 
+
 def create_run(base_path: Path, name: str) -> RunContext:
     """Create a new run and return its identity and directory."""
     created_at = datetime.now(timezone.utc)
