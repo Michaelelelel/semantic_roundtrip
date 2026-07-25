@@ -11,6 +11,7 @@ from semantic_roundtrip.config_resolution import (
     expected_stage_outputs,
     load_effective_config,
 )
+from semantic_roundtrip.experiment_runner import PreparedExperiment
 from semantic_roundtrip.persistence.config_snapshot import EFFECTIVE_CONFIG_FILENAME
 from semantic_roundtrip.persistence.database import (
     database_path_for_run,
@@ -21,17 +22,13 @@ from semantic_roundtrip.persistence.run_manager import RunContext
 from semantic_roundtrip.pipeline import PipelineSummary
 
 
-def print_run_info(
-    config: ResolvedAppConfig,
-    database_path: Path,
-    manifest_path: Path,
-    run_context: RunContext,
+def print_run_info(prepared: PreparedExperiment
 ) -> None:
-    typer.echo(f"Experiment name: {config.run.name}")
-    typer.echo(f"Run ID: {run_context.run_id}")
-    typer.echo(f"Run directory: {run_context.directory}")
-    typer.echo(f"Database: {database_path}")
-    typer.echo(f"Manifest: {manifest_path}")
+    typer.echo(f"Experiment name: {prepared.config.run.name}")
+    typer.echo(f"Run ID: {prepared.run_context.run_id}")
+    typer.echo(f"Run directory: {prepared.run_context.directory}")
+    typer.echo(f"Database: {prepared.database_path}")
+    typer.echo(f"Manifest: {prepared.manifest_path}")
 
 
 def print_run_summary(summary: PipelineSummary) -> None:

@@ -42,25 +42,6 @@ def _run_directory_option() -> Path:
     )
 
 
-def _run_new_experiment(config_file: Path) -> None:
-    prepared = prepare_experiment_from_file(config_file)
-    print_run_info(
-        prepared.config,
-        prepared.database_path,
-        prepared.manifest_path,
-        prepared.run_context,
-    )
-
-    summary = execute_prepared_experiment(prepared)
-    print_run_info(
-        prepared.config,
-        prepared.database_path,
-        prepared.manifest_path,
-        prepared.run_context,
-    )
-    print_run_summary(summary)
-
-
 @app.command("start")
 def start(
     config_file: Path = typer.Option(
@@ -75,7 +56,14 @@ def start(
     ),
 ) -> None:
     """Start a new experiment run."""
-    _run_new_experiment(config_file)
+    prepared = prepare_experiment_from_file(config_file)
+
+    print_run_info(prepared)
+
+    summary = execute_prepared_experiment(prepared)
+
+    print_run_info(prepared)
+    print_run_summary(summary)
 
 
 @app.command("status")
