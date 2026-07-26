@@ -11,10 +11,10 @@ from semantic_roundtrip.config_resolution import (
 )
 from semantic_roundtrip.persistence.config_snapshot import (
     EFFECTIVE_CONFIG_FILENAME,
-    PROMPT_PROFILE_FILENAME,
     create_effective_config_snapshot,
     create_input_config_snapshot,
-    create_prompt_profile_snapshot,
+    create_prompt_snapshots,
+    use_prompt_snapshots,
 )
 from semantic_roundtrip.persistence.run_database import (
     load_run_context,
@@ -76,7 +76,8 @@ def prepare_experiment(
         config,
         run_context.directory,
     )
-    prompt_profile_path = create_prompt_profile_snapshot(
+    prompt_paths = create_prompt_snapshots(
+        config,
         loaded_prompt_profile,
         run_context.directory,
     )
@@ -95,8 +96,7 @@ def prepare_experiment(
         effective_config_path,
         database_path,
         images_directory,
-        prompt_profile_path,
-        loaded_prompt_profile,
+        prompt_paths,
     )
 
     return PreparedExperiment(
@@ -148,8 +148,13 @@ def resume_experiment(
     if record.status not in allowed_statuses:
         raise ValueError(f"Cannot resume a run with status '{record.status}'.")
 
-    config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
-    loaded_prompt_profile = load_prompt_profile(run_directory / PROMPT_PROFILE_FILENAME)
+    config = use_prompt_snapshots(
+        load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME),
+        run_directory,
+    )
+    loaded_prompt_profile = load_prompt_profile(
+        config.stages.prompt_generation.prompt_profile
+    )
     adapters = create_adapters(config)
     run_context = load_run_context(run_directory)
     return run_pipeline(
