@@ -1,7 +1,7 @@
 services:
   text_runtime:
     image: >-
-      ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:f96be8dfd1c1eb533e09f42fc4d92311150dc63ecd568284c9199cacae5a9e26
+      ghcr.io/ggml-org/llama.cpp:server-cuda
     volumes:
       - "${MODEL_ROOT:?MODEL_ROOT must be set}/text:/models:ro"
       - ./chat_templates:/chat_templates:ro
@@ -29,7 +29,7 @@ services:
 
   vision_runtime:
     image: >-
-      ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:f96be8dfd1c1eb533e09f42fc4d92311150dc63ecd568284c9199cacae5a9e26
+      ghcr.io/ggml-org/llama.cpp:server-cuda
     volumes:
       - "${MODEL_ROOT:?MODEL_ROOT must be set}/vision:/models:ro"
       - ./configs/deployments/vision-models.ini:/config/models.ini:ro
@@ -58,7 +58,7 @@ services:
 
   image_runtime:
     image: >-
-      mmartial/comfyui-nvidia-docker:ubuntu24_cuda13.1-dgx-latest@sha256:7a3f25b0f1563974bd19459bfe884d2a6e86df55a703da291a3668ed0aeb42ce
+      mmartial/comfyui-nvidia-docker:ubuntu24_cuda13.1-dgx-latest
     volumes:
       - "${RUNTIME_ROOT:?RUNTIME_ROOT must be set}/comfyui/mnt:/comfy/mnt"
       - "${RUNTIME_ROOT:?RUNTIME_ROOT must be set}/comfyui/base:/basedir"
