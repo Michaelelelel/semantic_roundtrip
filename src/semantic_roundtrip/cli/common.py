@@ -1,8 +1,10 @@
 """Shared behavior for all CLI command groups."""
 
+import signal
 import time
 from collections.abc import Callable
 from pathlib import Path
+from types import FrameType
 from typing import Never
 
 import typer
@@ -17,6 +19,19 @@ EXPECTED_COMMAND_ERRORS = (AdapterError, OSError, ValueError)
 TERMINAL_STATUSES = frozenset({"paused", "completed", "failed", "interrupted"})
 
 StatusRenderer = Callable[[Path], str]
+
+
+def _interrupt_on_sigterm(
+    _signal_number: int,
+    _frame: FrameType | None,
+) -> Never:
+    """Translate Docker's stop signal into the CLI's normal interrupt path."""
+    raise KeyboardInterrupt
+
+
+def install_termination_handler() -> None:
+    """Persist interrupted state when Docker stops the CLI process."""
+    signal.signal(signal.SIGTERM, _interrupt_on_sigterm)
 
 
 def exit_with_error(

@@ -340,11 +340,10 @@ def run_pipeline(
 ) -> PipelineSummary:
     """Run a new experiment or continue a paused, interrupted, or failed run."""
     with RunDatabase(database_path, run_context) as database:
-        if resume:
-            database.clear_pause_request()
-        database.update_status("running")
-
         try:
+            if resume:
+                database.clear_pause_request()
+            database.update_status("running")
             _execute(
                 config=config,
                 database=database,
@@ -356,6 +355,7 @@ def run_pipeline(
             database.update_status("paused")
             return _summary(database, "paused")
         except KeyboardInterrupt:
+            database.tasks.reset_running_tasks()
             database.update_status("interrupted")
             raise
         except Exception:

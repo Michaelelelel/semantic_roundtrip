@@ -338,31 +338,27 @@ def execute_job(
         raise ValueError(f"Cannot start a job with status '{record.status}'.")
 
     with JobDatabase(prepared.database_path, prepared.context) as database:
-        database.update_job_status("running")
-
-        for configured_entry in prepared.config.entries:
-            try:
+        try:
+            database.update_job_status("running")
+            for configured_entry in prepared.config.entries:
                 outcome = _execute_job_entry(
                     prepared=prepared,
                     database=database,
                     configured_entry=configured_entry,
                     report=report,
                 )
-            except KeyboardInterrupt:
-                database.update_job_status("interrupted")
-                raise
-            except JobStateError:
-                database.update_job_status("interrupted")
-                raise
 
-            if outcome == "paused":
-                database.update_job_status("paused")
-                return _execution_summary(prepared, database, "paused")
-            if outcome == "failed" and not prepared.config.job.continue_on_error:
-                database.update_job_status("failed")
-                return _execution_summary(prepared, database, "failed")
+                if outcome == "paused":
+                    database.update_job_status("paused")
+                    return _execution_summary(prepared, database, "paused")
+                if outcome == "failed" and not prepared.config.job.continue_on_error:
+                    database.update_job_status("failed")
+                    return _execution_summary(prepared, database, "failed")
 
-        failed = any(entry.status == "failed" for entry in database.entries())
-        final_status = "failed" if failed else "completed"
-        database.update_job_status(final_status)
-        return _execution_summary(prepared, database, final_status)
+            failed = any(entry.status == "failed" for entry in database.entries())
+            final_status = "failed" if failed else "completed"
+            database.update_job_status(final_status)
+            return _execution_summary(prepared, database, final_status)
+        except (KeyboardInterrupt, JobStateError):
+            database.update_job_status("interrupted")
+            raise

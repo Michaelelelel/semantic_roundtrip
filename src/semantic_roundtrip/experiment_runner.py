@@ -30,7 +30,7 @@ from semantic_roundtrip.pipeline import PipelineSummary, run_pipeline
 from semantic_roundtrip.prompting import PromptProfile, load_prompt_profile
 
 
-RESUMABLE_RUN_STATUSES = frozenset({"paused", "failed", "interrupted"})
+RESUMABLE_RUN_STATUSES = frozenset({"created", "paused", "failed", "interrupted"})
 
 
 @dataclass(frozen=True, slots=True)

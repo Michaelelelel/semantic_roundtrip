@@ -170,6 +170,22 @@ class RunTaskStore:
                 (now, now, task_id),
             )
 
+    def reset_running_tasks(self) -> None:
+        """Return interrupted in-flight work to the resumable pending state."""
+        now = utc_now()
+        with self._connection:
+            self._connection.execute(
+                """
+                UPDATE stage_tasks
+                SET status = 'pending',
+                    started_at = NULL,
+                    updated_at = ?,
+                    finished_at = NULL
+                WHERE run_id = ? AND status = 'running'
+                """,
+                (now, self._run_context.run_id),
+            )
+
     def add_error(
         self,
         *,
