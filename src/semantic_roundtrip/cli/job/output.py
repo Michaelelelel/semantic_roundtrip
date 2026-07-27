@@ -153,7 +153,7 @@ def show_job_status(job_directory: Path) -> str:
             child_status = read_run_record(
                 database_path_for_run(entry.run_directory)
             ).status
-        except OSError, ValueError:
+        except (OSError, ValueError):
             child_status = "unavailable"
 
         models = ", ".join(
