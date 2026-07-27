@@ -86,6 +86,18 @@ def print_job_info(prepared: PreparedJob) -> None:
     typer.echo(f"Database: {prepared.database_path}")
     typer.echo(f"Snapshot: {prepared.effective_config_path}")
 
+    entries = read_job_entries(
+        prepared.database_path,
+        prepared.context.directory,
+    )
+    typer.echo("Created child runs:")
+    for entry in entries:
+        configured_entry = prepared.config.entries[entry.entry_index]
+        typer.echo(
+            f"  [{entry.entry_index + 1}/{len(entries)}] "
+            f"{configured_entry.name}: {entry.run_directory}"
+        )
+
 
 def print_job_execution_summary(summary: JobExecutionSummary) -> None:
     """Print final entry counts for one job invocation."""
