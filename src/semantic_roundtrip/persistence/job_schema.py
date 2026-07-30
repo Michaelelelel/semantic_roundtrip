@@ -11,7 +11,7 @@ from semantic_roundtrip.persistence.sqlite import (
 )
 
 
-JOB_DATABASE_SCHEMA_VERSION = 2
+JOB_DATABASE_SCHEMA_VERSION = 3
 
 
 def job_database_path(job_directory: Path) -> Path:
@@ -72,6 +72,7 @@ def initialize_job_database(
                 job_id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 created_at TEXT NOT NULL,
+                started_at TEXT,
                 heartbeat_at TEXT,
                 finished_at TEXT,
                 status TEXT NOT NULL CHECK (
@@ -86,8 +87,6 @@ def initialize_job_database(
                 ),
                 continue_on_error INTEGER NOT NULL
                     CHECK (continue_on_error IN (0, 1)),
-                max_parallel_experiments INTEGER NOT NULL
-                    CHECK (max_parallel_experiments = 1),
                 input_config_path TEXT NOT NULL,
                 effective_config_path TEXT NOT NULL
             );
@@ -126,11 +125,10 @@ def initialize_job_database(
                 heartbeat_at,
                 status,
                 continue_on_error,
-                max_parallel_experiments,
                 input_config_path,
                 effective_config_path
             )
-            VALUES (?, ?, ?, ?, 'created', ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, 'created', ?, ?, ?)
             """,
             (
                 context.job_id,
@@ -138,7 +136,6 @@ def initialize_job_database(
                 context.created_at.isoformat(),
                 now,
                 int(config.job.continue_on_error),
-                config.execution.max_parallel_experiments,
                 _relative_path(input_config_path, context.directory),
                 _relative_path(effective_config_path, context.directory),
             ),

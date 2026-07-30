@@ -1,7 +1,6 @@
 """Persistence of input and effective experiment configurations."""
 
 from pathlib import Path
-import re
 from shutil import copy2
 
 import yaml
@@ -14,6 +13,7 @@ INPUT_CONFIG_FILENAME = "config_input.yaml"
 EFFECTIVE_CONFIG_FILENAME = "config_snapshot.yaml"
 PROMPT_PROFILE_FILENAME = "prompt_profile.yaml"
 VERIFICATION_PROMPT_FILENAME = "verification_prompt.txt"
+IMAGE_DESCRIPTION_PROMPT_FILENAME = "image_description_prompt.txt"
 TITLE_GUESSING_PROMPT_FILENAME = "title_guessing_prompt.txt"
 
 
@@ -64,12 +64,6 @@ def create_prompt_profile_snapshot(
     return snapshot_path
 
 
-def _chat_template_filename(alias: str, source_path: Path) -> str:
-    safe_alias = re.sub(r"[^a-zA-Z0-9_-]+", "-", alias).strip("-")
-    suffix = source_path.suffix or ".txt"
-    return f"{safe_alias or 'backend'}_chat_template{suffix}"
-
-
 def create_prompt_snapshots(
     config: ResolvedAppConfig,
     loaded_profile: LoadedPromptProfile,
@@ -87,6 +81,14 @@ def create_prompt_snapshots(
             config.stages.verification.template_path,
             VERIFICATION_PROMPT_FILENAME,
         ),
+        "image_description": (
+            (
+                None
+                if config.stages.image_description is None
+                else config.stages.image_description.template_path
+            ),
+            IMAGE_DESCRIPTION_PROMPT_FILENAME,
+        ),
         "title_guessing": (
             config.stages.title_guessing.template_path,
             TITLE_GUESSING_PROMPT_FILENAME,
@@ -98,15 +100,6 @@ def create_prompt_snapshots(
         snapshot_path = run_directory / filename
         copy2(source_path, snapshot_path)
         snapshots[name] = snapshot_path
-
-    for alias, backend in config.backends.items():
-        configured_path = backend.settings.get("chat_template_path")
-        if configured_path is None:
-            continue
-        source_path = Path(configured_path)
-        snapshot_path = run_directory / _chat_template_filename(alias, source_path)
-        copy2(source_path, snapshot_path)
-        snapshots[f"{alias}_chat_template"] = snapshot_path
 
     return snapshots
 
@@ -130,6 +123,13 @@ def use_prompt_snapshots(
             update={"template_path": verification_path}
         )
 
+    image_description = config.stages.image_description
+    image_description_path = run_directory / IMAGE_DESCRIPTION_PROMPT_FILENAME
+    if image_description is not None and image_description_path.is_file():
+        image_description = image_description.model_copy(
+            update={"template_path": image_description_path}
+        )
+
     title_guessing = config.stages.title_guessing
     title_guessing_path = run_directory / TITLE_GUESSING_PROMPT_FILENAME
     if title_guessing_path.is_file():
@@ -141,27 +141,9 @@ def use_prompt_snapshots(
         update={
             "prompt_generation": prompt_generation,
             "verification": verification,
+            "image_description": image_description,
             "title_guessing": title_guessing,
         }
     )
 
-    backends = dict(config.backends)
-    for alias, backend in backends.items():
-        configured_path = backend.settings.get("chat_template_path")
-        if configured_path is None:
-            continue
-        snapshot_path = run_directory / _chat_template_filename(
-            alias,
-            Path(configured_path),
-        )
-        if snapshot_path.is_file():
-            settings = dict(backend.settings)
-            settings["chat_template_path"] = snapshot_path
-            backends[alias] = backend.model_copy(update={"settings": settings})
-
-    return config.model_copy(
-        update={
-            "stages": stages,
-            "backends": backends,
-        }
-    )
+    return config.model_copy(update={"stages": stages})

@@ -3,11 +3,13 @@
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from semantic_roundtrip.domain import (
     BenchmarkItem,
     GeneratedPrompt,
     ImageArtifact,
+    ImageDescription,
     PromptResponse,
     TitlePrediction,
     VerificationResult,
@@ -22,6 +24,7 @@ class ResultCounts:
     prompts: int
     images: int
     verifications: int
+    image_descriptions: int
     predictions: int
     evaluations: int
 
@@ -214,6 +217,58 @@ class RunResultStore:
             (image_id, int(result.passed), result.reason, result.raw_response),
         )
 
+    def get_image_description(
+        self,
+        image_id: int,
+    ) -> tuple[int, ImageDescription] | None:
+        row = self._connection.execute(
+            """
+            SELECT
+                description_id,
+                text,
+                backend_request_id,
+                raw_response
+            FROM image_descriptions
+            WHERE image_id = ?
+            """,
+            (image_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return (
+            int(row["description_id"]),
+            ImageDescription(
+                text=row["text"],
+                backend_request_id=row["backend_request_id"],
+                raw_response=row["raw_response"],
+            ),
+        )
+
+    def add_image_description(
+        self,
+        image_id: int,
+        description: ImageDescription,
+    ) -> int:
+        return self._insert(
+            """
+            INSERT INTO image_descriptions (
+                image_id,
+                text,
+                backend_request_id,
+                raw_response,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                image_id,
+                description.text,
+                description.backend_request_id,
+                description.raw_response,
+                utc_now(),
+            ),
+        )
+
     def get_prediction(
         self,
         image_id: int,
@@ -222,6 +277,8 @@ class RunResultStore:
             """
             SELECT
                 prediction_id,
+                description_id,
+                input_kind,
                 title,
                 confidence,
                 confidence_type,
@@ -247,20 +304,33 @@ class RunResultStore:
         self,
         image_id: int,
         prediction: TitlePrediction,
+        *,
+        input_kind: Literal["image", "description"],
+        description_id: int | None = None,
     ) -> int:
+        if (input_kind == "description") != (description_id is not None):
+            raise ValueError(
+                "Description predictions require description_id; "
+                "image predictions must not provide one."
+            )
+
         return self._insert(
             """
             INSERT INTO predictions (
                 image_id,
+                description_id,
+                input_kind,
                 title,
                 confidence,
                 confidence_type,
                 raw_response
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 image_id,
+                description_id,
+                input_kind,
                 prediction.title,
                 prediction.confidence,
                 prediction.confidence_type,
@@ -273,10 +343,12 @@ class RunResultStore:
         *,
         verification_id: int,
         prediction_id: int,
-        title_exact_match: bool,
+        exact_match: bool,
+        casefold_contains_match: bool,
         included: bool,
-        score: bool | None,
-        method: str,
+        primary_score: bool | None,
+        exact_method: str,
+        contains_method: str,
     ) -> int:
         row = self._connection.execute(
             """
@@ -289,26 +361,30 @@ class RunResultStore:
         if row is not None:
             return int(row["evaluation_id"])
 
-        stored_score = None if score is None else int(score)
+        stored_score = None if primary_score is None else int(primary_score)
         return self._insert(
             """
             INSERT INTO evaluations (
                 verification_id,
                 prediction_id,
-                title_exact_match,
+                exact_match,
+                casefold_contains_match,
                 included,
-                score,
-                method
+                primary_score,
+                exact_method,
+                contains_method
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 verification_id,
                 prediction_id,
-                int(title_exact_match),
+                int(exact_match),
+                int(casefold_contains_match),
                 int(included),
                 stored_score,
-                method,
+                exact_method,
+                contains_method,
             ),
         )
 
@@ -321,6 +397,7 @@ class RunResultStore:
                 (SELECT COUNT(*) FROM prompts) AS prompts,
                 (SELECT COUNT(*) FROM images) AS images,
                 (SELECT COUNT(*) FROM verifications) AS verifications,
+                (SELECT COUNT(*) FROM image_descriptions) AS image_descriptions,
                 (SELECT COUNT(*) FROM predictions) AS predictions,
                 (SELECT COUNT(*) FROM evaluations) AS evaluations
             """
@@ -330,6 +407,7 @@ class RunResultStore:
             prompts=int(row["prompts"]),
             images=int(row["images"]),
             verifications=int(row["verifications"]),
+            image_descriptions=int(row["image_descriptions"]),
             predictions=int(row["predictions"]),
             evaluations=int(row["evaluations"]),
         )

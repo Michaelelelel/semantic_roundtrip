@@ -1,4 +1,4 @@
-schema_version: 1
+schema_version: 2
 
 run:
   name: mock_smoke
@@ -34,6 +34,7 @@ stages:
     backend: mock
 
   title_guessing:
+    input: image
     backend: mock
 
 evaluation:

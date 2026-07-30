@@ -111,8 +111,8 @@ class OpenAICompatibleImageVerifier:
         )
 
 
-class OpenAICompatibleTitleGuesser:
-    """Guess a title and retain token confidence metadata."""
+class OpenAICompatibleImageTitleGuesser:
+    """Guess a title directly from an image and retain confidence metadata."""
 
     def __init__(self, settings: OpenAICompatibleVisionSettings) -> None:
         self._config = settings
@@ -175,8 +175,8 @@ def build_openai_compatible_image_verifier(
     return OpenAICompatibleImageVerifier(settings)
 
 
-def build_openai_compatible_title_guesser(
+def build_openai_compatible_image_title_guesser(
     raw_settings: dict[str, Any],
-) -> OpenAICompatibleTitleGuesser:
+) -> OpenAICompatibleImageTitleGuesser:
     settings = OpenAICompatibleVisionSettings.model_validate(raw_settings)
-    return OpenAICompatibleTitleGuesser(settings)
+    return OpenAICompatibleImageTitleGuesser(settings)

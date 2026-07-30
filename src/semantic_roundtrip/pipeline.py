@@ -9,8 +9,10 @@ from semantic_roundtrip.adapters.factory import AdapterBundle
 from semantic_roundtrip.config import ResolvedAppConfig
 from semantic_roundtrip.domain import BenchmarkItem, GeneratedPrompt
 from semantic_roundtrip.evaluation import (
-    EVALUATION_METHOD,
+    CONTAINS_MATCH_METHOD,
+    EXACT_MATCH_METHOD,
     apply_verification_policy,
+    title_casefold_contains_match,
     title_exact_match,
 )
 from semantic_roundtrip.persistence.run_database import RunDatabase
@@ -35,6 +37,7 @@ class PipelineSummary:
     prompts: int
     images: int
     verifications: int
+    image_descriptions: int
     predictions: int
     evaluations: int
 
@@ -47,6 +50,7 @@ def _summary(database: RunDatabase, status: str) -> PipelineSummary:
         prompts=counts.prompts,
         images=counts.images,
         verifications=counts.verifications,
+        image_descriptions=counts.image_descriptions,
         predictions=counts.predictions,
         evaluations=counts.evaluations,
     )
@@ -297,13 +301,14 @@ def _execute(
                     stage="title_guessing",
                     task_suffix=task_suffix,
                     existing=database.results.get_prediction(image_id),
-                    operation=lambda: adapters.title_guesser.guess_title(
+                    operation=lambda: adapters.image_title_guesser.guess_title(
                         image_path=image.path,
                         domain=item.domain,
                     ),
                     save=lambda result: database.results.add_prediction(
                         image_id,
                         result,
+                        input_kind="image",
                     ),
                     retry_limit=retry_limit,
                     item_id=item_id,
@@ -312,19 +317,25 @@ def _execute(
                     image_id=image_id,
                 )
 
-                title_matches = title_exact_match(item.title, prediction.title)
+                exact_match = title_exact_match(item.title, prediction.title)
+                contains_match = title_casefold_contains_match(
+                    item.title,
+                    prediction.title,
+                )
                 included, score = apply_verification_policy(
-                    title_matches=title_matches,
+                    title_matches=exact_match,
                     verification_passed=verification.passed,
                     failed_verification=config.evaluation.failed_verification,
                 )
                 database.results.add_evaluation_if_missing(
                     verification_id=verification_id,
                     prediction_id=prediction_id,
-                    title_exact_match=title_matches,
+                    exact_match=exact_match,
+                    casefold_contains_match=contains_match,
                     included=included,
-                    score=score,
-                    method=EVALUATION_METHOD,
+                    primary_score=score,
+                    exact_method=EXACT_MATCH_METHOD,
+                    contains_method=CONTAINS_MATCH_METHOD,
                 )
 
 

@@ -1,21 +1,18 @@
 schema_version: 2
 
 run:
-  name: mock_pause
+  name: mock_description
   output_directory: runs
 
 dataset:
   items:
     - domain: songs
       title: Imagine
-    - domain: movies
-      title: The Matrix
 
 experiment:
-  prompts_per_title: 5
+  prompts_per_title: 1
   prompt_seed: 1000
   image_seeds:
-    - 41
     - 42
   retry_limit: 0
 
@@ -27,24 +24,22 @@ stages:
   prompt_generation:
     backend: mock
     prompt_profile: prompts/prompt_generation/visual_single_v1.yaml
-    parameters:
-      delay_seconds: 2
 
   image_generation:
     backend: mock
-    parameters:
-      delay_seconds: 2
 
   verification:
     backend: mock
-    parameters:
-      delay_seconds: 2
+    template_path: prompts/verification/json_v1.txt
+
+  image_description:
+    backend: mock
+    template_path: prompts/image_description/plain_v1.txt
 
   title_guessing:
-    input: image
+    input: description
     backend: mock
-    parameters:
-      delay_seconds: 2
+    template_path: prompts/title_guessing/description_plain_v1.txt
 
 evaluation:
   failed_verification: count_as_failure

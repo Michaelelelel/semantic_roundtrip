@@ -37,6 +37,7 @@ def print_run_summary(summary: PipelineSummary) -> None:
     typer.echo(f"Prompts: {summary.prompts}")
     typer.echo(f"Images: {summary.images}")
     typer.echo(f"Verifications: {summary.verifications}")
+    typer.echo(f"Image descriptions: {summary.image_descriptions}")
     typer.echo(f"Predictions: {summary.predictions}")
     typer.echo(f"Evaluations: {summary.evaluations}")
 
@@ -60,6 +61,8 @@ def show_run_status(run_directory: Path) -> str:
 
     console.print(f"[bold]Run:[/bold] {record.name} ({record.run_id})")
     console.print(f"[bold]Status:[/bold] {record.status}")
+    if record.started_at is not None:
+        console.print(f"[bold]Started:[/bold] {record.started_at.isoformat()}")
     if record.status == "pausing":
         console.print(
             "[yellow]Pause requested; waiting for a safe checkpoint.[/yellow]"
@@ -81,9 +84,12 @@ def show_run_status(run_directory: Path) -> str:
         "prompt_generation": "Prompt generation",
         "image_generation": "Image generation",
         "verification": "Verification",
+        "image_description": "Image description",
         "title_guessing": "Title guessing",
     }
     for stage_name, label in labels.items():
+        if stage_name not in expected:
+            continue
         stage = progress.get(stage_name)
         table.add_row(
             label,

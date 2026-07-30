@@ -1,12 +1,10 @@
 schema_version: 1
 
-adapter: llama_cpp_vision
+adapter: openai_compatible
 
 settings:
-  endpoint: http://vision_runtime:8080/completion
+  endpoint: http://vision_runtime:8080/v1/chat/completions
   model_id: llava-v1.5-7b-q4_k
-  chat_template_path: prompts/llama_cpp_vision/vicuna_v1.txt
-  media_marker: <__media__>
   timeout_seconds: 300
 
 runtime:

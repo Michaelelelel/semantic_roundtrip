@@ -33,12 +33,6 @@ class JobDefinition(ConfigModel):
     continue_on_error: bool = False
 
 
-class JobExecutionConfig(ConfigModel):
-    """Execution limits supported by the current sequential runner."""
-
-    max_parallel_experiments: Literal[1] = 1
-
-
 class JobExperimentReference(ConfigModel):
     """One named experiment configuration in an input job."""
 
@@ -49,9 +43,8 @@ class JobExperimentReference(ConfigModel):
 class InputJobConfig(ConfigModel):
     """Human-maintained job configuration."""
 
-    schema_version: Literal[1]
+    schema_version: Literal[2]
     job: JobDefinition
-    execution: JobExecutionConfig = Field(default_factory=JobExecutionConfig)
     experiments: list[JobExperimentReference] = Field(min_length=1)
 
 
@@ -77,10 +70,9 @@ class ResolvedJobEntry(ConfigModel):
 class ResolvedJobConfig(ConfigModel):
     """Frozen job policy and immutable entry metadata used for resume."""
 
-    schema_version: Literal[1]
+    schema_version: Literal[2]
     configuration_kind: Literal["effective"] = "effective"
     job: JobDefinition
-    execution: JobExecutionConfig
     entries: list[ResolvedJobEntry] = Field(min_length=1)
 
 
@@ -223,7 +215,6 @@ def create_resolved_job_config(
     return ResolvedJobConfig(
         schema_version=loaded.input_config.schema_version,
         job=loaded.input_config.job,
-        execution=loaded.input_config.execution,
         entries=entries,
     )
 
@@ -260,6 +251,7 @@ def plan_job(
         "prompt_generation": 0,
         "image_generation": 0,
         "verification": 0,
+        "image_description": 0,
         "title_guessing": 0,
     }
     entries: list[JobPlanEntry] = []

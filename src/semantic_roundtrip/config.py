@@ -1,9 +1,9 @@
 """Validated input and effective experiment configuration models."""
 
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ConfigModel(BaseModel):
@@ -18,8 +18,15 @@ class RunConfig(ConfigModel):
 
 
 class DatasetItem(ConfigModel):
-    domain: str
-    title: str
+    domain: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+
+    @field_validator("domain", "title")
+    @classmethod
+    def reject_whitespace_only_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Dataset domain and title cannot be blank.")
+        return value
 
 
 class DatasetConfig(ConfigModel):
@@ -45,6 +52,7 @@ StageName = Literal[
     "prompt_generation",
     "image_generation",
     "verification",
+    "image_description",
     "title_guessing",
 ]
 
@@ -66,6 +74,14 @@ class RuntimeSpec(ConfigModel):
     ]
     control_url: str | None = None
     resource_group: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_local_control_url(self) -> Self:
+        if self.controller in {"llama_cpp_router", "comfyui"} and not self.control_url:
+            raise ValueError(
+                f"Runtime controller '{self.controller}' requires control_url."
+            )
+        return self
 
 
 class BackendProfile(ConfigModel):
@@ -105,7 +121,12 @@ class VerificationStage(StageConfig):
     template_path: Path | None = None
 
 
+class ImageDescriptionStage(StageConfig):
+    template_path: Path
+
+
 class TitleGuessingStage(StageConfig):
+    input: Literal["image", "description"]
     template_path: Path | None = None
 
 
@@ -113,7 +134,23 @@ class StagesConfig(ConfigModel):
     prompt_generation: PromptGenerationStage
     image_generation: ImageGenerationStage
     verification: VerificationStage
+    image_description: ImageDescriptionStage | None = None
     title_guessing: TitleGuessingStage
+
+    @model_validator(mode="after")
+    def require_consistent_title_input(self) -> Self:
+        uses_description = self.title_guessing.input == "description"
+        has_description_stage = self.image_description is not None
+
+        if uses_description and not has_description_stage:
+            raise ValueError(
+                "title_guessing.input='description' requires image_description."
+            )
+        if not uses_description and has_description_stage:
+            raise ValueError(
+                "image_description must be absent when title_guessing.input='image'."
+            )
+        return self
 
 
 class EvaluationConfig(ConfigModel):
@@ -123,7 +160,7 @@ class EvaluationConfig(ConfigModel):
 class InputAppConfig(ConfigModel):
     """Human-maintained experiment configuration with backend references."""
 
-    schema_version: Literal[1]
+    schema_version: Literal[2]
     run: RunConfig
     dataset: DatasetConfig
     experiment: ExperimentConfig
@@ -135,7 +172,7 @@ class InputAppConfig(ConfigModel):
 class ResolvedAppConfig(ConfigModel):
     """Self-contained effective configuration stored with a run."""
 
-    schema_version: Literal[1]
+    schema_version: Literal[2]
     configuration_kind: Literal["effective"] = "effective"
     run: RunConfig
     dataset: DatasetConfig

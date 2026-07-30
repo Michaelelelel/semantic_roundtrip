@@ -38,11 +38,11 @@ class JobRecord:
     job_id: str
     name: str
     created_at: datetime
+    started_at: datetime | None
     heartbeat_at: datetime | None
     finished_at: datetime | None
     status: str
     continue_on_error: bool
-    max_parallel_experiments: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,11 +62,11 @@ def _job_record(row: sqlite3.Row) -> JobRecord:
         job_id=row["job_id"],
         name=row["name"],
         created_at=datetime.fromisoformat(row["created_at"]),
+        started_at=parse_datetime(row["started_at"]),
         heartbeat_at=parse_datetime(row["heartbeat_at"]),
         finished_at=parse_datetime(row["finished_at"]),
         status=row["status"],
         continue_on_error=bool(row["continue_on_error"]),
-        max_parallel_experiments=int(row["max_parallel_experiments"]),
     )
 
 
@@ -134,15 +134,28 @@ class JobDatabase:
     def update_job_status(self, status: JobStatus) -> None:
         """Persist job lifecycle state and heartbeat."""
         now = utc_now()
-        finished_at = now if status in {"completed", "failed"} else None
+        finished_at = now if status in {"completed", "failed", "interrupted"} else None
         with self._connection:
             self._connection.execute(
                 """
                 UPDATE job_metadata
-                SET status = ?, heartbeat_at = ?, finished_at = ?
+                SET status = ?,
+                    started_at = CASE
+                        WHEN ? = 'running' THEN COALESCE(started_at, ?)
+                        ELSE started_at
+                    END,
+                    heartbeat_at = ?,
+                    finished_at = ?
                 WHERE job_id = ?
                 """,
-                (status, now, finished_at, self._context.job_id),
+                (
+                    status,
+                    status,
+                    now,
+                    now,
+                    finished_at,
+                    self._context.job_id,
+                ),
             )
 
     def get_entry(self, entry_index: int) -> JobEntryRecord:

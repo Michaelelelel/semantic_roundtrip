@@ -14,6 +14,7 @@ from semantic_roundtrip.persistence.run_schema import (
     require_run_schema,
 )
 from semantic_roundtrip.persistence.run_tasks import RunTaskStore
+from semantic_roundtrip.persistence.runtime_events import RuntimeEventStore
 from semantic_roundtrip.persistence.sqlite import parse_datetime, utc_now
 
 
@@ -33,6 +34,7 @@ class RunRecord:
     run_id: str
     name: str
     created_at: datetime
+    started_at: datetime | None
     status: str
     pause_requested: bool
     heartbeat_at: datetime | None
@@ -61,6 +63,7 @@ def read_run_record(database_path: Path) -> RunRecord:
             run_id=row["run_id"],
             name=row["name"],
             created_at=datetime.fromisoformat(row["created_at"]),
+            started_at=parse_datetime(row["started_at"]),
             status=row["status"],
             pause_requested=bool(row["pause_requested"]),
             heartbeat_at=parse_datetime(row["heartbeat_at"]),
@@ -71,7 +74,7 @@ def read_run_record(database_path: Path) -> RunRecord:
 
 
 def load_run_context(run_directory: Path) -> RunContext:
-    """Reconstruct a run context from an existing schema-v4 database."""
+    """Reconstruct a run context from an existing schema-v5 database."""
     record = read_run_record(database_path_for_run(run_directory))
     return RunContext(
         run_id=record.run_id,
@@ -151,6 +154,7 @@ class RunDatabase:
         require_run_schema(self._connection)
         self.results = RunResultStore(self._connection, run_context)
         self.tasks = RunTaskStore(self._connection, run_context)
+        self.runtime_events = RuntimeEventStore(self._connection, run_context)
 
     def __enter__(self) -> "RunDatabase":
         return self
@@ -165,18 +169,27 @@ class RunDatabase:
 
     def update_status(self, status: RunStatus) -> None:
         """Update lifecycle state and heartbeat."""
-        finished_at = utc_now() if status in {"completed", "failed"} else None
+        now = utc_now()
+        finished_at = now if status in {"completed", "failed", "interrupted"} else None
         with self._connection:
             self._connection.execute(
                 """
                 UPDATE run_metadata
-                SET status = ?, finished_at = ?, heartbeat_at = ?
+                SET status = ?,
+                    started_at = CASE
+                        WHEN ? = 'running' THEN COALESCE(started_at, ?)
+                        ELSE started_at
+                    END,
+                    finished_at = ?,
+                    heartbeat_at = ?
                 WHERE run_id = ?
                 """,
                 (
                     status,
+                    status,
+                    now,
                     finished_at,
-                    utc_now(),
+                    now,
                     self._run_context.run_id,
                 ),
             )

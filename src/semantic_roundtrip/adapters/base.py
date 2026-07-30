@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Protocol
 
 from semantic_roundtrip.domain import (
+    ImageDescription,
     ImageArtifact,
     PromptMessage,
     PromptResponse,
@@ -51,8 +52,21 @@ class ImageVerifier(Protocol):
         ...
 
 
-class TitleGuesser(Protocol):
-    """Guess a title using only the image and optional domain context."""
+class ImageDescriber(Protocol):
+    """Describe an image without access to its source title."""
+
+    def describe_image(
+        self,
+        *,
+        image_path: Path,
+        domain: str | None,
+    ) -> ImageDescription:
+        """Return a stored textual representation of one image."""
+        ...
+
+
+class ImageTitleGuesser(Protocol):
+    """Guess a title directly from an image and optional domain context."""
 
     def guess_title(
         self,
@@ -61,4 +75,17 @@ class TitleGuesser(Protocol):
         domain: str | None,
     ) -> TitlePrediction:
         """Return one best title guess without access to the source title."""
+        ...
+
+
+class TextTitleGuesser(Protocol):
+    """Guess a title from a stored image description."""
+
+    def guess_title(
+        self,
+        *,
+        description: str,
+        domain: str | None,
+    ) -> TitlePrediction:
+        """Return one best title guess without access to the image or source title."""
         ...

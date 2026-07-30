@@ -116,8 +116,8 @@ class MockImageVerifier:
         )
 
 
-class MockTitleGuesser:
-    """Return a fixed prediction without calling a vision model."""
+class MockImageTitleGuesser:
+    """Return a fixed prediction directly from an image."""
 
     def __init__(self, delay_seconds: float = 0.0) -> None:
         self._delay_seconds = delay_seconds
@@ -173,8 +173,8 @@ def build_mock_image_verifier(
     return MockImageVerifier(settings.delay_seconds)
 
 
-def build_mock_title_guesser(
+def build_mock_image_title_guesser(
     raw_settings: dict[str, Any],
-) -> MockTitleGuesser:
+) -> MockImageTitleGuesser:
     settings = _load_mock_settings(raw_settings)
-    return MockTitleGuesser(settings.delay_seconds)
+    return MockImageTitleGuesser(settings.delay_seconds)

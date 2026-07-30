@@ -19,6 +19,7 @@ STAGE_NAMES: tuple[StageName, ...] = (
     "prompt_generation",
     "image_generation",
     "verification",
+    "image_description",
     "title_guessing",
 )
 
@@ -38,6 +39,9 @@ def resolve_stage_adapter(
 ) -> StageAdapterConfig:
     """Merge one stage's backend settings and scientific parameters."""
     stage = getattr(config.stages, stage_name)
+    if stage is None:
+        raise ValueError(f"Optional stage '{stage_name}' is not configured.")
+
     backend = config.backends.get(stage.backend)
     if backend is None:
         raise ValueError(
@@ -70,6 +74,8 @@ def resolve_stage_adapter(
 
 def _validate_resolved_config(config: ResolvedAppConfig) -> None:
     for stage_name in STAGE_NAMES:
+        if getattr(config.stages, stage_name) is None:
+            continue
         resolve_stage_adapter(config, stage_name)
 
 
@@ -116,9 +122,12 @@ def expected_stage_outputs(config: ResolvedAppConfig) -> dict[StageName, int]:
     """Calculate the number of adapter outputs expected from one experiment."""
     prompt_count = len(config.dataset.items) * config.experiment.prompts_per_title
     image_count = prompt_count * len(config.experiment.image_seeds)
-    return {
+    expected: dict[StageName, int] = {
         "prompt_generation": prompt_count,
         "image_generation": image_count,
         "verification": image_count,
         "title_guessing": image_count,
     }
+    if config.stages.image_description is not None:
+        expected["image_description"] = image_count
+    return expected

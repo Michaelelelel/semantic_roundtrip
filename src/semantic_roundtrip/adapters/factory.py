@@ -6,25 +6,21 @@ from typing import Any
 
 from semantic_roundtrip.adapters.base import (
     ImageGenerator,
+    ImageTitleGuesser,
     ImageVerifier,
     PromptGenerator,
-    TitleGuesser,
 )
 from semantic_roundtrip.adapters.comfyui import build_comfyui_image_generator
-from semantic_roundtrip.adapters.llama_cpp_vision import (
-    build_llama_cpp_image_verifier,
-    build_llama_cpp_title_guesser,
-)
 from semantic_roundtrip.adapters.mock import (
     build_mock_image_generator,
+    build_mock_image_title_guesser,
     build_mock_image_verifier,
     build_mock_prompt_generator,
-    build_mock_title_guesser,
 )
 from semantic_roundtrip.adapters.openai_compatible import (
+    build_openai_compatible_image_title_guesser,
     build_openai_compatible_image_verifier,
     build_openai_compatible_prompt_generator,
-    build_openai_compatible_title_guesser,
 )
 from semantic_roundtrip.config import ResolvedAppConfig, StageAdapterConfig
 from semantic_roundtrip.config_resolution import resolve_stage_adapter
@@ -32,18 +28,18 @@ from semantic_roundtrip.config_resolution import resolve_stage_adapter
 
 @dataclass(frozen=True, slots=True)
 class AdapterBundle:
-    """The four adapters required by one pipeline run."""
+    """The four adapters required by the current direct-image pipeline."""
 
     prompt_generator: PromptGenerator
     image_generator: ImageGenerator
     image_verifier: ImageVerifier
-    title_guesser: TitleGuesser
+    image_title_guesser: ImageTitleGuesser
 
 
 PromptGeneratorBuilder = Callable[[dict[str, Any]], PromptGenerator]
 ImageGeneratorBuilder = Callable[[dict[str, Any]], ImageGenerator]
 ImageVerifierBuilder = Callable[[dict[str, Any]], ImageVerifier]
-TitleGuesserBuilder = Callable[[dict[str, Any]], TitleGuesser]
+ImageTitleGuesserBuilder = Callable[[dict[str, Any]], ImageTitleGuesser]
 
 
 PROMPT_GENERATORS: dict[str, PromptGeneratorBuilder] = {
@@ -58,14 +54,12 @@ IMAGE_GENERATORS: dict[str, ImageGeneratorBuilder] = {
 
 IMAGE_VERIFIERS: dict[str, ImageVerifierBuilder] = {
     "mock": build_mock_image_verifier,
-    "llama_cpp_vision": build_llama_cpp_image_verifier,
     "openai_compatible": build_openai_compatible_image_verifier,
 }
 
-TITLE_GUESSERS: dict[str, TitleGuesserBuilder] = {
-    "mock": build_mock_title_guesser,
-    "llama_cpp_vision": build_llama_cpp_title_guesser,
-    "openai_compatible": build_openai_compatible_title_guesser,
+IMAGE_TITLE_GUESSERS: dict[str, ImageTitleGuesserBuilder] = {
+    "mock": build_mock_image_title_guesser,
+    "openai_compatible": build_openai_compatible_image_title_guesser,
 }
 
 
@@ -120,21 +114,27 @@ def create_image_verifier(
     return builder(selection.settings)
 
 
-def create_title_guesser(
+def create_image_title_guesser(
     selection: StageAdapterConfig,
-) -> TitleGuesser:
-    builder = TITLE_GUESSERS.get(selection.adapter)
+) -> ImageTitleGuesser:
+    builder = IMAGE_TITLE_GUESSERS.get(selection.adapter)
     if builder is None:
         raise _unsupported_adapter(
-            stage="title-guessing",
+            stage="image title-guessing",
             adapter=selection.adapter,
-            registry=TITLE_GUESSERS,
+            registry=IMAGE_TITLE_GUESSERS,
         )
     return builder(selection.settings)
 
 
 def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
-    """Create all stage adapters from resolved backend settings."""
+    """Create adapters for the currently implemented direct-image route."""
+    if config.stages.title_guessing.input != "image":
+        raise ValueError(
+            "Description-based title guessing is configured but is not "
+            "executable until the image-description pipeline phase."
+        )
+
     return AdapterBundle(
         prompt_generator=create_prompt_generator(
             resolve_stage_adapter(config, "prompt_generation")
@@ -145,7 +145,7 @@ def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
         image_verifier=create_image_verifier(
             resolve_stage_adapter(config, "verification")
         ),
-        title_guesser=create_title_guesser(
+        image_title_guesser=create_image_title_guesser(
             resolve_stage_adapter(config, "title_guessing")
         ),
     )

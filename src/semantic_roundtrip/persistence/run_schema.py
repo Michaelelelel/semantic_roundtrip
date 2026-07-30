@@ -12,7 +12,7 @@ from semantic_roundtrip.persistence.sqlite import (
 
 
 DATABASE_FILENAME = "pipeline_state.sqlite"
-DATABASE_SCHEMA_VERSION = 4
+DATABASE_SCHEMA_VERSION = 5
 
 
 def database_path_for_run(run_directory: Path) -> Path:
@@ -54,7 +54,7 @@ def initialize_database(
     input_config_path: Path,
     effective_config_path: Path,
 ) -> Path:
-    """Create a schema-v4 database for a new experiment run."""
+    """Create a schema-v5 database for a new experiment run."""
     database_path = database_path_for_run(run_context.directory)
     if database_path.exists():
         raise FileExistsError(f"Database already exists: {database_path}")
@@ -69,6 +69,7 @@ def initialize_database(
                 run_id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 created_at TEXT NOT NULL,
+                started_at TEXT,
                 heartbeat_at TEXT,
                 finished_at TEXT,
                 status TEXT NOT NULL CHECK (
@@ -131,14 +132,36 @@ def initialize_database(
                 raw_response TEXT NOT NULL CHECK (length(raw_response) > 0)
             );
 
+            CREATE TABLE image_descriptions (
+                description_id INTEGER PRIMARY KEY,
+                image_id INTEGER NOT NULL UNIQUE REFERENCES images(image_id)
+                    ON DELETE CASCADE,
+                text TEXT NOT NULL CHECK (length(text) > 0),
+                backend_request_id TEXT,
+                raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
+                created_at TEXT NOT NULL,
+                UNIQUE (description_id, image_id)
+            );
+
             CREATE TABLE predictions (
                 prediction_id INTEGER PRIMARY KEY,
                 image_id INTEGER NOT NULL UNIQUE REFERENCES images(image_id)
                     ON DELETE CASCADE,
+                description_id INTEGER,
+                input_kind TEXT NOT NULL
+                    CHECK (input_kind IN ('image', 'description')),
                 title TEXT NOT NULL,
                 confidence REAL,
                 confidence_type TEXT,
-                raw_response TEXT NOT NULL CHECK (length(raw_response) > 0)
+                raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
+                CHECK (
+                    (input_kind = 'image' AND description_id IS NULL)
+                    OR
+                    (input_kind = 'description' AND description_id IS NOT NULL)
+                ),
+                FOREIGN KEY (description_id, image_id)
+                    REFERENCES image_descriptions(description_id, image_id)
+                    ON DELETE CASCADE
             );
 
             CREATE TABLE evaluations (
@@ -147,11 +170,34 @@ def initialize_database(
                     REFERENCES verifications(verification_id) ON DELETE CASCADE,
                 prediction_id INTEGER NOT NULL UNIQUE
                     REFERENCES predictions(prediction_id) ON DELETE CASCADE,
-                title_exact_match INTEGER NOT NULL
-                    CHECK (title_exact_match IN (0, 1)),
+                exact_match INTEGER NOT NULL
+                    CHECK (exact_match IN (0, 1)),
+                casefold_contains_match INTEGER NOT NULL
+                    CHECK (casefold_contains_match IN (0, 1)),
                 included INTEGER NOT NULL CHECK (included IN (0, 1)),
-                score INTEGER CHECK (score IS NULL OR score IN (0, 1)),
-                method TEXT NOT NULL
+                primary_score INTEGER
+                    CHECK (primary_score IS NULL OR primary_score IN (0, 1)),
+                exact_method TEXT NOT NULL,
+                contains_method TEXT NOT NULL
+            );
+
+            CREATE TABLE runtime_events (
+                runtime_event_id INTEGER PRIMARY KEY,
+                run_id TEXT NOT NULL REFERENCES run_metadata(run_id)
+                    ON DELETE CASCADE,
+                stage TEXT NOT NULL,
+                backend_alias TEXT NOT NULL,
+                controller TEXT NOT NULL,
+                resource_group TEXT NOT NULL,
+                model_id TEXT,
+                action TEXT NOT NULL
+                    CHECK (action IN ('load', 'reuse', 'unload')),
+                status TEXT NOT NULL
+                    CHECK (status IN ('started', 'completed', 'failed')),
+                started_at TEXT NOT NULL,
+                finished_at TEXT,
+                error_type TEXT,
+                error_message TEXT
             );
 
             CREATE TABLE stage_tasks (
@@ -208,6 +254,8 @@ def initialize_database(
                 ON stage_tasks(run_id, stage, status);
             CREATE INDEX stage_errors_run_stage_idx
                 ON stage_errors(run_id, stage);
+            CREATE INDEX runtime_events_run_stage_idx
+                ON runtime_events(run_id, stage, runtime_event_id);
             """
         )
         now = utc_now()

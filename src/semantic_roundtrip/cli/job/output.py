@@ -32,6 +32,7 @@ def print_job_plan(plan: JobPlan) -> bool:
         f"prompts={plan.expected_outputs['prompt_generation']}, "
         f"images={plan.expected_outputs['image_generation']}, "
         f"verifications={plan.expected_outputs['verification']}, "
+        f"descriptions={plan.expected_outputs['image_description']}, "
         f"title guesses={plan.expected_outputs['title_guessing']}"
     )
 
@@ -134,6 +135,8 @@ def show_job_status(job_directory: Path) -> str:
 
     console.print(f"[bold]Job:[/bold] {record.name} ({record.job_id})")
     console.print(f"[bold]Status:[/bold] {record.status}")
+    if record.started_at is not None:
+        console.print(f"[bold]Started:[/bold] {record.started_at.isoformat()}")
     if record.heartbeat_at is not None:
         console.print(f"[bold]Last update:[/bold] {record.heartbeat_at.isoformat()}")
 

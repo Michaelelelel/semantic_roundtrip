@@ -58,6 +58,15 @@ class VerificationResult:
 
 
 @dataclass(frozen=True, slots=True)
+class ImageDescription:
+    """A textual description produced from one generated image."""
+
+    text: str
+    raw_response: str
+    backend_request_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class TitlePrediction:
     """A title guess and its optional model-reported confidence."""
 
