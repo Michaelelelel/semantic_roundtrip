@@ -8,6 +8,7 @@ import yaml
 from semantic_roundtrip.config import (
     BackendProfile,
     InputAppConfig,
+    PipelineStageName,
     ResolvedAppConfig,
     ResolvedBackend,
     StageAdapterConfig,
@@ -118,15 +119,16 @@ def load_effective_config(path: Path) -> ResolvedAppConfig:
     return config
 
 
-def expected_stage_outputs(config: ResolvedAppConfig) -> dict[StageName, int]:
-    """Calculate the number of adapter outputs expected from one experiment."""
+def expected_stage_outputs(config: ResolvedAppConfig) -> dict[PipelineStageName, int]:
+    """Calculate the number of outputs expected from every pipeline stage."""
     prompt_count = len(config.dataset.items) * config.experiment.prompts_per_title
     image_count = prompt_count * len(config.experiment.image_seeds)
-    expected: dict[StageName, int] = {
+    expected: dict[PipelineStageName, int] = {
         "prompt_generation": prompt_count,
         "image_generation": image_count,
         "verification": image_count,
         "title_guessing": image_count,
+        "evaluation": image_count,
     }
     if config.stages.image_description is not None:
         expected["image_description"] = image_count

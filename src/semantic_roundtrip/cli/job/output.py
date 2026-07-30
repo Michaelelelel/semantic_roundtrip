@@ -28,12 +28,13 @@ def print_job_plan(plan: JobPlan) -> bool:
     typer.echo(f"Job: {plan.name}")
     typer.echo(f"Experiment entries: {len(plan.entries)}")
     typer.echo(
-        "Expected calls: "
+        "Expected outputs: "
         f"prompts={plan.expected_outputs['prompt_generation']}, "
         f"images={plan.expected_outputs['image_generation']}, "
         f"verifications={plan.expected_outputs['verification']}, "
         f"descriptions={plan.expected_outputs['image_description']}, "
-        f"title guesses={plan.expected_outputs['title_guessing']}"
+        f"title guesses={plan.expected_outputs['title_guessing']}, "
+        f"evaluations={plan.expected_outputs['evaluation']}"
     )
 
     table = Table()

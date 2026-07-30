@@ -16,8 +16,9 @@ from semantic_roundtrip.evaluation import (
     title_exact_match,
 )
 from semantic_roundtrip.persistence.run_database import RunDatabase
-from semantic_roundtrip.persistence.run_tasks import TaskRecord
 from semantic_roundtrip.persistence.run_manager import RunContext
+from semantic_roundtrip.persistence.run_results import ImageWorkItem
+from semantic_roundtrip.persistence.run_tasks import TaskRecord
 from semantic_roundtrip.prompting import PromptProfile, render_prompt_profile
 
 
@@ -56,6 +57,11 @@ def _summary(database: RunDatabase, status: str) -> PipelineSummary:
     )
 
 
+def _raise_if_pause_requested(database: RunDatabase) -> None:
+    if database.pause_requested():
+        raise PauseRequested
+
+
 def _run_task(
     operation: Callable[[], ResultType],
     *,
@@ -68,8 +74,7 @@ def _run_task(
 ) -> ResultType:
     """Run one adapter task, recording attempts and provider errors."""
     for retry in range(retry_limit + 1):
-        if database.pause_requested():
-            raise PauseRequested
+        _raise_if_pause_requested(database)
 
         attempt = database.tasks.mark_running(task.task_id)
         try:
@@ -111,6 +116,7 @@ def _load_or_run_single(
     image_id: int | None = None,
 ) -> tuple[int, ResultType]:
     """Reuse one stored result or execute and persist its adapter task."""
+    _raise_if_pause_requested(database)
     task = database.tasks.get_or_create(
         task_key=f"{stage}:{task_suffix}",
         stage=stage,
@@ -156,6 +162,7 @@ def _load_or_generate_prompt(
     sampling_seed: int,
     retry_limit: int,
 ) -> tuple[int, GeneratedPrompt]:
+    _raise_if_pause_requested(database)
     task = database.tasks.get_or_create(
         task_key=f"prompt_generation:{item_index}:{prompt_index}",
         stage="prompt_generation",
@@ -203,33 +210,214 @@ def _load_or_generate_prompt(
     )
 
 
-def _load_or_generate_prompts(
+def _image_task_suffix(image: ImageWorkItem) -> str:
+    return f"{image.item_index}:{image.prompt.index}:{image.image.seed}"
+
+
+def execute_prompt_generation_stage(
     *,
+    config: ResolvedAppConfig,
     database: RunDatabase,
     adapters: AdapterBundle,
-    config: ResolvedAppConfig,
     prompt_profile: PromptProfile,
-    item: BenchmarkItem,
-    item_index: int,
-    item_id: int,
-) -> list[tuple[int, GeneratedPrompt]]:
-    return [
-        _load_or_generate_prompt(
-            database=database,
-            adapters=adapters,
-            prompt_profile=prompt_profile,
-            item=item,
-            item_index=item_index,
-            item_id=item_id,
-            prompt_index=prompt_index,
-            sampling_seed=config.experiment.prompt_seed + prompt_index,
-            retry_limit=config.experiment.retry_limit,
+) -> None:
+    """Generate every missing visual prompt before the next stage starts."""
+    for item_index, configured_item in enumerate(config.dataset.items):
+        item = BenchmarkItem(
+            domain=configured_item.domain,
+            title=configured_item.title,
         )
-        for prompt_index in range(config.experiment.prompts_per_title)
-    ]
+        item_id = database.results.get_or_add_dataset_item(item_index, item)
+        for prompt_index in range(config.experiment.prompts_per_title):
+            _load_or_generate_prompt(
+                database=database,
+                adapters=adapters,
+                prompt_profile=prompt_profile,
+                item=item,
+                item_index=item_index,
+                item_id=item_id,
+                prompt_index=prompt_index,
+                sampling_seed=config.experiment.prompt_seed + prompt_index,
+                retry_limit=config.experiment.retry_limit,
+            )
 
 
-def _execute(
+def execute_image_generation_stage(
+    *,
+    config: ResolvedAppConfig,
+    database: RunDatabase,
+    images_directory: Path,
+    adapters: AdapterBundle,
+) -> None:
+    """Generate every missing image from the persisted prompts."""
+    for prompt in database.results.list_prompts():
+        for seed in config.experiment.image_seeds:
+            task_suffix = f"{prompt.item_index}:{prompt.prompt.index}:{seed}"
+            _load_or_run_single(
+                database=database,
+                stage="image_generation",
+                task_suffix=task_suffix,
+                existing=database.results.get_image(prompt.prompt_id, seed),
+                operation=lambda: adapters.image_generator.generate_image(
+                    prompt=prompt.prompt.text,
+                    seed=seed,
+                    output_directory=(images_directory / f"prompt_{prompt.prompt_id}"),
+                ),
+                save=lambda result: database.results.add_image(
+                    prompt.prompt_id,
+                    result,
+                ),
+                retry_limit=config.experiment.retry_limit,
+                item_id=prompt.item_id,
+                prompt_id=prompt.prompt_id,
+                seed=seed,
+            )
+
+
+def execute_verification_stage(
+    *,
+    config: ResolvedAppConfig,
+    database: RunDatabase,
+    adapters: AdapterBundle,
+) -> None:
+    """Verify every persisted image before title guessing starts."""
+    for image in database.results.list_images():
+        _load_or_run_single(
+            database=database,
+            stage="verification",
+            task_suffix=_image_task_suffix(image),
+            existing=database.results.get_verification(image.image_id),
+            operation=lambda: adapters.image_verifier.verify_image(
+                image_path=image.image.path
+            ),
+            save=lambda result: database.results.add_verification(
+                image.image_id,
+                result,
+            ),
+            retry_limit=config.experiment.retry_limit,
+            item_id=image.item_id,
+            prompt_id=image.prompt_id,
+            seed=image.image.seed,
+            image_id=image.image_id,
+        )
+
+
+def execute_image_description_stage(
+    *,
+    config: ResolvedAppConfig,
+) -> None:
+    """Reserve the optional stage boundary implemented in Phase 4."""
+    if config.stages.image_description is not None:
+        raise NotImplementedError(
+            "Image-description execution will be added in Phase 4."
+        )
+
+
+def execute_title_guessing_stage(
+    *,
+    config: ResolvedAppConfig,
+    database: RunDatabase,
+    adapters: AdapterBundle,
+) -> None:
+    """Guess every title directly from its persisted image."""
+    if config.stages.title_guessing.input != "image":
+        raise NotImplementedError(
+            "Description-based title guessing will be added in Phase 4."
+        )
+
+    for image in database.results.list_images():
+        _load_or_run_single(
+            database=database,
+            stage="title_guessing",
+            task_suffix=_image_task_suffix(image),
+            existing=database.results.get_prediction(image.image_id),
+            operation=lambda: adapters.image_title_guesser.guess_title(
+                image_path=image.image.path,
+                domain=image.item.domain,
+            ),
+            save=lambda result: database.results.add_prediction(
+                image.image_id,
+                result,
+                input_kind="image",
+            ),
+            retry_limit=config.experiment.retry_limit,
+            item_id=image.item_id,
+            prompt_id=image.prompt_id,
+            seed=image.image.seed,
+            image_id=image.image_id,
+        )
+
+
+def execute_evaluation_stage(
+    *,
+    config: ResolvedAppConfig,
+    database: RunDatabase,
+) -> None:
+    """Evaluate every persisted prediction as an independently resumable task."""
+    for image in database.results.list_images():
+        _raise_if_pause_requested(database)
+        verification_entry = database.results.get_verification(image.image_id)
+        prediction_entry = database.results.get_prediction(image.image_id)
+        if verification_entry is None or prediction_entry is None:
+            raise RuntimeError(
+                f"Image {image.image_id} is missing verification or prediction data."
+            )
+
+        verification_id, verification = verification_entry
+        prediction_id, prediction = prediction_entry
+        task = database.tasks.get_or_create(
+            task_key=f"evaluation:{_image_task_suffix(image)}",
+            stage="evaluation",
+            expected_outputs=1,
+            item_id=image.item_id,
+            prompt_id=image.prompt_id,
+            image_id=image.image_id,
+            seed=image.image.seed,
+        )
+        evaluation_id = database.results.get_evaluation_id(prediction_id)
+        if evaluation_id is not None:
+            if task.status != "completed":
+                database.tasks.mark_completed(task.task_id, 1)
+            continue
+        if task.status == "completed":
+            raise RuntimeError(
+                f"Task {task.task_key} is completed but has no evaluation."
+            )
+
+        def evaluate() -> int:
+            exact_match = title_exact_match(image.item.title, prediction.title)
+            contains_match = title_casefold_contains_match(
+                image.item.title,
+                prediction.title,
+            )
+            included, score = apply_verification_policy(
+                title_matches=exact_match,
+                verification_passed=verification.passed,
+                failed_verification=config.evaluation.failed_verification,
+            )
+            return database.results.add_evaluation_if_missing(
+                verification_id=verification_id,
+                prediction_id=prediction_id,
+                exact_match=exact_match,
+                casefold_contains_match=contains_match,
+                included=included,
+                primary_score=score,
+                exact_method=EXACT_MATCH_METHOD,
+                contains_method=CONTAINS_MATCH_METHOD,
+            )
+
+        _run_task(
+            evaluate,
+            database=database,
+            task=task,
+            retry_limit=0,
+            item_id=image.item_id,
+            prompt_id=image.prompt_id,
+            image_id=image.image_id,
+        )
+
+
+def execute_stages(
     *,
     config: ResolvedAppConfig,
     database: RunDatabase,
@@ -237,106 +425,34 @@ def _execute(
     adapters: AdapterBundle,
     prompt_profile: PromptProfile,
 ) -> None:
-    """Execute all missing work in dataset, prompt, and seed order."""
-    retry_limit = config.experiment.retry_limit
-
-    for item_index, configured_item in enumerate(config.dataset.items):
-        item = BenchmarkItem(
-            domain=configured_item.domain,
-            title=configured_item.title,
-        )
-        item_id = database.results.get_or_add_dataset_item(item_index, item)
-        prompts = _load_or_generate_prompts(
-            database=database,
-            adapters=adapters,
-            config=config,
-            prompt_profile=prompt_profile,
-            item=item,
-            item_index=item_index,
-            item_id=item_id,
-        )
-
-        for prompt_id, prompt in prompts:
-            for seed in config.experiment.image_seeds:
-                task_suffix = f"{item_index}:{prompt.index}:{seed}"
-
-                image_id, image = _load_or_run_single(
-                    database=database,
-                    stage="image_generation",
-                    task_suffix=task_suffix,
-                    existing=database.results.get_image(prompt_id, seed),
-                    operation=lambda: adapters.image_generator.generate_image(
-                        prompt=prompt.text,
-                        seed=seed,
-                        output_directory=images_directory / f"prompt_{prompt_id}",
-                    ),
-                    save=lambda result: database.results.add_image(prompt_id, result),
-                    retry_limit=retry_limit,
-                    item_id=item_id,
-                    prompt_id=prompt_id,
-                    seed=seed,
-                )
-
-                verification_id, verification = _load_or_run_single(
-                    database=database,
-                    stage="verification",
-                    task_suffix=task_suffix,
-                    existing=database.results.get_verification(image_id),
-                    operation=lambda: adapters.image_verifier.verify_image(
-                        image_path=image.path
-                    ),
-                    save=lambda result: database.results.add_verification(
-                        image_id,
-                        result,
-                    ),
-                    retry_limit=retry_limit,
-                    item_id=item_id,
-                    prompt_id=prompt_id,
-                    seed=seed,
-                    image_id=image_id,
-                )
-
-                prediction_id, prediction = _load_or_run_single(
-                    database=database,
-                    stage="title_guessing",
-                    task_suffix=task_suffix,
-                    existing=database.results.get_prediction(image_id),
-                    operation=lambda: adapters.image_title_guesser.guess_title(
-                        image_path=image.path,
-                        domain=item.domain,
-                    ),
-                    save=lambda result: database.results.add_prediction(
-                        image_id,
-                        result,
-                        input_kind="image",
-                    ),
-                    retry_limit=retry_limit,
-                    item_id=item_id,
-                    prompt_id=prompt_id,
-                    seed=seed,
-                    image_id=image_id,
-                )
-
-                exact_match = title_exact_match(item.title, prediction.title)
-                contains_match = title_casefold_contains_match(
-                    item.title,
-                    prediction.title,
-                )
-                included, score = apply_verification_policy(
-                    title_matches=exact_match,
-                    verification_passed=verification.passed,
-                    failed_verification=config.evaluation.failed_verification,
-                )
-                database.results.add_evaluation_if_missing(
-                    verification_id=verification_id,
-                    prediction_id=prediction_id,
-                    exact_match=exact_match,
-                    casefold_contains_match=contains_match,
-                    included=included,
-                    primary_score=score,
-                    exact_method=EXACT_MATCH_METHOD,
-                    contains_method=CONTAINS_MATCH_METHOD,
-                )
+    """Execute all missing work in complete, sequential pipeline stages."""
+    execute_prompt_generation_stage(
+        config=config,
+        database=database,
+        adapters=adapters,
+        prompt_profile=prompt_profile,
+    )
+    execute_image_generation_stage(
+        config=config,
+        database=database,
+        images_directory=images_directory,
+        adapters=adapters,
+    )
+    execute_verification_stage(
+        config=config,
+        database=database,
+        adapters=adapters,
+    )
+    execute_image_description_stage(config=config)
+    execute_title_guessing_stage(
+        config=config,
+        database=database,
+        adapters=adapters,
+    )
+    execute_evaluation_stage(
+        config=config,
+        database=database,
+    )
 
 
 def run_pipeline(
@@ -355,7 +471,7 @@ def run_pipeline(
             if resume:
                 database.clear_pause_request()
             database.update_status("running")
-            _execute(
+            execute_stages(
                 config=config,
                 database=database,
                 images_directory=images_directory,

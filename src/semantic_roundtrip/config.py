@@ -55,6 +55,7 @@ StageName = Literal[
     "image_description",
     "title_guessing",
 ]
+PipelineStageName = StageName | Literal["evaluation"]
 
 
 class BackendReference(ConfigModel):

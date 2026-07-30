@@ -86,6 +86,7 @@ def show_run_status(run_directory: Path) -> str:
         "verification": "Verification",
         "image_description": "Image description",
         "title_guessing": "Title guessing",
+        "evaluation": "Evaluation",
     }
     for stage_name, label in labels.items():
         if stage_name not in expected:

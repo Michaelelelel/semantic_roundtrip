@@ -29,6 +29,30 @@ class ResultCounts:
     evaluations: int
 
 
+@dataclass(frozen=True, slots=True)
+class PromptWorkItem:
+    """One persisted prompt together with its source benchmark item."""
+
+    item_id: int
+    item_index: int
+    item: BenchmarkItem
+    prompt_id: int
+    prompt: GeneratedPrompt
+
+
+@dataclass(frozen=True, slots=True)
+class ImageWorkItem:
+    """One persisted image together with its prompt and benchmark item."""
+
+    item_id: int
+    item_index: int
+    item: BenchmarkItem
+    prompt_id: int
+    prompt: GeneratedPrompt
+    image_id: int
+    image: ImageArtifact
+
+
 def _relative_path(path: Path, run_directory: Path) -> str:
     return path.relative_to(run_directory).as_posix()
 
@@ -135,6 +159,40 @@ class RunResultStore:
             ),
         )
 
+    def list_prompts(self) -> list[PromptWorkItem]:
+        """Return stored prompts in deterministic dataset and prompt order."""
+        rows = self._connection.execute(
+            """
+            SELECT
+                items.item_id,
+                items.item_index,
+                items.domain,
+                items.title,
+                prompts.prompt_id,
+                prompts.prompt_index,
+                prompts.text
+            FROM prompts
+            JOIN dataset_items AS items
+                ON items.item_id = prompts.item_id
+            WHERE items.run_id = ?
+            ORDER BY items.item_index, prompts.prompt_index
+            """,
+            (self._run_context.run_id,),
+        ).fetchall()
+        return [
+            PromptWorkItem(
+                item_id=int(row["item_id"]),
+                item_index=int(row["item_index"]),
+                item=BenchmarkItem(domain=row["domain"], title=row["title"]),
+                prompt_id=int(row["prompt_id"]),
+                prompt=GeneratedPrompt(
+                    index=int(row["prompt_index"]),
+                    text=row["text"],
+                ),
+            )
+            for row in rows
+        ]
+
     def get_image(
         self,
         prompt_id: int,
@@ -180,6 +238,54 @@ class RunResultStore:
                 image.raw_response,
             ),
         )
+
+    def list_images(self) -> list[ImageWorkItem]:
+        """Return stored images in deterministic dataset, prompt, and seed order."""
+        rows = self._connection.execute(
+            """
+            SELECT
+                items.item_id,
+                items.item_index,
+                items.domain,
+                items.title,
+                prompts.prompt_id,
+                prompts.prompt_index,
+                prompts.text,
+                images.image_id,
+                images.path,
+                images.seed,
+                images.raw_response,
+                images.backend_job_id
+            FROM images
+            JOIN prompts
+                ON prompts.prompt_id = images.prompt_id
+            JOIN dataset_items AS items
+                ON items.item_id = prompts.item_id
+            WHERE items.run_id = ?
+            ORDER BY items.item_index, prompts.prompt_index, images.seed
+            """,
+            (self._run_context.run_id,),
+        ).fetchall()
+        return [
+            ImageWorkItem(
+                item_id=int(row["item_id"]),
+                item_index=int(row["item_index"]),
+                item=BenchmarkItem(domain=row["domain"], title=row["title"]),
+                prompt_id=int(row["prompt_id"]),
+                prompt=GeneratedPrompt(
+                    index=int(row["prompt_index"]),
+                    text=row["text"],
+                ),
+                image_id=int(row["image_id"]),
+                image=ImageArtifact(
+                    path=self._run_context.directory / row["path"],
+                    seed=int(row["seed"]),
+                    raw_response=row["raw_response"],
+                    backend_job_id=row["backend_job_id"],
+                ),
+            )
+            for row in rows
+        ]
 
     def get_verification(
         self,
@@ -387,6 +493,18 @@ class RunResultStore:
                 contains_method,
             ),
         )
+
+    def get_evaluation_id(self, prediction_id: int) -> int | None:
+        """Return the stored evaluation for one prediction, when present."""
+        row = self._connection.execute(
+            """
+            SELECT evaluation_id
+            FROM evaluations
+            WHERE prediction_id = ?
+            """,
+            (prediction_id,),
+        ).fetchone()
+        return None if row is None else int(row["evaluation_id"])
 
     def counts(self) -> ResultCounts:
         """Count all successfully stored result rows."""

@@ -253,6 +253,7 @@ def plan_job(
         "verification": 0,
         "image_description": 0,
         "title_guessing": 0,
+        "evaluation": 0,
     }
     entries: list[JobPlanEntry] = []
     model_stacks: list[str] = []
