@@ -22,7 +22,9 @@ from semantic_roundtrip.adapters.mock import (
     build_mock_title_guesser,
 )
 from semantic_roundtrip.adapters.openai_compatible import (
+    build_openai_compatible_image_verifier,
     build_openai_compatible_prompt_generator,
+    build_openai_compatible_title_guesser,
 )
 from semantic_roundtrip.config import ResolvedAppConfig, StageAdapterConfig
 from semantic_roundtrip.config_resolution import resolve_stage_adapter
@@ -57,11 +59,13 @@ IMAGE_GENERATORS: dict[str, ImageGeneratorBuilder] = {
 IMAGE_VERIFIERS: dict[str, ImageVerifierBuilder] = {
     "mock": build_mock_image_verifier,
     "llama_cpp_vision": build_llama_cpp_image_verifier,
+    "openai_compatible": build_openai_compatible_image_verifier,
 }
 
 TITLE_GUESSERS: dict[str, TitleGuesserBuilder] = {
     "mock": build_mock_title_guesser,
     "llama_cpp_vision": build_llama_cpp_title_guesser,
+    "openai_compatible": build_openai_compatible_title_guesser,
 }
 
 
