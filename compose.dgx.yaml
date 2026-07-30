@@ -32,6 +32,7 @@ services:
       ghcr.io/ggml-org/llama.cpp:server-cuda
     volumes:
       - "${MODEL_ROOT:?MODEL_ROOT must be set}/vision:/models:ro"
+      - ./chat_templates:/chat_templates:ro
       - ./configs/deployments/vision-models.ini:/config/models.ini:ro
     environment:
       LLAMA_MEDIA_MARKER: "<__media__>"
