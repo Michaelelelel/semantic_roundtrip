@@ -44,7 +44,7 @@ chat_templates/*
 
 # Runtime data stays local, but mount roots must exist before Docker starts.
 runs/
-runtime/
+/runtime/
 *.sqlite
 *.db
 

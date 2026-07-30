@@ -32,6 +32,7 @@ class RuntimeEventStore:
         action: RuntimeAction,
     ) -> int:
         """Create one in-progress runtime event."""
+        now = utc_now()
         with self._connection:
             cursor = self._connection.execute(
                 """
@@ -56,8 +57,16 @@ class RuntimeEventStore:
                     resource_group,
                     model_id,
                     action,
-                    utc_now(),
+                    now,
                 ),
+            )
+            self._connection.execute(
+                """
+                UPDATE run_metadata
+                SET heartbeat_at = ?
+                WHERE run_id = ?
+                """,
+                (now, self._run_context.run_id),
             )
         return int(cursor.lastrowid)
 
@@ -84,6 +93,7 @@ class RuntimeEventStore:
         status: Literal["completed", "failed"],
         error: BaseException | None,
     ) -> None:
+        now = utc_now()
         with self._connection:
             cursor = self._connection.execute(
                 """
@@ -96,11 +106,19 @@ class RuntimeEventStore:
                 """,
                 (
                     status,
-                    utc_now(),
+                    now,
                     None if error is None else type(error).__name__,
                     None if error is None else str(error),
                     runtime_event_id,
                 ),
+            )
+            self._connection.execute(
+                """
+                UPDATE run_metadata
+                SET heartbeat_at = ?
+                WHERE run_id = ?
+                """,
+                (now, self._run_context.run_id),
             )
         if cursor.rowcount != 1:
             raise ValueError(

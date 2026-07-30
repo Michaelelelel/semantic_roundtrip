@@ -11,11 +11,17 @@ import typer
 from rich.console import Console
 
 from semantic_roundtrip.adapters.errors import AdapterError
+from semantic_roundtrip.runtime import RuntimeControllerError
 
 
 console = Console()
 
-EXPECTED_COMMAND_ERRORS = (AdapterError, OSError, ValueError)
+EXPECTED_COMMAND_ERRORS = (
+    AdapterError,
+    RuntimeControllerError,
+    OSError,
+    ValueError,
+)
 TERMINAL_STATUSES = frozenset({"paused", "completed", "failed", "interrupted"})
 
 StatusRenderer = Callable[[Path], str]
