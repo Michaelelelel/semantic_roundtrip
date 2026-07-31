@@ -5,22 +5,28 @@ from dataclasses import dataclass
 from typing import Any
 
 from semantic_roundtrip.adapters.base import (
+    ImageDescriber,
     ImageGenerator,
     ImageTitleGuesser,
     ImageVerifier,
     PromptGenerator,
+    TextTitleGuesser,
 )
 from semantic_roundtrip.adapters.comfyui import build_comfyui_image_generator
 from semantic_roundtrip.adapters.mock import (
+    build_mock_image_describer,
     build_mock_image_generator,
     build_mock_image_title_guesser,
     build_mock_image_verifier,
     build_mock_prompt_generator,
+    build_mock_text_title_guesser,
 )
 from semantic_roundtrip.adapters.openai_compatible import (
+    build_openai_compatible_image_describer,
     build_openai_compatible_image_title_guesser,
     build_openai_compatible_image_verifier,
     build_openai_compatible_prompt_generator,
+    build_openai_compatible_text_title_guesser,
 )
 from semantic_roundtrip.config import ResolvedAppConfig, StageAdapterConfig
 from semantic_roundtrip.config_resolution import resolve_stage_adapter
@@ -28,18 +34,22 @@ from semantic_roundtrip.config_resolution import resolve_stage_adapter
 
 @dataclass(frozen=True, slots=True)
 class AdapterBundle:
-    """The four adapters required by the current direct-image pipeline."""
+    """Adapters required by one configured direct or description pipeline."""
 
     prompt_generator: PromptGenerator
     image_generator: ImageGenerator
     image_verifier: ImageVerifier
-    image_title_guesser: ImageTitleGuesser
+    image_describer: ImageDescriber | None
+    image_title_guesser: ImageTitleGuesser | None
+    text_title_guesser: TextTitleGuesser | None
 
 
 PromptGeneratorBuilder = Callable[[dict[str, Any]], PromptGenerator]
 ImageGeneratorBuilder = Callable[[dict[str, Any]], ImageGenerator]
 ImageVerifierBuilder = Callable[[dict[str, Any]], ImageVerifier]
+ImageDescriberBuilder = Callable[[dict[str, Any]], ImageDescriber]
 ImageTitleGuesserBuilder = Callable[[dict[str, Any]], ImageTitleGuesser]
+TextTitleGuesserBuilder = Callable[[dict[str, Any]], TextTitleGuesser]
 
 
 PROMPT_GENERATORS: dict[str, PromptGeneratorBuilder] = {
@@ -57,9 +67,19 @@ IMAGE_VERIFIERS: dict[str, ImageVerifierBuilder] = {
     "openai_compatible": build_openai_compatible_image_verifier,
 }
 
+IMAGE_DESCRIBERS: dict[str, ImageDescriberBuilder] = {
+    "mock": build_mock_image_describer,
+    "openai_compatible": build_openai_compatible_image_describer,
+}
+
 IMAGE_TITLE_GUESSERS: dict[str, ImageTitleGuesserBuilder] = {
     "mock": build_mock_image_title_guesser,
     "openai_compatible": build_openai_compatible_image_title_guesser,
+}
+
+TEXT_TITLE_GUESSERS: dict[str, TextTitleGuesserBuilder] = {
+    "mock": build_mock_text_title_guesser,
+    "openai_compatible": build_openai_compatible_text_title_guesser,
 }
 
 
@@ -127,25 +147,65 @@ def create_image_title_guesser(
     return builder(selection.settings)
 
 
+def create_image_describer(
+    selection: StageAdapterConfig,
+) -> ImageDescriber:
+    builder = IMAGE_DESCRIBERS.get(selection.adapter)
+    if builder is None:
+        raise _unsupported_adapter(
+            stage="image-description",
+            adapter=selection.adapter,
+            registry=IMAGE_DESCRIBERS,
+        )
+    return builder(selection.settings)
+
+
+def create_text_title_guesser(
+    selection: StageAdapterConfig,
+) -> TextTitleGuesser:
+    builder = TEXT_TITLE_GUESSERS.get(selection.adapter)
+    if builder is None:
+        raise _unsupported_adapter(
+            stage="description title-guessing",
+            adapter=selection.adapter,
+            registry=TEXT_TITLE_GUESSERS,
+        )
+    return builder(selection.settings)
+
+
 def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
-    """Create adapters for the currently implemented direct-image route."""
-    if config.stages.title_guessing.input != "image":
-        raise ValueError(
-            "Description-based title guessing is configured but is not "
-            "executable until the image-description pipeline phase."
+    """Create only the adapters required by the configured pipeline route."""
+    prompt_generator = create_prompt_generator(
+        resolve_stage_adapter(config, "prompt_generation")
+    )
+    image_generator = create_image_generator(
+        resolve_stage_adapter(config, "image_generation")
+    )
+    image_verifier = create_image_verifier(
+        resolve_stage_adapter(config, "verification")
+    )
+
+    if config.stages.title_guessing.input == "image":
+        return AdapterBundle(
+            prompt_generator=prompt_generator,
+            image_generator=image_generator,
+            image_verifier=image_verifier,
+            image_describer=None,
+            image_title_guesser=create_image_title_guesser(
+                resolve_stage_adapter(config, "title_guessing")
+            ),
+            text_title_guesser=None,
         )
 
     return AdapterBundle(
-        prompt_generator=create_prompt_generator(
-            resolve_stage_adapter(config, "prompt_generation")
+        prompt_generator=prompt_generator,
+        image_generator=image_generator,
+        image_verifier=image_verifier,
+        image_describer=create_image_describer(
+            resolve_stage_adapter(config, "image_description")
         ),
-        image_generator=create_image_generator(
-            resolve_stage_adapter(config, "image_generation")
-        ),
-        image_verifier=create_image_verifier(
-            resolve_stage_adapter(config, "verification")
-        ),
-        image_title_guesser=create_image_title_guesser(
+        image_title_guesser=None,
+        text_title_guesser=create_text_title_guesser(
             resolve_stage_adapter(config, "title_guessing")
         ),
     )

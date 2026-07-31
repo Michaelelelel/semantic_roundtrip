@@ -316,11 +316,36 @@ def execute_verification_stage(
 def execute_image_description_stage(
     *,
     config: ResolvedAppConfig,
+    database: RunDatabase,
+    adapters: AdapterBundle,
 ) -> None:
-    """Reserve the optional stage boundary implemented in Phase 4."""
-    if config.stages.image_description is not None:
-        raise NotImplementedError(
-            "Image-description execution will be added in Phase 4."
+    """Describe every persisted image when the optional route is configured."""
+    if config.stages.image_description is None:
+        return
+    if adapters.image_describer is None:
+        raise RuntimeError(
+            "Image-description configuration has no image-describer adapter."
+        )
+
+    for image in database.results.list_images():
+        _load_or_run_single(
+            database=database,
+            stage="image_description",
+            task_suffix=_image_task_suffix(image),
+            existing=database.results.get_image_description(image.image_id),
+            operation=lambda: adapters.image_describer.describe_image(
+                image_path=image.image.path,
+                domain=image.item.domain,
+            ),
+            save=lambda result: database.results.add_image_description(
+                image.image_id,
+                result,
+            ),
+            retry_limit=config.experiment.retry_limit,
+            item_id=image.item_id,
+            prompt_id=image.prompt_id,
+            seed=image.image.seed,
+            image_id=image.image_id,
         )
 
 
@@ -330,11 +355,17 @@ def execute_title_guessing_stage(
     database: RunDatabase,
     adapters: AdapterBundle,
 ) -> None:
-    """Guess every title directly from its persisted image."""
-    if config.stages.title_guessing.input != "image":
-        raise NotImplementedError(
-            "Description-based title guessing will be added in Phase 4."
+    """Guess every title from its configured image or description input."""
+    if config.stages.title_guessing.input == "description":
+        _execute_description_title_guessing_stage(
+            config=config,
+            database=database,
+            adapters=adapters,
         )
+        return
+
+    if adapters.image_title_guesser is None:
+        raise RuntimeError("Direct title guessing has no image-title adapter.")
 
     for image in database.results.list_images():
         _load_or_run_single(
@@ -350,6 +381,45 @@ def execute_title_guessing_stage(
                 image.image_id,
                 result,
                 input_kind="image",
+            ),
+            retry_limit=config.experiment.retry_limit,
+            item_id=image.item_id,
+            prompt_id=image.prompt_id,
+            seed=image.image.seed,
+            image_id=image.image_id,
+        )
+
+
+def _execute_description_title_guessing_stage(
+    *,
+    config: ResolvedAppConfig,
+    database: RunDatabase,
+    adapters: AdapterBundle,
+) -> None:
+    """Guess every title from its persisted image description."""
+    if adapters.text_title_guesser is None:
+        raise RuntimeError("Description title guessing has no text-title adapter.")
+
+    for image in database.results.list_images():
+        stored_description = database.results.get_image_description(image.image_id)
+        if stored_description is None:
+            raise RuntimeError(f"Image {image.image_id} has no stored description.")
+        description_id, description = stored_description
+
+        _load_or_run_single(
+            database=database,
+            stage="title_guessing",
+            task_suffix=_image_task_suffix(image),
+            existing=database.results.get_prediction(image.image_id),
+            operation=lambda: adapters.text_title_guesser.guess_title(
+                description=description.text,
+                domain=image.item.domain,
+            ),
+            save=lambda result: database.results.add_prediction(
+                image.image_id,
+                result,
+                input_kind="description",
+                description_id=description_id,
             ),
             retry_limit=config.experiment.retry_limit,
             item_id=image.item_id,
@@ -503,7 +573,11 @@ def execute_stages(
         database=database,
         runtime_session=runtime_session,
         stage="image_description",
-        operation=lambda: execute_image_description_stage(config=config),
+        operation=lambda: execute_image_description_stage(
+            config=config,
+            database=database,
+            adapters=adapters,
+        ),
     )
     _execute_runtime_stage(
         config=config,

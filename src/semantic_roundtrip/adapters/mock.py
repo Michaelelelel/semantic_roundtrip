@@ -12,6 +12,7 @@ from pydantic import Field
 from semantic_roundtrip.config import ConfigModel
 from semantic_roundtrip.domain import (
     ImageArtifact,
+    ImageDescription,
     PromptMessage,
     PromptResponse,
     TitlePrediction,
@@ -23,6 +24,7 @@ class MockAdapterSettings(ConfigModel):
     """Settings shared by all deterministic mock adapters."""
 
     delay_seconds: float = Field(default=0.0, ge=0)
+    template_path: Path | None = None
 
 
 class MockPromptGenerator:
@@ -116,6 +118,31 @@ class MockImageVerifier:
         )
 
 
+class MockImageDescriber:
+    """Return a fixed description after validating the generated image."""
+
+    def __init__(self, delay_seconds: float = 0.0) -> None:
+        self._delay_seconds = delay_seconds
+
+    def describe_image(
+        self,
+        *,
+        image_path: Path,
+        domain: str | None,
+    ) -> ImageDescription:
+        time.sleep(self._delay_seconds)
+        with Image.open(image_path) as image:
+            image.verify()
+
+        text = "A plain blue square."
+        raw_response = json.dumps({"description": text, "domain": domain})
+        return ImageDescription(
+            text=text,
+            raw_response=raw_response,
+            backend_request_id="mock-description",
+        )
+
+
 class MockImageTitleGuesser:
     """Return a fixed prediction directly from an image."""
 
@@ -138,6 +165,35 @@ class MockImageTitleGuesser:
                 "title": "Mock Title",
                 "confidence": 0.5,
                 "domain": domain,
+            }
+        )
+        return TitlePrediction(
+            title="Mock Title",
+            confidence=0.5,
+            confidence_type="mock_probability",
+            raw_response=raw_response,
+        )
+
+
+class MockTextTitleGuesser:
+    """Return a fixed prediction from a stored description."""
+
+    def __init__(self, delay_seconds: float = 0.0) -> None:
+        self._delay_seconds = delay_seconds
+
+    def guess_title(
+        self,
+        *,
+        description: str,
+        domain: str | None,
+    ) -> TitlePrediction:
+        time.sleep(self._delay_seconds)
+        raw_response = json.dumps(
+            {
+                "title": "Mock Title",
+                "confidence": 0.5,
+                "domain": domain,
+                "description": description,
             }
         )
         return TitlePrediction(
@@ -173,8 +229,22 @@ def build_mock_image_verifier(
     return MockImageVerifier(settings.delay_seconds)
 
 
+def build_mock_image_describer(
+    raw_settings: dict[str, Any],
+) -> MockImageDescriber:
+    settings = _load_mock_settings(raw_settings)
+    return MockImageDescriber(settings.delay_seconds)
+
+
 def build_mock_image_title_guesser(
     raw_settings: dict[str, Any],
 ) -> MockImageTitleGuesser:
     settings = _load_mock_settings(raw_settings)
     return MockImageTitleGuesser(settings.delay_seconds)
+
+
+def build_mock_text_title_guesser(
+    raw_settings: dict[str, Any],
+) -> MockTextTitleGuesser:
+    settings = _load_mock_settings(raw_settings)
+    return MockTextTitleGuesser(settings.delay_seconds)
