@@ -1,5 +1,6 @@
 """Commands for starting and managing individual experiment runs."""
 
+from enum import Enum
 from pathlib import Path
 
 import typer
@@ -7,12 +8,14 @@ import typer
 from semantic_roundtrip.cli.common import (
     EXPECTED_COMMAND_ERRORS,
     exit_with_error,
+    runs_root_option,
     watch_status,
 )
 from semantic_roundtrip.cli.run.output import (
     print_run_info,
     print_run_pause_summary,
     print_run_summary,
+    show_run_list,
     show_run_status,
 )
 from semantic_roundtrip.experiment_runner import (
@@ -22,12 +25,25 @@ from semantic_roundtrip.experiment_runner import (
 )
 from semantic_roundtrip.persistence.run_database import request_run_pause
 from semantic_roundtrip.persistence.run_schema import database_path_for_run
+from semantic_roundtrip.status.discovery import list_standalone_runs
 
 
 app = typer.Typer(
     help="Start and manage one experiment run.",
     no_args_is_help=True,
 )
+
+
+class RunListStatus(str, Enum):
+    """Lifecycle filters supported by standalone-run discovery."""
+
+    created = "created"
+    running = "running"
+    pausing = "pausing"
+    paused = "paused"
+    completed = "completed"
+    failed = "failed"
+    interrupted = "interrupted"
 
 
 def _run_directory_option() -> Path:
@@ -42,6 +58,28 @@ def _run_directory_option() -> Path:
         resolve_path=True,
         help="Existing experiment run directory.",
     )
+
+
+@app.command("list")
+def list_command(
+    root: Path = runs_root_option(),
+    status: RunListStatus | None = typer.Option(
+        None,
+        "--status",
+        case_sensitive=False,
+        help="Show only standalone runs with this lifecycle status.",
+    ),
+) -> None:
+    """Discover standalone runs without requiring their IDs."""
+    try:
+        results = list_standalone_runs(
+            root,
+            statuses=(None if status is None else {status.value}),
+        )
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
+
+    show_run_list(results, root=root)
 
 
 @app.command("start")

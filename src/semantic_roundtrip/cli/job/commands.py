@@ -1,5 +1,6 @@
 """Commands for planning and managing persisted experiment jobs."""
 
+from enum import Enum
 from pathlib import Path
 
 import typer
@@ -7,6 +8,7 @@ import typer
 from semantic_roundtrip.cli.common import (
     EXPECTED_COMMAND_ERRORS,
     exit_with_error,
+    runs_root_option,
     watch_status,
 )
 from semantic_roundtrip.cli.job.output import (
@@ -14,6 +16,7 @@ from semantic_roundtrip.cli.job.output import (
     print_job_info,
     print_job_pause_summary,
     print_job_plan,
+    show_job_list,
     show_job_status,
 )
 from semantic_roundtrip.job import load_job_config, plan_job
@@ -23,12 +26,24 @@ from semantic_roundtrip.job_runner import (
     prepare_job,
     request_job_pause,
 )
+from semantic_roundtrip.status.discovery import list_jobs
 
 
 app = typer.Typer(
     help="Plan and manage a persisted collection of experiment runs.",
     no_args_is_help=True,
 )
+
+
+class JobListStatus(str, Enum):
+    """Lifecycle filters supported by job discovery."""
+
+    created = "created"
+    running = "running"
+    paused = "paused"
+    completed = "completed"
+    failed = "failed"
+    interrupted = "interrupted"
 
 
 def _job_config_option() -> Path:
@@ -57,6 +72,28 @@ def _job_directory_option() -> Path:
         resolve_path=True,
         help="Existing job directory.",
     )
+
+
+@app.command("list")
+def list_command(
+    root: Path = runs_root_option(),
+    status: JobListStatus | None = typer.Option(
+        None,
+        "--status",
+        case_sensitive=False,
+        help="Show only jobs with this lifecycle status.",
+    ),
+) -> None:
+    """Discover persisted jobs without requiring their IDs."""
+    try:
+        results = list_jobs(
+            root,
+            statuses=(None if status is None else {status.value}),
+        )
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
+
+    show_job_list(results, root=root)
 
 
 @app.command("plan")

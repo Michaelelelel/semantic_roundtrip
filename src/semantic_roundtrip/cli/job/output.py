@@ -6,21 +6,26 @@ import typer
 from rich.table import Table
 
 from semantic_roundtrip.cli.common import console
-from semantic_roundtrip.job import JOB_SNAPSHOT_FILENAME, JobPlan, load_job_snapshot
+from semantic_roundtrip.cli.status_output import (
+    format_duration,
+    format_eta,
+    format_stage,
+    format_timestamp,
+)
+from semantic_roundtrip.job import JobPlan
 from semantic_roundtrip.job_runner import (
     JobExecutionSummary,
     JobPauseSummary,
     PreparedJob,
 )
-from semantic_roundtrip.persistence.run_database import (
-    read_run_record,
-)
 from semantic_roundtrip.persistence.job_database import (
     read_job_entries,
-    read_job_record,
 )
-from semantic_roundtrip.persistence.job_schema import job_database_path
-from semantic_roundtrip.persistence.run_schema import database_path_for_run
+from semantic_roundtrip.status.jobs import get_job_status
+from semantic_roundtrip.status.models import (
+    JobDiscoveryResult,
+    JobStatus,
+)
 
 
 def print_job_plan(plan: JobPlan) -> bool:
@@ -129,17 +134,27 @@ def print_job_pause_summary(summary: JobPauseSummary) -> None:
 
 def show_job_status(job_directory: Path) -> str:
     """Print job and child-run states from their read-only databases."""
-    database_path = job_database_path(job_directory)
-    record = read_job_record(database_path)
-    entries = read_job_entries(database_path, job_directory)
-    config = load_job_snapshot(job_directory / JOB_SNAPSHOT_FILENAME)
+    status = get_job_status(job_directory)
 
-    console.print(f"[bold]Job:[/bold] {record.name} ({record.job_id})")
-    console.print(f"[bold]Status:[/bold] {record.status}")
-    if record.started_at is not None:
-        console.print(f"[bold]Started:[/bold] {record.started_at.isoformat()}")
-    if record.heartbeat_at is not None:
-        console.print(f"[bold]Last update:[/bold] {record.heartbeat_at.isoformat()}")
+    console.print(f"[bold]Job:[/bold] {status.name} ({status.job_id})")
+    console.print(f"[bold]Status:[/bold] {status.status}")
+    if status.started_at is not None:
+        console.print(f"[bold]Started:[/bold] {format_timestamp(status.started_at)}")
+        console.print(
+            f"[bold]Elapsed:[/bold] {format_duration(status.elapsed_seconds)}"
+        )
+    if status.active_entry_name is not None:
+        console.print(f"[bold]Active entry:[/bold] {status.active_entry_name}")
+    if status.active_stage is not None:
+        console.print(f"[bold]Active stage:[/bold] {format_stage(status.active_stage)}")
+        console.print(
+            "[bold]Estimated remaining:[/bold] "
+            f"{format_eta(status.eta_state, status.eta_seconds)}"
+        )
+    if status.last_update is not None:
+        console.print(
+            f"[bold]Last update:[/bold] {format_timestamp(status.last_update)}"
+        )
 
     table = Table()
     table.add_column("#", justify="right")
@@ -150,33 +165,79 @@ def show_job_status(job_directory: Path) -> str:
     table.add_column("Models")
     table.add_column("Last error")
 
-    for entry in entries:
-        configured_entry = config.entries[entry.entry_index]
+    for entry in status.entries:
         run_name = entry.run_directory.name
-        try:
-            child_status = read_run_record(
-                database_path_for_run(entry.run_directory)
-            ).status
-        except (OSError, ValueError):
-            child_status = "unavailable"
-
-        models = ", ".join(
-            backend.model_id or backend.adapter for backend in configured_entry.backends
-        )
-        last_error = (
-            "-"
-            if entry.error_message is None
-            else f"{entry.error_type}: {entry.error_message}"
-        )
+        child_status = entry.child.status
         table.add_row(
-            str(entry.entry_index + 1),
-            configured_entry.name,
+            str(entry.index + 1),
+            entry.name,
             entry.status,
             child_status,
             run_name,
-            models,
-            last_error,
+            ", ".join(entry.models),
+            entry.last_error or "-",
         )
 
     console.print(table)
-    return record.status
+    return status.status
+
+
+def show_job_list(
+    results: list[JobDiscoveryResult],
+    *,
+    root: Path,
+) -> None:
+    """Print discovered jobs and their current child-run progress."""
+    console.print(f"[bold]Jobs:[/bold] {root}")
+    if not results:
+        console.print("No jobs found.")
+        return
+
+    table = Table()
+    table.add_column("Status")
+    table.add_column("Job")
+    table.add_column("Job ID")
+    table.add_column("Started / created")
+    table.add_column("Elapsed", justify="right")
+    table.add_column("Updated")
+    table.add_column("Runs", justify="right")
+    table.add_column("Active run")
+    table.add_column("Stage")
+    table.add_column("ETA")
+    table.add_column("Last error")
+
+    for result in results:
+        if not isinstance(result, JobStatus):
+            table.add_row(
+                result.status,
+                result.directory.name,
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                result.error,
+            )
+            continue
+
+        active_run = result.active_entry_name or "-"
+        if result.active_run_id is not None:
+            active_run = f"{active_run} ({result.active_run_id})"
+        table.add_row(
+            result.status,
+            result.name,
+            result.job_id,
+            format_timestamp(result.started_at or result.created_at),
+            format_duration(result.elapsed_seconds),
+            format_timestamp(result.last_update),
+            f"{result.completed_entries}/{result.total_entries}",
+            active_run,
+            format_stage(result.active_stage),
+            format_eta(result.eta_state, result.eta_seconds),
+            result.last_error or "-",
+        )
+
+    console.print(table)

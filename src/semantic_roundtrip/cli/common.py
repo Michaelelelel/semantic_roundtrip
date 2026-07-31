@@ -1,6 +1,7 @@
 """Shared behavior for all CLI command groups."""
 
 import signal
+import sqlite3
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -8,6 +9,7 @@ from types import FrameType
 from typing import Never
 
 import typer
+import yaml
 from rich.console import Console
 
 from semantic_roundtrip.adapters.errors import AdapterError
@@ -20,11 +22,26 @@ EXPECTED_COMMAND_ERRORS = (
     AdapterError,
     RuntimeControllerError,
     OSError,
+    sqlite3.Error,
     ValueError,
+    yaml.YAMLError,
 )
 TERMINAL_STATUSES = frozenset({"paused", "completed", "failed", "interrupted"})
 
 StatusRenderer = Callable[[Path], str]
+
+
+def runs_root_option() -> Path:
+    """Create the shared option for discovering persisted jobs and runs."""
+    return typer.Option(
+        Path("runs"),
+        "--root",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        resolve_path=True,
+        help="Directory containing persisted jobs and standalone runs.",
+    )
 
 
 def _interrupt_on_sigterm(

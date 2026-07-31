@@ -6,19 +6,19 @@ import typer
 from rich.table import Table
 
 from semantic_roundtrip.cli.common import console
-from semantic_roundtrip.config_resolution import (
-    expected_stage_outputs,
-    load_effective_config,
+from semantic_roundtrip.cli.status_output import (
+    format_duration,
+    format_eta,
+    format_stage,
+    format_timestamp,
 )
 from semantic_roundtrip.experiment_runner import PreparedExperiment
-from semantic_roundtrip.persistence.config_snapshot import EFFECTIVE_CONFIG_FILENAME
 from semantic_roundtrip.persistence.run_database import (
     RunRecord,
-    read_run_record,
-    read_stage_progress,
 )
-from semantic_roundtrip.persistence.run_schema import database_path_for_run
 from semantic_roundtrip.pipeline import PipelineSummary
+from semantic_roundtrip.status.models import RunDiscoveryResult, RunStatus
+from semantic_roundtrip.status.runs import get_run_status
 
 
 def print_run_info(prepared: PreparedExperiment) -> None:
@@ -53,24 +53,31 @@ def print_run_pause_summary(record: RunRecord) -> None:
 
 def show_run_status(run_directory: Path) -> str:
     """Print persisted run progress and return its lifecycle state."""
-    database_path = database_path_for_run(run_directory)
-    record = read_run_record(database_path)
-    config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
-    expected = expected_stage_outputs(config)
-    progress = {stage.stage: stage for stage in read_stage_progress(database_path)}
+    status = get_run_status(run_directory)
 
-    console.print(f"[bold]Run:[/bold] {record.name} ({record.run_id})")
-    console.print(f"[bold]Status:[/bold] {record.status}")
-    if record.started_at is not None:
-        console.print(f"[bold]Started:[/bold] {record.started_at.isoformat()}")
-    if record.status == "pausing":
+    console.print(f"[bold]Run:[/bold] {status.name} ({status.run_id})")
+    console.print(f"[bold]Status:[/bold] {status.status}")
+    if status.started_at is not None:
+        console.print(f"[bold]Started:[/bold] {format_timestamp(status.started_at)}")
+        console.print(
+            f"[bold]Elapsed:[/bold] {format_duration(status.elapsed_seconds)}"
+        )
+    if status.status == "pausing":
         console.print(
             "[yellow]Pause requested; waiting for a safe checkpoint.[/yellow]"
         )
-    elif record.status == "paused":
+    elif status.status == "paused":
         console.print("[yellow]Run is safely paused and can be resumed.[/yellow]")
-    if record.heartbeat_at is not None:
-        console.print(f"[bold]Last update:[/bold] {record.heartbeat_at.isoformat()}")
+    if status.active_stage is not None:
+        console.print(f"[bold]Active stage:[/bold] {format_stage(status.active_stage)}")
+        console.print(
+            "[bold]Estimated remaining:[/bold] "
+            f"{format_eta(status.eta_state, status.eta_seconds)}"
+        )
+    if status.last_update is not None:
+        console.print(
+            f"[bold]Last update:[/bold] {format_timestamp(status.last_update)}"
+        )
 
     table = Table()
     table.add_column("Stage")
@@ -80,26 +87,75 @@ def show_run_status(run_directory: Path) -> str:
     table.add_column("Running tasks", justify="right")
     table.add_column("Failed tasks", justify="right")
 
-    labels = {
-        "prompt_generation": "Prompt generation",
-        "image_generation": "Image generation",
-        "verification": "Verification",
-        "image_description": "Image description",
-        "title_guessing": "Title guessing",
-        "evaluation": "Evaluation",
-    }
-    for stage_name, label in labels.items():
-        if stage_name not in expected:
-            continue
-        stage = progress.get(stage_name)
+    for stage in status.stages:
         table.add_row(
-            label,
-            str(stage.produced_outputs if stage else 0),
-            str(expected[stage_name]),
-            str(stage.pending if stage else 0),
-            str(stage.running if stage else 0),
-            str(stage.failed if stage else 0),
+            format_stage(stage.name),
+            str(stage.produced),
+            str(stage.expected),
+            str(stage.pending),
+            str(stage.running),
+            str(stage.failed),
         )
 
     console.print(table)
-    return record.status
+    return status.status
+
+
+def show_run_list(
+    results: list[RunDiscoveryResult],
+    *,
+    root: Path,
+) -> None:
+    """Print discovered standalone runs."""
+    console.print(f"[bold]Standalone runs:[/bold] {root}")
+    if not results:
+        console.print("No standalone runs found.")
+        return
+
+    table = Table()
+    table.add_column("Status")
+    table.add_column("Run")
+    table.add_column("Run ID")
+    table.add_column("Started / created")
+    table.add_column("Elapsed", justify="right")
+    table.add_column("Stage")
+    table.add_column("Progress", justify="right")
+    table.add_column("ETA")
+    table.add_column("Last update")
+    table.add_column("Last error")
+
+    for result in results:
+        if not isinstance(result, RunStatus):
+            table.add_row(
+                result.status,
+                result.directory.name,
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+                result.error,
+            )
+            continue
+
+        active = next(
+            (stage for stage in result.stages if stage.name == result.active_stage),
+            None,
+        )
+        progress = "-" if active is None else f"{active.produced}/{active.expected}"
+        table.add_row(
+            result.status,
+            result.name,
+            result.run_id,
+            format_timestamp(result.started_at or result.created_at),
+            format_duration(result.elapsed_seconds),
+            format_stage(result.active_stage),
+            progress,
+            format_eta(result.eta_state, result.eta_seconds),
+            format_timestamp(result.last_update),
+            result.last_error or "-",
+        )
+
+    console.print(table)
