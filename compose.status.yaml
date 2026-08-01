@@ -1,0 +1,39 @@
+services:
+  status_web:
+    profiles: ["status"]
+    build:
+      context: .
+    init: true
+    read_only: true
+    user: "${HOST_UID:?HOST_UID must be set}:${HOST_GID:?HOST_GID must be set}"
+    working_dir: /app
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      SEMANTIC_ROUNDTRIP_RUNS_ROOT: /data/runs
+    volumes:
+      - "${RUN_ROOT:?RUN_ROOT must be set}:/data/runs:ro"
+    tmpfs:
+      - /tmp
+    ports:
+      - "127.0.0.1:${STATUS_PORT:?STATUS_PORT must be set}:8000"
+    command:
+      - uvicorn
+      - semantic_roundtrip.web.app:create_app
+      - --factory
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen(
+          'http://127.0.0.1:8000/health', timeout=4).read()
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
