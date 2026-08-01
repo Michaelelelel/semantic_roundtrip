@@ -3,7 +3,7 @@
 import sqlite3
 from typing import Literal
 
-from semantic_roundtrip.persistence.run_manager import RunContext
+from semantic_roundtrip.persistence.run.manager import RunContext
 from semantic_roundtrip.persistence.sqlite import utc_now
 
 

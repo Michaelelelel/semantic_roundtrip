@@ -1,16 +1,16 @@
 """Shared calculations and expected read failures for status discovery."""
 
-import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
 import yaml
 
+from semantic_roundtrip.persistence.sqlite import PERSISTENCE_ERRORS
 from semantic_roundtrip.status.models import UnavailableStatus
 
 
-STATUS_READ_ERRORS = (OSError, ValueError, sqlite3.Error, yaml.YAMLError)
+STATUS_READ_ERRORS = (OSError, ValueError, yaml.YAMLError, *PERSISTENCE_ERRORS)
 
 
 def elapsed_seconds(

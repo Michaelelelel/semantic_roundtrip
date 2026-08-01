@@ -1,21 +1,20 @@
-"""Run lifecycle, progress queries, and the writable database session."""
+"""Writable lifecycle session for one persisted experiment run."""
 
-from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from types import TracebackType
 from typing import Literal
 
-from semantic_roundtrip.persistence.run_manager import RunContext
-from semantic_roundtrip.persistence.run_results import RunResultStore
-from semantic_roundtrip.persistence.run_schema import (
+from semantic_roundtrip.persistence.run.manager import RunContext
+from semantic_roundtrip.persistence.run.queries import RunRecord, read_run_record
+from semantic_roundtrip.persistence.run.results import RunResultStore
+from semantic_roundtrip.persistence.run.schema import (
     connect_run_database,
     database_path_for_run,
     require_run_schema,
 )
-from semantic_roundtrip.persistence.run_tasks import RunTaskStore
-from semantic_roundtrip.persistence.runtime_events import RuntimeEventStore
-from semantic_roundtrip.persistence.sqlite import parse_datetime, utc_now
+from semantic_roundtrip.persistence.run.runtime_events import RuntimeEventStore
+from semantic_roundtrip.persistence.run.tasks import RunTaskStore
+from semantic_roundtrip.persistence.sqlite import utc_now
 
 
 RunStatus = Literal[
@@ -29,50 +28,6 @@ RunStatus = Literal[
 ]
 
 
-@dataclass(frozen=True, slots=True)
-class RunRecord:
-    run_id: str
-    name: str
-    created_at: datetime
-    started_at: datetime | None
-    status: str
-    pause_requested: bool
-    heartbeat_at: datetime | None
-    finished_at: datetime | None
-
-
-@dataclass(frozen=True, slots=True)
-class StageProgress:
-    stage: str
-    pending: int
-    running: int
-    completed: int
-    failed: int
-    produced_outputs: int
-
-
-def read_run_record(database_path: Path) -> RunRecord:
-    """Read the single run metadata record."""
-    connection = connect_run_database(database_path, read_only=True)
-    try:
-        require_run_schema(connection)
-        row = connection.execute("SELECT * FROM run_metadata").fetchone()
-        if row is None:
-            raise ValueError(f"No run metadata found in {database_path}")
-        return RunRecord(
-            run_id=row["run_id"],
-            name=row["name"],
-            created_at=datetime.fromisoformat(row["created_at"]),
-            started_at=parse_datetime(row["started_at"]),
-            status=row["status"],
-            pause_requested=bool(row["pause_requested"]),
-            heartbeat_at=parse_datetime(row["heartbeat_at"]),
-            finished_at=parse_datetime(row["finished_at"]),
-        )
-    finally:
-        connection.close()
-
-
 def load_run_context(run_directory: Path) -> RunContext:
     """Reconstruct a run context from an existing schema-v5 database."""
     record = read_run_record(database_path_for_run(run_directory))
@@ -81,40 +36,6 @@ def load_run_context(run_directory: Path) -> RunContext:
         directory=run_directory,
         created_at=record.created_at,
     )
-
-
-def read_stage_progress(database_path: Path) -> list[StageProgress]:
-    """Aggregate task progress for status displays."""
-    connection = connect_run_database(database_path, read_only=True)
-    try:
-        require_run_schema(connection)
-        rows = connection.execute(
-            """
-            SELECT
-                stage,
-                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
-                SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) AS running,
-                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed,
-                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed,
-                SUM(completed_outputs) AS produced_outputs
-            FROM stage_tasks
-            GROUP BY stage
-            ORDER BY stage
-            """
-        ).fetchall()
-        return [
-            StageProgress(
-                stage=row["stage"],
-                pending=int(row["pending"]),
-                running=int(row["running"]),
-                completed=int(row["completed"]),
-                failed=int(row["failed"]),
-                produced_outputs=int(row["produced_outputs"]),
-            )
-            for row in rows
-        ]
-    finally:
-        connection.close()
 
 
 def request_run_pause(database_path: Path) -> RunRecord:

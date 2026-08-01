@@ -8,7 +8,7 @@ from types import TracebackType
 from typing import Literal
 
 from semantic_roundtrip.job import JobContext
-from semantic_roundtrip.persistence.job_schema import (
+from semantic_roundtrip.persistence.job.schema import (
     connect_job_database,
     require_job_schema,
 )

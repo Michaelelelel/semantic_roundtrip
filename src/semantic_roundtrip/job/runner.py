@@ -12,7 +12,7 @@ from semantic_roundtrip.experiment_runner import (
     prepare_experiment,
     resume_experiment,
 )
-from semantic_roundtrip.job import (
+from semantic_roundtrip.job.config import (
     JOB_INPUT_FILENAME,
     JOB_RUNS_DIRECTORY,
     JOB_SNAPSHOT_FILENAME,
@@ -25,21 +25,21 @@ from semantic_roundtrip.job import (
     load_job_snapshot,
     plan_job,
 )
-from semantic_roundtrip.persistence.run_database import (
-    read_run_record,
+from semantic_roundtrip.persistence.run.database import (
     request_run_pause,
 )
-from semantic_roundtrip.persistence.job_database import (
+from semantic_roundtrip.persistence.job.database import (
     JobDatabase,
     read_job_entries,
     read_job_record,
 )
-from semantic_roundtrip.persistence.job_schema import (
+from semantic_roundtrip.persistence.job.schema import (
     initialize_job_database,
     job_database_path,
 )
-from semantic_roundtrip.persistence.run_manager import create_run
-from semantic_roundtrip.persistence.run_schema import database_path_for_run
+from semantic_roundtrip.persistence.run.manager import create_run
+from semantic_roundtrip.persistence.run.queries import read_run_record
+from semantic_roundtrip.persistence.run.schema import database_path_for_run
 
 
 Report = Callable[[str], None]
@@ -61,6 +61,7 @@ class PreparedJob:
     database_path: Path
     input_config_path: Path
     effective_config_path: Path
+    run_directories: tuple[Path, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,6 +167,7 @@ def prepare_job(config_path: Path) -> PreparedJob:
         database_path=database_path,
         input_config_path=input_config_path,
         effective_config_path=effective_config_path,
+        run_directories=tuple(context.directory / path for path in run_directories),
     )
 
 
@@ -182,7 +184,8 @@ def load_prepared_job(job_directory: Path) -> PreparedJob:
     )
     if config.job.name != record.name:
         raise ValueError("Job snapshot and database names do not match.")
-    if len(config.entries) != len(read_job_entries(database_path, job_directory)):
+    entries = read_job_entries(database_path, job_directory)
+    if len(config.entries) != len(entries):
         raise ValueError("Job snapshot and database entry counts do not match.")
 
     return PreparedJob(
@@ -191,6 +194,7 @@ def load_prepared_job(job_directory: Path) -> PreparedJob:
         database_path=database_path,
         input_config_path=job_directory / JOB_INPUT_FILENAME,
         effective_config_path=job_directory / JOB_SNAPSHOT_FILENAME,
+        run_directories=tuple(entry.run_directory for entry in entries),
     )
 
 
@@ -359,6 +363,6 @@ def execute_job(
             final_status = "failed" if failed else "completed"
             database.update_job_status(final_status)
             return _execution_summary(prepared, database, final_status)
-        except (KeyboardInterrupt, JobStateError):
+        except KeyboardInterrupt, JobStateError:
             database.update_job_status("interrupted")
             raise

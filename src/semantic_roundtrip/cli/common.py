@@ -1,7 +1,6 @@
 """Shared behavior for all CLI command groups."""
 
 import signal
-import sqlite3
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -13,6 +12,7 @@ import yaml
 from rich.console import Console
 
 from semantic_roundtrip.adapters.errors import AdapterError
+from semantic_roundtrip.persistence.sqlite import PERSISTENCE_ERRORS
 from semantic_roundtrip.runtime import RuntimeControllerError
 
 
@@ -22,9 +22,9 @@ EXPECTED_COMMAND_ERRORS = (
     AdapterError,
     RuntimeControllerError,
     OSError,
-    sqlite3.Error,
     ValueError,
     yaml.YAMLError,
+    *PERSISTENCE_ERRORS,
 )
 TERMINAL_STATUSES = frozenset({"paused", "completed", "failed", "interrupted"})
 

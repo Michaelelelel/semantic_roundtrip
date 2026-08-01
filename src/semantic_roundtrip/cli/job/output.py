@@ -13,13 +13,10 @@ from semantic_roundtrip.cli.status_output import (
     format_timestamp,
 )
 from semantic_roundtrip.job import JobPlan
-from semantic_roundtrip.job_runner import (
+from semantic_roundtrip.job.runner import (
     JobExecutionSummary,
     JobPauseSummary,
     PreparedJob,
-)
-from semantic_roundtrip.persistence.job_database import (
-    read_job_entries,
 )
 from semantic_roundtrip.status.jobs import get_job_status
 from semantic_roundtrip.status.models import (
@@ -93,16 +90,15 @@ def print_job_info(prepared: PreparedJob) -> None:
     typer.echo(f"Database: {prepared.database_path}")
     typer.echo(f"Snapshot: {prepared.effective_config_path}")
 
-    entries = read_job_entries(
-        prepared.database_path,
-        prepared.context.directory,
-    )
     typer.echo("Created child runs:")
-    for entry in entries:
-        configured_entry = prepared.config.entries[entry.entry_index]
+    for configured_entry, run_directory in zip(
+        prepared.config.entries,
+        prepared.run_directories,
+        strict=True,
+    ):
         typer.echo(
-            f"  [{entry.entry_index + 1}/{len(entries)}] "
-            f"{configured_entry.name}: {entry.run_directory}"
+            f"  [{configured_entry.index + 1}/{len(prepared.run_directories)}] "
+            f"{configured_entry.name}: {run_directory}"
         )
 
 

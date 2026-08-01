@@ -9,20 +9,21 @@ from semantic_roundtrip.config_resolution import (
     load_effective_config,
     load_input_config,
 )
-from semantic_roundtrip.persistence.config_snapshot import (
+from semantic_roundtrip.persistence.run.config_snapshot import (
     EFFECTIVE_CONFIG_FILENAME,
     create_effective_config_snapshot,
     create_input_config_snapshot,
     create_prompt_snapshots,
     use_prompt_snapshots,
 )
-from semantic_roundtrip.persistence.run_database import (
+from semantic_roundtrip.persistence.run.database import (
     load_run_context,
-    read_run_record,
+    request_run_pause,
 )
-from semantic_roundtrip.persistence.manifest import create_manifest
-from semantic_roundtrip.persistence.run_manager import RunContext, create_run
-from semantic_roundtrip.persistence.run_schema import (
+from semantic_roundtrip.persistence.run.manifest import create_manifest
+from semantic_roundtrip.persistence.run.manager import RunContext, create_run
+from semantic_roundtrip.persistence.run.queries import read_run_record
+from semantic_roundtrip.persistence.run.schema import (
     database_path_for_run,
     initialize_database,
 )
@@ -44,6 +45,13 @@ class PreparedExperiment:
     images_directory: Path
     adapters: AdapterBundle
     prompt_profile: PromptProfile
+
+
+@dataclass(frozen=True, slots=True)
+class RunPauseSummary:
+    """Persisted state immediately after requesting a cooperative pause."""
+
+    status: str
 
 
 def prepare_experiment(
@@ -135,6 +143,12 @@ def execute_prepared_experiment(
         adapters=prepared.adapters,
         prompt_profile=prepared.prompt_profile,
     )
+
+
+def request_experiment_pause(run_directory: Path) -> RunPauseSummary:
+    """Request a cooperative pause without exposing persistence to the CLI."""
+    record = request_run_pause(database_path_for_run(run_directory))
+    return RunPauseSummary(status=record.status)
 
 
 def resume_experiment(

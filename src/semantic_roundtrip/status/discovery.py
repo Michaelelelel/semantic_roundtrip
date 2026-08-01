@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from semantic_roundtrip.persistence.job_schema import job_database_path
-from semantic_roundtrip.persistence.run_schema import database_path_for_run
+from semantic_roundtrip.persistence.job.schema import job_database_path
+from semantic_roundtrip.persistence.run.schema import database_path_for_run
 from semantic_roundtrip.status.common import STATUS_READ_ERRORS, unavailable
 from semantic_roundtrip.status.jobs import get_job_status
 from semantic_roundtrip.status.models import (

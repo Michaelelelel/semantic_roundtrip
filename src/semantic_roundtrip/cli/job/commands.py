@@ -20,7 +20,7 @@ from semantic_roundtrip.cli.job.output import (
     show_job_status,
 )
 from semantic_roundtrip.job import load_job_config, plan_job
-from semantic_roundtrip.job_runner import (
+from semantic_roundtrip.job.runner import (
     execute_job,
     load_prepared_job,
     prepare_job,

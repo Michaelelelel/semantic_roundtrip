@@ -5,6 +5,13 @@ venv/
 # Python Cache
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
 
 # PyCharm
 .idea/
@@ -47,5 +54,3 @@ runs/
 /runtime/
 *.sqlite
 *.db
-
-*.egg-info/

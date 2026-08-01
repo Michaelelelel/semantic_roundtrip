@@ -4,8 +4,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from semantic_roundtrip.config import ResolvedAppConfig, StageName
-from semantic_roundtrip.persistence.run_database import RunDatabase
-from semantic_roundtrip.persistence.runtime_events import RuntimeAction
+from semantic_roundtrip.persistence.run.database import RunDatabase
+from semantic_roundtrip.persistence.run.runtime_events import RuntimeAction
 from semantic_roundtrip.runtime.base import RuntimeController, RuntimeTarget
 from semantic_roundtrip.runtime.factory import (
     create_runtime_controller,

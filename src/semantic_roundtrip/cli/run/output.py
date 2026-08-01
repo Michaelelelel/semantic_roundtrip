@@ -12,9 +12,9 @@ from semantic_roundtrip.cli.status_output import (
     format_stage,
     format_timestamp,
 )
-from semantic_roundtrip.experiment_runner import PreparedExperiment
-from semantic_roundtrip.persistence.run_database import (
-    RunRecord,
+from semantic_roundtrip.experiment_runner import (
+    PreparedExperiment,
+    RunPauseSummary,
 )
 from semantic_roundtrip.pipeline import PipelineSummary
 from semantic_roundtrip.status.models import RunDiscoveryResult, RunStatus
@@ -42,10 +42,10 @@ def print_run_summary(summary: PipelineSummary) -> None:
     typer.echo(f"Evaluations: {summary.evaluations}")
 
 
-def print_run_pause_summary(record: RunRecord) -> None:
+def print_run_pause_summary(summary: RunPauseSummary) -> None:
     """Print the persisted state after requesting a cooperative pause."""
-    typer.echo(f"Run status: {record.status}")
-    if record.status == "paused":
+    typer.echo(f"Run status: {summary.status}")
+    if summary.status == "paused":
         typer.echo("The run is safely paused and can be resumed.")
     else:
         typer.echo("The pipeline will pause before starting its next task.")

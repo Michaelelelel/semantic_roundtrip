@@ -3,7 +3,7 @@
 import sqlite3
 from pathlib import Path
 
-from semantic_roundtrip.persistence.run_manager import RunContext
+from semantic_roundtrip.persistence.run.manager import RunContext
 from semantic_roundtrip.persistence.sqlite import (
     connect_sqlite,
     require_schema,

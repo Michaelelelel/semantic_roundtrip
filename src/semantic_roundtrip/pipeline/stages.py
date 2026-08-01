@@ -1,13 +1,9 @@
-"""Provider-independent orchestration of semantic round-trip experiments."""
+"""Provider-independent work performed by individual pipeline stages."""
 
-from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path
-from typing import TypeVar
 
 from semantic_roundtrip.adapters.factory import AdapterBundle
-from semantic_roundtrip.config import ResolvedAppConfig, StageName
-from semantic_roundtrip.config_resolution import expected_stage_outputs
+from semantic_roundtrip.config import ResolvedAppConfig
 from semantic_roundtrip.domain import BenchmarkItem, GeneratedPrompt
 from semantic_roundtrip.evaluation import (
     CONTAINS_MATCH_METHOD,
@@ -16,149 +12,14 @@ from semantic_roundtrip.evaluation import (
     title_casefold_contains_match,
     title_exact_match,
 )
-from semantic_roundtrip.persistence.run_database import RunDatabase
-from semantic_roundtrip.persistence.run_manager import RunContext
-from semantic_roundtrip.persistence.run_results import ImageWorkItem
-from semantic_roundtrip.persistence.run_tasks import TaskRecord
+from semantic_roundtrip.persistence.run.database import RunDatabase
+from semantic_roundtrip.persistence.run.results import ImageWorkItem
+from semantic_roundtrip.pipeline.tasks import (
+    load_or_run_single,
+    raise_if_pause_requested,
+    run_task,
+)
 from semantic_roundtrip.prompting import PromptProfile, render_prompt_profile
-from semantic_roundtrip.runtime import RuntimeSession
-
-
-ResultType = TypeVar("ResultType")
-StageOperation = Callable[[], None]
-
-_STAGE_RESULT_FIELDS: dict[StageName, str] = {
-    "prompt_generation": "prompts",
-    "image_generation": "images",
-    "verification": "verifications",
-    "image_description": "image_descriptions",
-    "title_guessing": "predictions",
-}
-
-
-class PauseRequested(Exception):
-    """Stop at a safe boundary before starting another adapter call."""
-
-
-@dataclass(frozen=True, slots=True)
-class PipelineSummary:
-    """Current database counts and final status of one pipeline invocation."""
-
-    status: str
-    dataset_items: int
-    prompts: int
-    images: int
-    verifications: int
-    image_descriptions: int
-    predictions: int
-    evaluations: int
-
-
-def _summary(database: RunDatabase, status: str) -> PipelineSummary:
-    counts = database.results.counts()
-    return PipelineSummary(
-        status=status,
-        dataset_items=counts.dataset_items,
-        prompts=counts.prompts,
-        images=counts.images,
-        verifications=counts.verifications,
-        image_descriptions=counts.image_descriptions,
-        predictions=counts.predictions,
-        evaluations=counts.evaluations,
-    )
-
-
-def _raise_if_pause_requested(database: RunDatabase) -> None:
-    if database.pause_requested():
-        raise PauseRequested
-
-
-def _run_task(
-    operation: Callable[[], ResultType],
-    *,
-    database: RunDatabase,
-    task: TaskRecord,
-    retry_limit: int,
-    item_id: int | None = None,
-    prompt_id: int | None = None,
-    image_id: int | None = None,
-) -> ResultType:
-    """Run one adapter task, recording attempts and provider errors."""
-    for retry in range(retry_limit + 1):
-        _raise_if_pause_requested(database)
-
-        attempt = database.tasks.mark_running(task.task_id)
-        try:
-            result = operation()
-        except Exception as error:
-            raw_response = getattr(error, "raw_response", None)
-            database.tasks.add_error(
-                task_id=task.task_id,
-                stage=task.stage,
-                attempt=attempt,
-                error=error,
-                item_id=item_id,
-                prompt_id=prompt_id,
-                image_id=image_id,
-                raw_response=(raw_response if isinstance(raw_response, str) else None),
-            )
-            if retry == retry_limit:
-                database.tasks.mark_failed(task.task_id)
-                raise
-        else:
-            database.tasks.mark_completed(task.task_id, 1)
-            return result
-
-    raise RuntimeError("Task retry loop ended unexpectedly.")
-
-
-def _load_or_run_single(
-    *,
-    database: RunDatabase,
-    stage: str,
-    task_suffix: str,
-    existing: tuple[int, ResultType] | None,
-    operation: Callable[[], ResultType],
-    save: Callable[[ResultType], int],
-    retry_limit: int,
-    item_id: int,
-    prompt_id: int,
-    seed: int,
-    image_id: int | None = None,
-) -> tuple[int, ResultType]:
-    """Reuse one stored result or execute and persist its adapter task."""
-    _raise_if_pause_requested(database)
-    task = database.tasks.get_or_create(
-        task_key=f"{stage}:{task_suffix}",
-        stage=stage,
-        expected_outputs=1,
-        item_id=item_id,
-        prompt_id=prompt_id,
-        image_id=image_id,
-        seed=seed,
-    )
-
-    if existing is not None:
-        if task.status != "completed":
-            database.tasks.mark_completed(task.task_id, 1)
-        return existing
-
-    if task.status == "completed":
-        raise RuntimeError(f"Task {task.task_key} is completed but has no result.")
-
-    def execute() -> tuple[int, ResultType]:
-        result = operation()
-        return save(result), result
-
-    return _run_task(
-        execute,
-        database=database,
-        task=task,
-        retry_limit=retry_limit,
-        item_id=item_id,
-        prompt_id=prompt_id,
-        image_id=image_id,
-    )
 
 
 def _load_or_generate_prompt(
@@ -173,7 +34,7 @@ def _load_or_generate_prompt(
     sampling_seed: int,
     retry_limit: int,
 ) -> tuple[int, GeneratedPrompt]:
-    _raise_if_pause_requested(database)
+    raise_if_pause_requested(database)
     task = database.tasks.get_or_create(
         task_key=f"prompt_generation:{item_index}:{prompt_index}",
         stage="prompt_generation",
@@ -212,7 +73,7 @@ def _load_or_generate_prompt(
         )
         return prompt_id, prompt
 
-    return _run_task(
+    return run_task(
         generate,
         database=database,
         task=task,
@@ -264,7 +125,7 @@ def execute_image_generation_stage(
     for prompt in database.results.list_prompts():
         for seed in config.experiment.image_seeds:
             task_suffix = f"{prompt.item_index}:{prompt.prompt.index}:{seed}"
-            _load_or_run_single(
+            load_or_run_single(
                 database=database,
                 stage="image_generation",
                 task_suffix=task_suffix,
@@ -293,7 +154,7 @@ def execute_verification_stage(
 ) -> None:
     """Verify every persisted image before title guessing starts."""
     for image in database.results.list_images():
-        _load_or_run_single(
+        load_or_run_single(
             database=database,
             stage="verification",
             task_suffix=_image_task_suffix(image),
@@ -328,7 +189,7 @@ def execute_image_description_stage(
         )
 
     for image in database.results.list_images():
-        _load_or_run_single(
+        load_or_run_single(
             database=database,
             stage="image_description",
             task_suffix=_image_task_suffix(image),
@@ -368,7 +229,7 @@ def execute_title_guessing_stage(
         raise RuntimeError("Direct title guessing has no image-title adapter.")
 
     for image in database.results.list_images():
-        _load_or_run_single(
+        load_or_run_single(
             database=database,
             stage="title_guessing",
             task_suffix=_image_task_suffix(image),
@@ -406,7 +267,7 @@ def _execute_description_title_guessing_stage(
             raise RuntimeError(f"Image {image.image_id} has no stored description.")
         description_id, description = stored_description
 
-        _load_or_run_single(
+        load_or_run_single(
             database=database,
             stage="title_guessing",
             task_suffix=_image_task_suffix(image),
@@ -436,7 +297,7 @@ def execute_evaluation_stage(
 ) -> None:
     """Evaluate every persisted prediction as an independently resumable task."""
     for image in database.results.list_images():
-        _raise_if_pause_requested(database)
+        raise_if_pause_requested(database)
         verification_entry = database.results.get_verification(image.image_id)
         prediction_entry = database.results.get_prediction(image.image_id)
         if verification_entry is None or prediction_entry is None:
@@ -487,7 +348,7 @@ def execute_evaluation_stage(
                 contains_method=CONTAINS_MATCH_METHOD,
             )
 
-        _run_task(
+        run_task(
             evaluate,
             database=database,
             task=task,
@@ -496,145 +357,3 @@ def execute_evaluation_stage(
             prompt_id=image.prompt_id,
             image_id=image.image_id,
         )
-
-
-def _execute_runtime_stage(
-    *,
-    config: ResolvedAppConfig,
-    database: RunDatabase,
-    runtime_session: RuntimeSession,
-    stage: StageName,
-    operation: StageOperation,
-) -> None:
-    """Activate a model only when its stage still has missing result rows."""
-    expected = expected_stage_outputs(config).get(stage)
-    if expected is None:
-        operation()
-        return
-
-    produced = getattr(database.results.counts(), _STAGE_RESULT_FIELDS[stage])
-    if produced > expected:
-        raise RuntimeError(
-            f"Stage '{stage}' has {produced} outputs but only {expected} are expected."
-        )
-    if produced < expected:
-        _raise_if_pause_requested(database)
-        runtime_session.activate_stage(config, stage)
-    operation()
-
-
-def execute_stages(
-    *,
-    config: ResolvedAppConfig,
-    database: RunDatabase,
-    images_directory: Path,
-    adapters: AdapterBundle,
-    prompt_profile: PromptProfile,
-    runtime_session: RuntimeSession,
-) -> None:
-    """Execute all missing work in complete, sequential pipeline stages."""
-    _execute_runtime_stage(
-        config=config,
-        database=database,
-        runtime_session=runtime_session,
-        stage="prompt_generation",
-        operation=lambda: execute_prompt_generation_stage(
-            config=config,
-            database=database,
-            adapters=adapters,
-            prompt_profile=prompt_profile,
-        ),
-    )
-    _execute_runtime_stage(
-        config=config,
-        database=database,
-        runtime_session=runtime_session,
-        stage="image_generation",
-        operation=lambda: execute_image_generation_stage(
-            config=config,
-            database=database,
-            images_directory=images_directory,
-            adapters=adapters,
-        ),
-    )
-    _execute_runtime_stage(
-        config=config,
-        database=database,
-        runtime_session=runtime_session,
-        stage="verification",
-        operation=lambda: execute_verification_stage(
-            config=config,
-            database=database,
-            adapters=adapters,
-        ),
-    )
-    _execute_runtime_stage(
-        config=config,
-        database=database,
-        runtime_session=runtime_session,
-        stage="image_description",
-        operation=lambda: execute_image_description_stage(
-            config=config,
-            database=database,
-            adapters=adapters,
-        ),
-    )
-    _execute_runtime_stage(
-        config=config,
-        database=database,
-        runtime_session=runtime_session,
-        stage="title_guessing",
-        operation=lambda: execute_title_guessing_stage(
-            config=config,
-            database=database,
-            adapters=adapters,
-        ),
-    )
-    runtime_session.release()
-    execute_evaluation_stage(
-        config=config,
-        database=database,
-    )
-
-
-def run_pipeline(
-    *,
-    config: ResolvedAppConfig,
-    run_context: RunContext,
-    database_path: Path,
-    images_directory: Path,
-    adapters: AdapterBundle,
-    prompt_profile: PromptProfile,
-    resume: bool = False,
-) -> PipelineSummary:
-    """Run a new experiment or continue a paused, interrupted, or failed run."""
-    with RunDatabase(database_path, run_context) as database:
-        runtime_session = RuntimeSession(database)
-        try:
-            if resume:
-                database.clear_pause_request()
-            database.update_status("running")
-            try:
-                execute_stages(
-                    config=config,
-                    database=database,
-                    images_directory=images_directory,
-                    adapters=adapters,
-                    prompt_profile=prompt_profile,
-                    runtime_session=runtime_session,
-                )
-            finally:
-                runtime_session.release()
-        except PauseRequested:
-            database.update_status("paused")
-            return _summary(database, "paused")
-        except KeyboardInterrupt:
-            database.tasks.reset_running_tasks()
-            database.update_status("interrupted")
-            raise
-        except Exception:
-            database.update_status("failed")
-            raise
-
-        database.update_status("completed")
-        return _summary(database, "completed")

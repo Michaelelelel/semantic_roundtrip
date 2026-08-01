@@ -3,13 +3,13 @@
 from pathlib import Path
 
 from semantic_roundtrip.job import JOB_SNAPSHOT_FILENAME, load_job_snapshot
-from semantic_roundtrip.persistence.job_database import (
+from semantic_roundtrip.persistence.job.database import (
     read_job_entries,
     read_job_record,
 )
-from semantic_roundtrip.persistence.job_schema import job_database_path
-from semantic_roundtrip.persistence.run_database import read_run_record
-from semantic_roundtrip.persistence.run_schema import database_path_for_run
+from semantic_roundtrip.persistence.job.schema import job_database_path
+from semantic_roundtrip.persistence.run.queries import read_run_record
+from semantic_roundtrip.persistence.run.schema import database_path_for_run
 from semantic_roundtrip.status.common import (
     STATUS_READ_ERRORS,
     elapsed_seconds,

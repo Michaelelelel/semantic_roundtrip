@@ -21,10 +21,9 @@ from semantic_roundtrip.cli.run.output import (
 from semantic_roundtrip.experiment_runner import (
     execute_prepared_experiment,
     prepare_experiment_from_file,
+    request_experiment_pause,
     resume_experiment,
 )
-from semantic_roundtrip.persistence.run_database import request_run_pause
-from semantic_roundtrip.persistence.run_schema import database_path_for_run
 from semantic_roundtrip.status.discovery import list_standalone_runs
 
 
@@ -145,11 +144,11 @@ def pause(
 ) -> None:
     """Request a cooperative pause after the current adapter call."""
     try:
-        record = request_run_pause(database_path_for_run(run_directory))
+        summary = request_experiment_pause(run_directory)
     except EXPECTED_COMMAND_ERRORS as error:
         exit_with_error(error)
 
-    print_run_pause_summary(record)
+    print_run_pause_summary(summary)
 
 
 @app.command("resume")

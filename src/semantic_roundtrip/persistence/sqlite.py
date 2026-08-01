@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+PERSISTENCE_ERRORS = (sqlite3.Error,)
+
+
 def utc_now() -> str:
     """Return the current UTC timestamp in the persisted ISO format."""
     return datetime.now(timezone.utc).isoformat()
