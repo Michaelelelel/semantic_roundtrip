@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}{{ job.name }}{% endblock %}
+
+{% block content %}
+  <h1>{{ job.name }}</h1>
+  <p>
+    <span class="status--{{ job.status }}">{{ job.status }}</span>
+    <span class="mono">{{ job.job_id }}</span>
+  </p>
+
+  {% if job.last_error %}
+    <div class="error-panel">
+      <strong>Latest error:</strong> {{ job.last_error }}
+    </div>
+  {% endif %}
+
+  <dl class="metadata">
+    <div><dt>Runs completed</dt><dd>{{ job.completed_entries }} / {{ job.total_entries }}</dd></div>
+    <div><dt>Elapsed</dt><dd>{{ job.elapsed_seconds|duration }}</dd></div>
+    <div><dt>Active run</dt><dd class="mono">{{ job.active_run_id or "-" }}</dd></div>
+    <div><dt>Active stage</dt><dd>{{ job.active_stage|stage }}</dd></div>
+    <div><dt>Current ETA</dt><dd>{{ job.eta_state|eta(job.eta_seconds) }}</dd></div>
+    <div><dt>Last update</dt><dd>{{ job.last_update|datetime }}</dd></div>
+  </dl>
+
+  <section>
+    <h2>Child runs</h2>
+    <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Status</th>
+            <th>Experiment</th>
+            <th>Run</th>
+            <th>Models</th>
+            <th>Error</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in job.entries %}
+            <tr>
+              <td>{{ entry.index + 1 }}</td>
+              <td><span class="status--{{ entry.status }}">{{ entry.status }}</span></td>
+              <td><strong>{{ entry.name }}</strong></td>
+              <td>
+                {% if entry.child.status == "unavailable" %}
+                  <span class="error-text">Unavailable</span>
+                {% else %}
+                  <a class="mono" href="{{ url_for('run_detail', run_path=entry_paths[entry.index]) }}">
+                    {{ entry.child.run_id }}
+                  </a>
+                {% endif %}
+              </td>
+              <td>{{ entry.models|join(", ") }}</td>
+              <td class="error-text">{{ entry.last_error or "-" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+    </table>
+  </section>
+{% endblock %}

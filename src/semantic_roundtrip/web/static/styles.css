@@ -1,0 +1,136 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 10px;
+}
+
+header,
+main {
+    width: 1100px;
+    margin: 0 auto;
+}
+
+header {
+    padding: 20px 30px;
+    border-bottom: 1px solid;
+}
+
+main {
+    padding: 34px 30px;
+}
+
+a {
+    color: blue;
+}
+
+header a {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+h1 {
+    margin: 0 0 14px;
+    font-size: 26px;
+}
+
+h2 {
+    margin: 28px 0 10px;
+    font-size: 18px;
+}
+
+table,
+.metadata {
+    border: 1px solid;
+    background: white;
+}
+
+table {
+    width: 100%;
+    text-align: left;
+}
+
+th,
+td {
+    padding: 10px 12px;
+    border-bottom: 1px solid;
+}
+
+th {
+    font-weight: bold;
+    background: lightgray;
+    font-size: 12px;
+}
+
+tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+td a {
+    font-weight: bold;
+}
+
+.status--completed {
+    color: darkgreen;
+    background: lightgreen;
+}
+
+.status--running,
+.status--pausing {
+    color: darkblue;
+    background: lightblue;
+}
+
+.status--paused,
+.status--created,
+.status--pending {
+    color: brown;
+    background: rosybrown;
+}
+
+.status--failed,
+.status--interrupted,
+.status--unavailable {
+    color: darkred;
+    background: lightcoral;
+}
+
+
+.mono {
+    font-family: monospace;
+    overflow-wrap: anywhere;
+}
+
+.metadata {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    margin: 18px 0;
+    background: lightgray;
+}
+
+.metadata div {
+    padding: 12px;
+    background: white;
+}
+
+dt {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+dd {
+    margin: 2px 0 0;
+}
+
+.error-panel,
+.error-text {
+    color: darkred;
+}
+
+.error-panel {
+    padding: 10px 12px;
+    border: 1px solid darkred;
+    background: lightcoral;
+}

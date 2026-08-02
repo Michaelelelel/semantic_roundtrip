@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{{ run.name }}{% endblock %}
+
+{% block content %}
+  <h1>{{ run.name }}</h1>
+  <p>
+    <span class="status--{{ run.status }}">{{ run.status }}</span>
+    <span class="mono">{{ run.run_id }}</span>
+  </p>
+
+  {% if run.last_error %}
+    <div class="error-panel">
+      <strong>Latest error:</strong> {{ run.last_error }}
+    </div>
+  {% endif %}
+
+  <dl class="metadata">
+    <div><dt>Elapsed</dt><dd>{{ run.elapsed_seconds|duration }}</dd></div>
+    <div><dt>Active stage</dt><dd>{{ run.active_stage|stage }}</dd></div>
+    <div><dt>Current ETA</dt><dd>{{ run.eta_state|eta(run.eta_seconds) }}</dd></div>
+    <div><dt>Created</dt><dd>{{ run.created_at|datetime }}</dd></div>
+    <div><dt>Last update</dt><dd>{{ run.last_update|datetime }}</dd></div>
+  </dl>
+
+  <section>
+    <h2>Pipeline stages</h2>
+    <table>
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th>Outputs</th>
+            <th>Pending tasks</th>
+            <th>Running tasks</th>
+            <th>Failed tasks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stage in run.stages %}
+            <tr>
+              <td><strong>{{ stage.name|stage }}</strong></td>
+              <td>{{ stage.produced }} / {{ stage.expected }}</td>
+              <td>{{ stage.pending }}</td>
+              <td>{{ stage.running }}</td>
+              <td class="{{ 'error-text' if stage.failed else '' }}">{{ stage.failed }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+    </table>
+  </section>
+{% endblock %}

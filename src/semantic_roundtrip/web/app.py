@@ -4,11 +4,20 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
+from semantic_roundtrip.web.formatting import (
+    format_datetime,
+    format_duration,
+    format_eta,
+    format_stage,
+)
 from semantic_roundtrip.web.routes import router
 
 
 RUNS_ROOT_ENVIRONMENT_VARIABLE = "SEMANTIC_ROUNDTRIP_RUNS_ROOT"
+WEB_DIRECTORY = Path(__file__).parent
 
 
 def _configured_runs_root(runs_root: Path | None) -> Path:
@@ -35,5 +44,18 @@ def create_app(runs_root: Path | None = None) -> FastAPI:
         openapi_url=None,
     )
     app.state.runs_root = _configured_runs_root(runs_root)
+    templates = Jinja2Templates(directory=WEB_DIRECTORY / "templates")
+    templates.env.filters.update(
+        datetime=format_datetime,
+        duration=format_duration,
+        eta=format_eta,
+        stage=format_stage,
+    )
+    app.state.templates = templates
+    app.mount(
+        "/static",
+        StaticFiles(directory=WEB_DIRECTORY / "static"),
+        name="static",
+    )
     app.include_router(router)
     return app
