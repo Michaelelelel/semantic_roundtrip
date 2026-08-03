@@ -11,7 +11,7 @@ services:
       PYTHONDONTWRITEBYTECODE: "1"
       SEMANTIC_ROUNDTRIP_RUNS_ROOT: /data/runs
     volumes:
-      - "${RUN_ROOT:?RUN_ROOT must be set}:/data/runs:ro"
+      - "${RUN_ROOT:?RUN_ROOT must be set}:/data/runs"
     tmpfs:
       - /tmp
     ports:
