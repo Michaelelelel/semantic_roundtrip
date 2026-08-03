@@ -3,11 +3,15 @@
 from pathlib import Path
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 from semantic_roundtrip.persistence.job.schema import job_database_path
+from semantic_roundtrip.persistence.run.result_queries import (
+    read_image_artifact_path,
+    read_result_trace_page,
+)
 from semantic_roundtrip.persistence.run.schema import database_path_for_run
 from semantic_roundtrip.status.common import STATUS_READ_ERRORS
 from semantic_roundtrip.status.discovery import list_jobs, list_standalone_runs
@@ -16,6 +20,10 @@ from semantic_roundtrip.status.runs import get_run_status
 
 
 router = APIRouter()
+
+RESULTS_PAGE_SIZE = 20
+TERMINAL_STATUSES = frozenset({"completed", "failed", "interrupted"})
+IMAGE_SUFFIXES = frozenset({".jpeg", ".jpg", ".png", ".webp"})
 
 
 class HealthResponse(BaseModel):
@@ -69,6 +77,36 @@ def _resolve_runs_directory(runs_root: Path, relative_path: str) -> Path:
     return candidate
 
 
+def _resolve_run_directory(runs_root: Path, relative_path: str) -> Path:
+    """Resolve an experiment run containing a current run database."""
+    run_directory = _resolve_runs_directory(runs_root, relative_path)
+    if not database_path_for_run(run_directory).is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Run not found.",
+        )
+    return run_directory
+
+
+def _resolve_image_file(run_directory: Path, stored_path: Path) -> Path:
+    """Resolve one database-recorded image without escaping its run."""
+    image_path = (run_directory / stored_path).resolve()
+    try:
+        image_path.relative_to(run_directory)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found.",
+        ) from error
+
+    if image_path.suffix.lower() not in IMAGE_SUFFIXES or not image_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found.",
+        )
+    return image_path
+
+
 def _unreadable_status(error: BaseException) -> HTTPException:
     """Return a concise HTTP error without exposing a server traceback."""
     return HTTPException(
@@ -91,6 +129,7 @@ def overview(request: Request, runs_root: RunsRoot) -> HTMLResponse:
         "overview.html",
         jobs=jobs,
         standalone_runs=standalone_runs,
+        auto_refresh=True,
     )
 
 
@@ -122,6 +161,7 @@ def job_detail(
         "job.html",
         job=job,
         entry_paths=entry_paths,
+        auto_refresh=job.status not in TERMINAL_STATUSES,
     )
 
 
@@ -132,19 +172,84 @@ def run_detail(
     runs_root: RunsRoot,
 ) -> HTMLResponse:
     """Show one standalone or job-owned experiment run."""
-    run_directory = _resolve_runs_directory(runs_root, run_path)
-    if not database_path_for_run(run_directory).is_file():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Run not found.",
-        )
+    run_directory = _resolve_run_directory(runs_root, run_path)
 
     try:
         run = get_run_status(run_directory)
     except STATUS_READ_ERRORS as error:
         raise _unreadable_status(error) from error
 
-    return _render(request, "run.html", run=run)
+    return _render(
+        request,
+        "run.html",
+        run=run,
+        run_path=run_directory.relative_to(runs_root).as_posix(),
+        auto_refresh=run.status not in TERMINAL_STATUSES,
+    )
+
+
+@router.get("/results/{run_path:path}", response_class=HTMLResponse)
+def run_results(
+    request: Request,
+    run_path: str,
+    runs_root: RunsRoot,
+    page: Annotated[int, Query(ge=1)] = 1,
+) -> HTMLResponse:
+    """Show paginated products from every completed pipeline stage."""
+    run_directory = _resolve_run_directory(runs_root, run_path)
+    database_path = database_path_for_run(run_directory)
+
+    try:
+        run = get_run_status(run_directory)
+        result_page = read_result_trace_page(
+            database_path,
+            page=page,
+            page_size=RESULTS_PAGE_SIZE,
+        )
+    except STATUS_READ_ERRORS as error:
+        raise _unreadable_status(error) from error
+
+    if page > result_page.total_pages:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Result page not found.",
+        )
+
+    return _render(
+        request,
+        "results.html",
+        run=run,
+        run_path=run_directory.relative_to(runs_root).as_posix(),
+        result_page=result_page,
+        has_description_stage=any(
+            stage.name == "image_description" for stage in run.stages
+        ),
+        auto_refresh=run.status not in TERMINAL_STATUSES,
+    )
+
+
+@router.get("/images/{image_id}/{run_path:path}", response_class=FileResponse)
+def run_image(
+    image_id: int,
+    run_path: str,
+    runs_root: RunsRoot,
+) -> FileResponse:
+    """Serve one database-recorded generated image from its run directory."""
+    run_directory = _resolve_run_directory(runs_root, run_path)
+    try:
+        stored_path = read_image_artifact_path(
+            database_path_for_run(run_directory),
+            image_id,
+        )
+    except STATUS_READ_ERRORS as error:
+        raise _unreadable_status(error) from error
+
+    if stored_path is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found.",
+        )
+    return FileResponse(_resolve_image_file(run_directory, stored_path))
 
 
 @router.get("/health", response_model=HealthResponse)

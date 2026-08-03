@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}{{ run.name }} results{% endblock %}
+
+{% block content %}
+  <h1>{{ run.name }} results</h1>
+  <p>
+    <span class="status--{{ run.status }}">{{ run.status }}</span>
+    <span class="mono">{{ run.run_id }}</span>
+  </p>
+  <p><a href="{{ url_for('run_detail', run_path=run_path) }}">Back to run status</a></p>
+
+  {% if result_page.traces %}
+    <p>
+      {{ result_page.total_traces }} result traces ·
+      page {{ result_page.page }} of {{ result_page.total_pages }}
+    </p>
+
+    {% for trace in result_page.traces %}
+      <article class="result">
+        <div class="result-image">
+          {% if trace.image_id is not none %}
+            <a href="{{ url_for('run_image', image_id=trace.image_id, run_path=run_path) }}">
+              <img
+                src="{{ url_for('run_image', image_id=trace.image_id, run_path=run_path) }}"
+                alt="Generated image for {{ trace.expected_title }} in {{ trace.domain }}"
+                loading="lazy"
+              >
+            </a>
+            <p>Image seed: <span class="mono">{{ trace.image_seed }}</span></p>
+          {% else %}
+            <p>Image pending.</p>
+          {% endif %}
+        </div>
+
+        <table>
+          <tbody>
+            <tr>
+              <th>Input</th>
+              <td>{{ trace.domain }} · <strong>{{ trace.expected_title }}</strong></td>
+            </tr>
+            <tr>
+              <th>Generated prompt</th>
+              <td>
+                {{ trace.prompt_text }}
+                <br>
+                <small>
+                  Prompt {{ trace.prompt_index + 1 }} · sampling seed
+                  <span class="mono">{{ trace.prompt_sampling_seed }}</span>
+                </small>
+              </td>
+            </tr>
+            <tr>
+              <th>Verification</th>
+              <td>
+                {% if trace.verification_passed is none %}
+                  Pending
+                {% elif trace.verification_passed %}
+                  <span class="value--yes">Passed</span>
+                {% else %}
+                  <span class="value--no">Failed</span>
+                {% endif %}
+                {% if trace.verification_reason %} · {{ trace.verification_reason }}{% endif %}
+              </td>
+            </tr>
+            {% if has_description_stage %}
+              <tr>
+                <th>Image description</th>
+                <td>{{ trace.image_description or "Pending" }}</td>
+              </tr>
+            {% endif %}
+            <tr>
+              <th>Predicted title</th>
+              <td>
+                {% if trace.predicted_title is none %}
+                  Pending
+                {% else %}
+                  <strong>{{ trace.predicted_title }}</strong>
+                  <br>
+                  <small>
+                    Input: {{ trace.prediction_input_kind }}
+                    {% if trace.prediction_confidence is not none %}
+                      · confidence {{ trace.prediction_confidence }}
+                      {% if trace.prediction_confidence_type %}
+                        ({{ trace.prediction_confidence_type }})
+                      {% endif %}
+                    {% endif %}
+                  </small>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <th>Evaluation</th>
+              <td>
+                {% if trace.exact_match is none %}
+                  Pending
+                {% else %}
+                  Exact:
+                  <span class="value--{{ 'yes' if trace.exact_match else 'no' }}">
+                    {{ "yes" if trace.exact_match else "no" }}
+                  </span>
+                  · Contains:
+                  <span class="value--{{ 'yes' if trace.contains_match else 'no' }}">
+                    {{ "yes" if trace.contains_match else "no" }}
+                  </span>
+                  · Included:
+                  <span class="value--{{ 'yes' if trace.included else 'no' }}">
+                    {{ "yes" if trace.included else "no" }}
+                  </span>
+                {% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+    {% endfor %}
+
+    <p class="pagination">
+      {% if result_page.has_previous %}
+        <a href="{{ url_for('run_results', run_path=run_path) }}?page={{ result_page.page - 1 }}">
+          Previous
+        </a>
+      {% endif %}
+      <span>Page {{ result_page.page }} of {{ result_page.total_pages }}</span>
+      {% if result_page.has_next %}
+        <a href="{{ url_for('run_results', run_path=run_path) }}?page={{ result_page.page + 1 }}">
+          Next
+        </a>
+      {% endif %}
+    </p>
+  {% else %}
+    <p>No generated prompts are available yet.</p>
+  {% endif %}
+{% endblock %}
