@@ -3,8 +3,13 @@
 from pathlib import Path
 
 from semantic_roundtrip.adapters.factory import AdapterBundle
-from semantic_roundtrip.config import ResolvedAppConfig
-from semantic_roundtrip.domain import BenchmarkItem, GeneratedPrompt
+from semantic_roundtrip.config import PredictionInputKind, ResolvedAppConfig
+from semantic_roundtrip.config_resolution import configured_prediction_inputs
+from semantic_roundtrip.domain import (
+    BenchmarkItem,
+    GeneratedPrompt,
+    VerificationResult,
+)
 from semantic_roundtrip.evaluation import (
     CONTAINS_MATCH_METHOD,
     EXACT_MATCH_METHOD,
@@ -210,19 +215,14 @@ def execute_image_description_stage(
         )
 
 
-def execute_title_guessing_stage(
+def execute_direct_title_guessing_stage(
     *,
     config: ResolvedAppConfig,
     database: RunDatabase,
     adapters: AdapterBundle,
 ) -> None:
-    """Guess every title from its configured image or description input."""
-    if config.stages.title_guessing.input == "description":
-        _execute_description_title_guessing_stage(
-            config=config,
-            database=database,
-            adapters=adapters,
-        )
+    """Guess every title directly from its persisted image."""
+    if config.stages.title_guessing.direct is None:
         return
 
     if adapters.image_title_guesser is None:
@@ -231,9 +231,9 @@ def execute_title_guessing_stage(
     for image in database.results.list_images():
         load_or_run_single(
             database=database,
-            stage="title_guessing",
+            stage="title_guessing_direct",
             task_suffix=_image_task_suffix(image),
-            existing=database.results.get_prediction(image.image_id),
+            existing=database.results.get_prediction(image.image_id, "image"),
             operation=lambda: adapters.image_title_guesser.guess_title(
                 image_path=image.image.path,
                 domain=image.item.domain,
@@ -251,13 +251,16 @@ def execute_title_guessing_stage(
         )
 
 
-def _execute_description_title_guessing_stage(
+def execute_description_title_guessing_stage(
     *,
     config: ResolvedAppConfig,
     database: RunDatabase,
     adapters: AdapterBundle,
 ) -> None:
     """Guess every title from its persisted image description."""
+    if config.stages.title_guessing.from_description is None:
+        return
+
     if adapters.text_title_guesser is None:
         raise RuntimeError("Description title guessing has no text-title adapter.")
 
@@ -269,9 +272,9 @@ def _execute_description_title_guessing_stage(
 
         load_or_run_single(
             database=database,
-            stage="title_guessing",
+            stage="title_guessing_from_description",
             task_suffix=_image_task_suffix(image),
-            existing=database.results.get_prediction(image.image_id),
+            existing=database.results.get_prediction(image.image_id, "description"),
             operation=lambda: adapters.text_title_guesser.guess_title(
                 description=description.text,
                 domain=image.item.domain,
@@ -297,63 +300,85 @@ def execute_evaluation_stage(
 ) -> None:
     """Evaluate every persisted prediction as an independently resumable task."""
     for image in database.results.list_images():
-        raise_if_pause_requested(database)
         verification_entry = database.results.get_verification(image.image_id)
-        prediction_entry = database.results.get_prediction(image.image_id)
-        if verification_entry is None or prediction_entry is None:
-            raise RuntimeError(
-                f"Image {image.image_id} is missing verification or prediction data."
-            )
+        if verification_entry is None:
+            raise RuntimeError(f"Image {image.image_id} is missing verification data.")
 
         verification_id, verification = verification_entry
-        prediction_id, prediction = prediction_entry
-        task = database.tasks.get_or_create(
-            task_key=f"evaluation:{_image_task_suffix(image)}",
-            stage="evaluation",
-            expected_outputs=1,
-            item_id=image.item_id,
-            prompt_id=image.prompt_id,
-            image_id=image.image_id,
-            seed=image.image.seed,
-        )
-        evaluation_id = database.results.get_evaluation_id(prediction_id)
-        if evaluation_id is not None:
-            if task.status != "completed":
-                database.tasks.mark_completed(task.task_id, 1)
-            continue
-        if task.status == "completed":
-            raise RuntimeError(
-                f"Task {task.task_key} is completed but has no evaluation."
-            )
-
-        def evaluate() -> int:
-            exact_match = title_exact_match(image.item.title, prediction.title)
-            contains_match = title_casefold_contains_match(
-                image.item.title,
-                prediction.title,
-            )
-            included, score = apply_verification_policy(
-                title_matches=exact_match,
-                verification_passed=verification.passed,
-                failed_verification=config.evaluation.failed_verification,
-            )
-            return database.results.add_evaluation_if_missing(
+        for input_kind in configured_prediction_inputs(config):
+            _evaluate_prediction(
+                config=config,
+                database=database,
+                image=image,
                 verification_id=verification_id,
-                prediction_id=prediction_id,
-                exact_match=exact_match,
-                casefold_contains_match=contains_match,
-                included=included,
-                primary_score=score,
-                exact_method=EXACT_MATCH_METHOD,
-                contains_method=CONTAINS_MATCH_METHOD,
+                verification=verification,
+                input_kind=input_kind,
             )
 
-        run_task(
-            evaluate,
-            database=database,
-            task=task,
-            retry_limit=0,
-            item_id=image.item_id,
-            prompt_id=image.prompt_id,
-            image_id=image.image_id,
+
+def _evaluate_prediction(
+    *,
+    config: ResolvedAppConfig,
+    database: RunDatabase,
+    image: ImageWorkItem,
+    verification_id: int,
+    verification: VerificationResult,
+    input_kind: PredictionInputKind,
+) -> None:
+    """Evaluate one configured prediction route for one image."""
+    raise_if_pause_requested(database)
+    prediction_entry = database.results.get_prediction(image.image_id, input_kind)
+    if prediction_entry is None:
+        raise RuntimeError(
+            f"Image {image.image_id} has no {input_kind} title prediction."
         )
+
+    prediction_id, prediction = prediction_entry
+    task = database.tasks.get_or_create(
+        task_key=f"evaluation:{input_kind}:{_image_task_suffix(image)}",
+        stage="evaluation",
+        expected_outputs=1,
+        item_id=image.item_id,
+        prompt_id=image.prompt_id,
+        image_id=image.image_id,
+        seed=image.image.seed,
+    )
+    evaluation_id = database.results.get_evaluation_id(prediction_id)
+    if evaluation_id is not None:
+        if task.status != "completed":
+            database.tasks.mark_completed(task.task_id, 1)
+        return
+    if task.status == "completed":
+        raise RuntimeError(f"Task {task.task_key} is completed but has no evaluation.")
+
+    def evaluate() -> int:
+        exact_match = title_exact_match(image.item.title, prediction.title)
+        contains_match = title_casefold_contains_match(
+            image.item.title,
+            prediction.title,
+        )
+        included, score = apply_verification_policy(
+            title_matches=exact_match,
+            verification_passed=verification.passed,
+            failed_verification=config.evaluation.failed_verification,
+        )
+        return database.results.add_evaluation_if_missing(
+            verification_id=verification_id,
+            prediction_id=prediction_id,
+            exact_match=exact_match,
+            casefold_contains_match=contains_match,
+            included=included,
+            primary_score=score,
+            exact_method=EXACT_MATCH_METHOD,
+            contains_method=CONTAINS_MATCH_METHOD,
+        )
+
+    run_task(
+        evaluate,
+        database=database,
+        task=task,
+        retry_limit=0,
+        item_id=image.item_id,
+        prompt_id=image.prompt_id,
+        image_id=image.image_id,
+    )

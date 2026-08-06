@@ -9,9 +9,11 @@ from semantic_roundtrip.config import (
     BackendProfile,
     InputAppConfig,
     PipelineStageName,
+    PredictionInputKind,
     ResolvedAppConfig,
     ResolvedBackend,
     StageAdapterConfig,
+    StageConfig,
     StageName,
 )
 
@@ -20,8 +22,9 @@ STAGE_NAMES: tuple[StageName, ...] = (
     "prompt_generation",
     "image_generation",
     "verification",
+    "title_guessing_direct",
     "image_description",
-    "title_guessing",
+    "title_guessing_from_description",
 )
 
 
@@ -39,7 +42,7 @@ def resolve_stage_adapter(
     stage_name: StageName,
 ) -> StageAdapterConfig:
     """Merge one stage's backend settings and scientific parameters."""
-    stage = getattr(config.stages, stage_name)
+    stage = get_stage_config(config, stage_name)
     if stage is None:
         raise ValueError(f"Optional stage '{stage_name}' is not configured.")
 
@@ -73,9 +76,33 @@ def resolve_stage_adapter(
     )
 
 
+def get_stage_config(
+    config: ResolvedAppConfig,
+    stage_name: StageName,
+) -> StageConfig | None:
+    """Return the configuration represented by one executable stage name."""
+    if stage_name == "title_guessing_direct":
+        return config.stages.title_guessing.direct
+    if stage_name == "title_guessing_from_description":
+        return config.stages.title_guessing.from_description
+    return getattr(config.stages, stage_name)
+
+
+def configured_prediction_inputs(
+    config: ResolvedAppConfig,
+) -> tuple[PredictionInputKind, ...]:
+    """Return configured prediction inputs in pipeline execution order."""
+    inputs: list[PredictionInputKind] = []
+    if config.stages.title_guessing.direct is not None:
+        inputs.append("image")
+    if config.stages.title_guessing.from_description is not None:
+        inputs.append("description")
+    return tuple(inputs)
+
+
 def _validate_resolved_config(config: ResolvedAppConfig) -> None:
     for stage_name in STAGE_NAMES:
-        if getattr(config.stages, stage_name) is None:
+        if get_stage_config(config, stage_name) is None:
             continue
         resolve_stage_adapter(config, stage_name)
 
@@ -127,9 +154,12 @@ def expected_stage_outputs(config: ResolvedAppConfig) -> dict[PipelineStageName,
         "prompt_generation": prompt_count,
         "image_generation": image_count,
         "verification": image_count,
-        "title_guessing": image_count,
-        "evaluation": image_count,
+        "evaluation": image_count * len(configured_prediction_inputs(config)),
     }
+    if config.stages.title_guessing.direct is not None:
+        expected["title_guessing_direct"] = image_count
     if config.stages.image_description is not None:
         expected["image_description"] = image_count
+    if config.stages.title_guessing.from_description is not None:
+        expected["title_guessing_from_description"] = image_count
     return expected

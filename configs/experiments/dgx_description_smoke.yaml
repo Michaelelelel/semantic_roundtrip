@@ -1,4 +1,4 @@
-schema_version: 2
+schema_version: 3
 
 run:
   name: dgx_description_smoke
@@ -49,13 +49,13 @@ stages:
       max_tokens: 256
 
   title_guessing:
-    input: description
-    backend: prompt_llm
-    template_path: prompts/title_guessing/description_plain_v1.txt
-    parameters:
-      temperature: 0.0
-      top_p: 1.0
-      max_tokens: 64
+    from_description:
+      backend: prompt_llm
+      template_path: prompts/title_guessing/description_plain_v1.txt
+      parameters:
+        temperature: 0.0
+        top_p: 1.0
+        max_tokens: 64
 
 evaluation:
   failed_verification: count_as_failure

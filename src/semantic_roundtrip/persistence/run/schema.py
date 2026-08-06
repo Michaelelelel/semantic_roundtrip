@@ -12,7 +12,7 @@ from semantic_roundtrip.persistence.sqlite import (
 
 
 DATABASE_FILENAME = "pipeline_state.sqlite"
-DATABASE_SCHEMA_VERSION = 5
+DATABASE_SCHEMA_VERSION = 6
 
 
 def database_path_for_run(run_directory: Path) -> Path:
@@ -54,7 +54,7 @@ def initialize_database(
     input_config_path: Path,
     effective_config_path: Path,
 ) -> Path:
-    """Create a schema-v5 database for a new experiment run."""
+    """Create a schema-v6 database for a new experiment run."""
     database_path = database_path_for_run(run_context.directory)
     if database_path.exists():
         raise FileExistsError(f"Database already exists: {database_path}")
@@ -145,7 +145,7 @@ def initialize_database(
 
             CREATE TABLE predictions (
                 prediction_id INTEGER PRIMARY KEY,
-                image_id INTEGER NOT NULL UNIQUE REFERENCES images(image_id)
+                image_id INTEGER NOT NULL REFERENCES images(image_id)
                     ON DELETE CASCADE,
                 description_id INTEGER,
                 input_kind TEXT NOT NULL
@@ -161,12 +161,13 @@ def initialize_database(
                 ),
                 FOREIGN KEY (description_id, image_id)
                     REFERENCES image_descriptions(description_id, image_id)
-                    ON DELETE CASCADE
+                    ON DELETE CASCADE,
+                UNIQUE (image_id, input_kind)
             );
 
             CREATE TABLE evaluations (
                 evaluation_id INTEGER PRIMARY KEY,
-                verification_id INTEGER NOT NULL UNIQUE
+                verification_id INTEGER NOT NULL
                     REFERENCES verifications(verification_id) ON DELETE CASCADE,
                 prediction_id INTEGER NOT NULL UNIQUE
                     REFERENCES predictions(prediction_id) ON DELETE CASCADE,
@@ -250,6 +251,9 @@ def initialize_database(
 
             CREATE INDEX prompts_item_id_idx ON prompts(item_id);
             CREATE INDEX images_prompt_id_idx ON images(prompt_id);
+            CREATE INDEX predictions_image_id_idx ON predictions(image_id);
+            CREATE INDEX evaluations_verification_id_idx
+                ON evaluations(verification_id);
             CREATE INDEX stage_tasks_run_stage_status_idx
                 ON stage_tasks(run_id, stage, status);
             CREATE INDEX stage_errors_run_stage_idx

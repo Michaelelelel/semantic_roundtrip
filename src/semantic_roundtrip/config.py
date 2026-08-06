@@ -52,10 +52,12 @@ StageName = Literal[
     "prompt_generation",
     "image_generation",
     "verification",
+    "title_guessing_direct",
     "image_description",
-    "title_guessing",
+    "title_guessing_from_description",
 ]
 PipelineStageName = StageName | Literal["evaluation"]
+PredictionInputKind = Literal["image", "description"]
 
 
 class BackendReference(ConfigModel):
@@ -127,8 +129,20 @@ class ImageDescriptionStage(StageConfig):
 
 
 class TitleGuessingStage(StageConfig):
-    input: Literal["image", "description"]
     template_path: Path | None = None
+
+
+class TitleGuessingRoutes(ConfigModel):
+    """The independently configurable routes used to reconstruct a title."""
+
+    direct: TitleGuessingStage | None = None
+    from_description: TitleGuessingStage | None = None
+
+    @model_validator(mode="after")
+    def require_at_least_one_route(self) -> Self:
+        if self.direct is None and self.from_description is None:
+            raise ValueError("Configure at least one title-guessing route.")
+        return self
 
 
 class StagesConfig(ConfigModel):
@@ -136,20 +150,20 @@ class StagesConfig(ConfigModel):
     image_generation: ImageGenerationStage
     verification: VerificationStage
     image_description: ImageDescriptionStage | None = None
-    title_guessing: TitleGuessingStage
+    title_guessing: TitleGuessingRoutes
 
     @model_validator(mode="after")
-    def require_consistent_title_input(self) -> Self:
-        uses_description = self.title_guessing.input == "description"
+    def require_consistent_title_routes(self) -> Self:
+        uses_description = self.title_guessing.from_description is not None
         has_description_stage = self.image_description is not None
 
         if uses_description and not has_description_stage:
             raise ValueError(
-                "title_guessing.input='description' requires image_description."
+                "title_guessing.from_description requires image_description."
             )
         if not uses_description and has_description_stage:
             raise ValueError(
-                "image_description must be absent when title_guessing.input='image'."
+                "image_description requires title_guessing.from_description."
             )
         return self
 
@@ -161,7 +175,7 @@ class EvaluationConfig(ConfigModel):
 class InputAppConfig(ConfigModel):
     """Human-maintained experiment configuration with backend references."""
 
-    schema_version: Literal[2]
+    schema_version: Literal[3]
     run: RunConfig
     dataset: DatasetConfig
     experiment: ExperimentConfig
@@ -173,7 +187,7 @@ class InputAppConfig(ConfigModel):
 class ResolvedAppConfig(ConfigModel):
     """Self-contained effective configuration stored with a run."""
 
-    schema_version: Literal[2]
+    schema_version: Literal[3]
     configuration_kind: Literal["effective"] = "effective"
     run: RunConfig
     dataset: DatasetConfig

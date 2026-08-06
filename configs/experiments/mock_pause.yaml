@@ -1,4 +1,4 @@
-schema_version: 2
+schema_version: 3
 
 run:
   name: mock_pause
@@ -41,10 +41,10 @@ stages:
       delay_seconds: 2
 
   title_guessing:
-    input: image
-    backend: mock
-    parameters:
-      delay_seconds: 2
+    direct:
+      backend: mock
+      parameters:
+        delay_seconds: 2
 
 evaluation:
   failed_verification: count_as_failure

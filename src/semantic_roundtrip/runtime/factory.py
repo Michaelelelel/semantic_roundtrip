@@ -3,6 +3,7 @@
 from typing import Any
 
 from semantic_roundtrip.config import ResolvedAppConfig, StageName
+from semantic_roundtrip.config_resolution import get_stage_config
 from semantic_roundtrip.runtime.base import RuntimeController, RuntimeTarget
 from semantic_roundtrip.runtime.comfyui import ComfyUIRuntimeController
 from semantic_roundtrip.runtime.llama_cpp_router import LlamaCppRouterController
@@ -14,7 +15,7 @@ def resolve_runtime_target(
     stage: StageName,
 ) -> RuntimeTarget:
     """Resolve the runtime identity used by one configured pipeline stage."""
-    stage_config = getattr(config.stages, stage)
+    stage_config = get_stage_config(config, stage)
     if stage_config is None:
         raise ValueError(f"Optional stage '{stage}' is not configured.")
 

@@ -1,4 +1,4 @@
-schema_version: 2
+schema_version: 3
 
 run:
   name: dgx_smoke
@@ -45,11 +45,11 @@ stages:
       max_tokens: 128
 
   title_guessing:
-    input: image
-    backend: vision_llm
-    template_path: prompts/title_guessing/plain_v1.txt
-    parameters:
-      max_tokens: 64
+    direct:
+      backend: vision_llm
+      template_path: prompts/title_guessing/plain_v1.txt
+      parameters:
+        max_tokens: 64
 
 evaluation:
   failed_verification: count_as_failure

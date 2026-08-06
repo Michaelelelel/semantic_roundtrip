@@ -26,8 +26,9 @@ STAGE_ORDER = (
     "prompt_generation",
     "image_generation",
     "verification",
+    "title_guessing_direct",
     "image_description",
-    "title_guessing",
+    "title_guessing_from_description",
     "evaluation",
 )
 MINIMUM_ETA_SAMPLES = 3

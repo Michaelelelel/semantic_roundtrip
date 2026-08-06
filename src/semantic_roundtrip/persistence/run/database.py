@@ -29,7 +29,7 @@ RunStatus = Literal[
 
 
 def load_run_context(run_directory: Path) -> RunContext:
-    """Reconstruct a run context from an existing schema-v5 database."""
+    """Reconstruct a run context from an existing schema-v6 database."""
     record = read_run_record(database_path_for_run(run_directory))
     return RunContext(
         run_id=record.run_id,

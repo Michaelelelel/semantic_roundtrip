@@ -10,11 +10,12 @@ from semantic_roundtrip.persistence.run.database import RunDatabase
 from semantic_roundtrip.persistence.run.manager import RunContext
 from semantic_roundtrip.pipeline.models import PipelineSummary
 from semantic_roundtrip.pipeline.stages import (
+    execute_description_title_guessing_stage,
+    execute_direct_title_guessing_stage,
     execute_evaluation_stage,
     execute_image_description_stage,
     execute_image_generation_stage,
     execute_prompt_generation_stage,
-    execute_title_guessing_stage,
     execute_verification_stage,
 )
 from semantic_roundtrip.pipeline.tasks import PauseRequested, raise_if_pause_requested
@@ -28,8 +29,9 @@ _STAGE_RESULT_FIELDS: dict[StageName, str] = {
     "prompt_generation": "prompts",
     "image_generation": "images",
     "verification": "verifications",
+    "title_guessing_direct": "direct_predictions",
     "image_description": "image_descriptions",
-    "title_guessing": "predictions",
+    "title_guessing_from_description": "description_predictions",
 }
 
 
@@ -121,6 +123,17 @@ def execute_stages(
         config=config,
         database=database,
         runtime_session=runtime_session,
+        stage="title_guessing_direct",
+        operation=lambda: execute_direct_title_guessing_stage(
+            config=config,
+            database=database,
+            adapters=adapters,
+        ),
+    )
+    _execute_runtime_stage(
+        config=config,
+        database=database,
+        runtime_session=runtime_session,
         stage="image_description",
         operation=lambda: execute_image_description_stage(
             config=config,
@@ -132,8 +145,8 @@ def execute_stages(
         config=config,
         database=database,
         runtime_session=runtime_session,
-        stage="title_guessing",
-        operation=lambda: execute_title_guessing_stage(
+        stage="title_guessing_from_description",
+        operation=lambda: execute_description_title_guessing_stage(
             config=config,
             database=database,
             adapters=adapters,

@@ -3,8 +3,8 @@
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
 
+from semantic_roundtrip.config import PredictionInputKind
 from semantic_roundtrip.domain import (
     BenchmarkItem,
     GeneratedPrompt,
@@ -25,6 +25,8 @@ class ResultCounts:
     images: int
     verifications: int
     image_descriptions: int
+    direct_predictions: int
+    description_predictions: int
     predictions: int
     evaluations: int
 
@@ -378,6 +380,7 @@ class RunResultStore:
     def get_prediction(
         self,
         image_id: int,
+        input_kind: PredictionInputKind,
     ) -> tuple[int, TitlePrediction] | None:
         row = self._connection.execute(
             """
@@ -390,9 +393,9 @@ class RunResultStore:
                 confidence_type,
                 raw_response
             FROM predictions
-            WHERE image_id = ?
+            WHERE image_id = ? AND input_kind = ?
             """,
-            (image_id,),
+            (image_id, input_kind),
         ).fetchone()
         if row is None:
             return None
@@ -411,7 +414,7 @@ class RunResultStore:
         image_id: int,
         prediction: TitlePrediction,
         *,
-        input_kind: Literal["image", "description"],
+        input_kind: PredictionInputKind,
         description_id: int | None = None,
     ) -> int:
         if (input_kind == "description") != (description_id is not None):
@@ -516,6 +519,13 @@ class RunResultStore:
                 (SELECT COUNT(*) FROM images) AS images,
                 (SELECT COUNT(*) FROM verifications) AS verifications,
                 (SELECT COUNT(*) FROM image_descriptions) AS image_descriptions,
+                (
+                    SELECT COUNT(*) FROM predictions WHERE input_kind = 'image'
+                ) AS direct_predictions,
+                (
+                    SELECT COUNT(*) FROM predictions
+                    WHERE input_kind = 'description'
+                ) AS description_predictions,
                 (SELECT COUNT(*) FROM predictions) AS predictions,
                 (SELECT COUNT(*) FROM evaluations) AS evaluations
             """
@@ -526,6 +536,8 @@ class RunResultStore:
             images=int(row["images"]),
             verifications=int(row["verifications"]),
             image_descriptions=int(row["image_descriptions"]),
+            direct_predictions=int(row["direct_predictions"]),
+            description_predictions=int(row["description_predictions"]),
             predictions=int(row["predictions"]),
             evaluations=int(row["evaluations"]),
         )

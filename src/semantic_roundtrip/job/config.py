@@ -251,8 +251,9 @@ def plan_job(
         "prompt_generation": 0,
         "image_generation": 0,
         "verification": 0,
+        "title_guessing_direct": 0,
         "image_description": 0,
-        "title_guessing": 0,
+        "title_guessing_from_description": 0,
         "evaluation": 0,
     }
     entries: list[JobPlanEntry] = []

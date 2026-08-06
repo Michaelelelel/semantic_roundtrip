@@ -14,7 +14,10 @@ EFFECTIVE_CONFIG_FILENAME = "config_snapshot.yaml"
 PROMPT_PROFILE_FILENAME = "prompt_profile.yaml"
 VERIFICATION_PROMPT_FILENAME = "verification_prompt.txt"
 IMAGE_DESCRIPTION_PROMPT_FILENAME = "image_description_prompt.txt"
-TITLE_GUESSING_PROMPT_FILENAME = "title_guessing_prompt.txt"
+DIRECT_TITLE_GUESSING_PROMPT_FILENAME = "title_guessing_direct_prompt.txt"
+DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME = (
+    "title_guessing_from_description_prompt.txt"
+)
 
 
 def create_input_config_snapshot(
@@ -89,9 +92,21 @@ def create_prompt_snapshots(
             ),
             IMAGE_DESCRIPTION_PROMPT_FILENAME,
         ),
-        "title_guessing": (
-            config.stages.title_guessing.template_path,
-            TITLE_GUESSING_PROMPT_FILENAME,
+        "title_guessing_direct": (
+            (
+                None
+                if config.stages.title_guessing.direct is None
+                else config.stages.title_guessing.direct.template_path
+            ),
+            DIRECT_TITLE_GUESSING_PROMPT_FILENAME,
+        ),
+        "title_guessing_from_description": (
+            (
+                None
+                if config.stages.title_guessing.from_description is None
+                else config.stages.title_guessing.from_description.template_path
+            ),
+            DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME,
         ),
     }
     for name, (source_path, filename) in configured_prompts.items():
@@ -130,12 +145,31 @@ def use_prompt_snapshots(
             update={"template_path": image_description_path}
         )
 
-    title_guessing = config.stages.title_guessing
-    title_guessing_path = run_directory / TITLE_GUESSING_PROMPT_FILENAME
-    if title_guessing_path.is_file():
-        title_guessing = title_guessing.model_copy(
-            update={"template_path": title_guessing_path}
+    direct_title_guessing = config.stages.title_guessing.direct
+    direct_title_guessing_path = run_directory / DIRECT_TITLE_GUESSING_PROMPT_FILENAME
+    if direct_title_guessing is not None and direct_title_guessing_path.is_file():
+        direct_title_guessing = direct_title_guessing.model_copy(
+            update={"template_path": direct_title_guessing_path}
         )
+
+    description_title_guessing = config.stages.title_guessing.from_description
+    description_title_guessing_path = (
+        run_directory / DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME
+    )
+    if (
+        description_title_guessing is not None
+        and description_title_guessing_path.is_file()
+    ):
+        description_title_guessing = description_title_guessing.model_copy(
+            update={"template_path": description_title_guessing_path}
+        )
+
+    title_guessing = config.stages.title_guessing.model_copy(
+        update={
+            "direct": direct_title_guessing,
+            "from_description": description_title_guessing,
+        }
+    )
 
     stages = config.stages.model_copy(
         update={

@@ -1,5 +1,36 @@
 {% extends "base.html" %}
 
+{% macro show_prediction(result) %}
+  {% if result is none %}
+    Pending
+  {% else %}
+    <strong>{{ result.title }}</strong>
+    {% if result.confidence is not none %}
+      · confidence {{ result.confidence }}
+      {% if result.confidence_type %}({{ result.confidence_type }}){% endif %}
+    {% endif %}
+    <br>
+    <small>
+      {% if result.exact_match is none %}
+        Evaluation pending
+      {% else %}
+        Exact:
+        <span class="value--{{ 'yes' if result.exact_match else 'no' }}">
+          {{ "yes" if result.exact_match else "no" }}
+        </span>
+        · Contains:
+        <span class="value--{{ 'yes' if result.contains_match else 'no' }}">
+          {{ "yes" if result.contains_match else "no" }}
+        </span>
+        · Included:
+        <span class="value--{{ 'yes' if result.included else 'no' }}">
+          {{ "yes" if result.included else "no" }}
+        </span>
+      {% endif %}
+    </small>
+  {% endif %}
+{% endmacro %}
+
 {% block title %}{{ run.name }} results{% endblock %}
 
 {% block content %}
@@ -63,53 +94,22 @@
                 {% if trace.verification_reason %} · {{ trace.verification_reason }}{% endif %}
               </td>
             </tr>
-            {% if has_description_stage %}
+            {% if has_direct_route %}
+              <tr>
+                <th>Direct route</th>
+                <td>{{ show_prediction(trace.direct_result) }}</td>
+              </tr>
+            {% endif %}
+            {% if has_description_route %}
               <tr>
                 <th>Image description</th>
                 <td>{{ trace.image_description or "Pending" }}</td>
               </tr>
+              <tr>
+                <th>Description route</th>
+                <td>{{ show_prediction(trace.description_result) }}</td>
+              </tr>
             {% endif %}
-            <tr>
-              <th>Predicted title</th>
-              <td>
-                {% if trace.predicted_title is none %}
-                  Pending
-                {% else %}
-                  <strong>{{ trace.predicted_title }}</strong>
-                  <br>
-                  <small>
-                    Input: {{ trace.prediction_input_kind }}
-                    {% if trace.prediction_confidence is not none %}
-                      · confidence {{ trace.prediction_confidence }}
-                      {% if trace.prediction_confidence_type %}
-                        ({{ trace.prediction_confidence_type }})
-                      {% endif %}
-                    {% endif %}
-                  </small>
-                {% endif %}
-              </td>
-            </tr>
-            <tr>
-              <th>Evaluation</th>
-              <td>
-                {% if trace.exact_match is none %}
-                  Pending
-                {% else %}
-                  Exact:
-                  <span class="value--{{ 'yes' if trace.exact_match else 'no' }}">
-                    {{ "yes" if trace.exact_match else "no" }}
-                  </span>
-                  · Contains:
-                  <span class="value--{{ 'yes' if trace.contains_match else 'no' }}">
-                    {{ "yes" if trace.contains_match else "no" }}
-                  </span>
-                  · Included:
-                  <span class="value--{{ 'yes' if trace.included else 'no' }}">
-                    {{ "yes" if trace.included else "no" }}
-                  </span>
-                {% endif %}
-              </td>
-            </tr>
           </tbody>
         </table>
       </article>

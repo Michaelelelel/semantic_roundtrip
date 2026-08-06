@@ -1,13 +1,25 @@
 """Read-only queries for inspecting persisted pipeline results."""
 
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
 
 from semantic_roundtrip.persistence.run.schema import (
     connect_run_database,
     require_run_schema,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class PredictionTrace:
+    """One route-specific title prediction and its evaluation."""
+
+    title: str
+    confidence: float | None
+    confidence_type: str | None
+    exact_match: bool | None
+    contains_match: bool | None
+    included: bool | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,13 +38,8 @@ class ResultTrace:
     verification_passed: bool | None
     verification_reason: str | None
     image_description: str | None
-    prediction_input_kind: Literal["image", "description"] | None
-    predicted_title: str | None
-    prediction_confidence: float | None
-    prediction_confidence_type: str | None
-    exact_match: bool | None
-    contains_match: bool | None
-    included: bool | None
+    direct_result: PredictionTrace | None
+    description_result: PredictionTrace | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +66,20 @@ class ResultTracePage:
 
 def _optional_bool(value: object | None) -> bool | None:
     return None if value is None else bool(value)
+
+
+def _prediction_trace(row: sqlite3.Row, prefix: str) -> PredictionTrace | None:
+    if row[f"{prefix}_prediction_id"] is None:
+        return None
+    confidence = row[f"{prefix}_confidence"]
+    return PredictionTrace(
+        title=row[f"{prefix}_title"],
+        confidence=None if confidence is None else float(confidence),
+        confidence_type=row[f"{prefix}_confidence_type"],
+        exact_match=_optional_bool(row[f"{prefix}_exact_match"]),
+        contains_match=_optional_bool(row[f"{prefix}_contains_match"]),
+        included=_optional_bool(row[f"{prefix}_included"]),
+    )
 
 
 def read_result_trace_page(
@@ -103,13 +124,24 @@ def read_result_trace_page(
                 verifications.passed AS verification_passed,
                 verifications.reason AS verification_reason,
                 image_descriptions.text AS image_description,
-                predictions.input_kind AS prediction_input_kind,
-                predictions.title AS predicted_title,
-                predictions.confidence AS prediction_confidence,
-                predictions.confidence_type AS prediction_confidence_type,
-                evaluations.exact_match,
-                evaluations.casefold_contains_match AS contains_match,
-                evaluations.included
+                direct_predictions.prediction_id AS direct_prediction_id,
+                direct_predictions.title AS direct_title,
+                direct_predictions.confidence AS direct_confidence,
+                direct_predictions.confidence_type AS direct_confidence_type,
+                direct_evaluations.exact_match AS direct_exact_match,
+                direct_evaluations.casefold_contains_match
+                    AS direct_contains_match,
+                direct_evaluations.included AS direct_included,
+                description_predictions.prediction_id
+                    AS description_prediction_id,
+                description_predictions.title AS description_title,
+                description_predictions.confidence AS description_confidence,
+                description_predictions.confidence_type
+                    AS description_confidence_type,
+                description_evaluations.exact_match AS description_exact_match,
+                description_evaluations.casefold_contains_match
+                    AS description_contains_match,
+                description_evaluations.included AS description_included
             FROM prompts
             JOIN dataset_items AS items
                 ON items.item_id = prompts.item_id
@@ -119,10 +151,18 @@ def read_result_trace_page(
                 ON verifications.image_id = images.image_id
             LEFT JOIN image_descriptions
                 ON image_descriptions.image_id = images.image_id
-            LEFT JOIN predictions
-                ON predictions.image_id = images.image_id
-            LEFT JOIN evaluations
-                ON evaluations.prediction_id = predictions.prediction_id
+            LEFT JOIN predictions AS direct_predictions
+                ON direct_predictions.image_id = images.image_id
+                AND direct_predictions.input_kind = 'image'
+            LEFT JOIN evaluations AS direct_evaluations
+                ON direct_evaluations.prediction_id
+                    = direct_predictions.prediction_id
+            LEFT JOIN predictions AS description_predictions
+                ON description_predictions.image_id = images.image_id
+                AND description_predictions.input_kind = 'description'
+            LEFT JOIN evaluations AS description_evaluations
+                ON description_evaluations.prediction_id
+                    = description_predictions.prediction_id
             ORDER BY
                 items.item_index,
                 prompts.prompt_index,
@@ -145,23 +185,12 @@ def read_result_trace_page(
             prompt_sampling_seed=int(row["prompt_sampling_seed"]),
             prompt_text=row["prompt_text"],
             image_id=None if row["image_id"] is None else int(row["image_id"]),
-            image_seed=(
-                None if row["image_seed"] is None else int(row["image_seed"])
-            ),
+            image_seed=(None if row["image_seed"] is None else int(row["image_seed"])),
             verification_passed=_optional_bool(row["verification_passed"]),
             verification_reason=row["verification_reason"],
             image_description=row["image_description"],
-            prediction_input_kind=row["prediction_input_kind"],
-            predicted_title=row["predicted_title"],
-            prediction_confidence=(
-                None
-                if row["prediction_confidence"] is None
-                else float(row["prediction_confidence"])
-            ),
-            prediction_confidence_type=row["prediction_confidence_type"],
-            exact_match=_optional_bool(row["exact_match"]),
-            contains_match=_optional_bool(row["contains_match"]),
-            included=_optional_bool(row["included"]),
+            direct_result=_prediction_trace(row, "direct"),
+            description_result=_prediction_trace(row, "description"),
         )
         for row in rows
     )

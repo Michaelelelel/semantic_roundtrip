@@ -34,7 +34,7 @@ from semantic_roundtrip.config_resolution import resolve_stage_adapter
 
 @dataclass(frozen=True, slots=True)
 class AdapterBundle:
-    """Adapters required by one configured direct or description pipeline."""
+    """Adapters required by the configured title-reconstruction routes."""
 
     prompt_generator: PromptGenerator
     image_generator: ImageGenerator
@@ -174,7 +174,7 @@ def create_text_title_guesser(
 
 
 def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
-    """Create only the adapters required by the configured pipeline route."""
+    """Create only the adapters required by the configured pipeline routes."""
     prompt_generator = create_prompt_generator(
         resolve_stage_adapter(config, "prompt_generation")
     )
@@ -185,27 +185,29 @@ def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
         resolve_stage_adapter(config, "verification")
     )
 
-    if config.stages.title_guessing.input == "image":
-        return AdapterBundle(
-            prompt_generator=prompt_generator,
-            image_generator=image_generator,
-            image_verifier=image_verifier,
-            image_describer=None,
-            image_title_guesser=create_image_title_guesser(
-                resolve_stage_adapter(config, "title_guessing")
-            ),
-            text_title_guesser=None,
-        )
-
     return AdapterBundle(
         prompt_generator=prompt_generator,
         image_generator=image_generator,
         image_verifier=image_verifier,
-        image_describer=create_image_describer(
-            resolve_stage_adapter(config, "image_description")
+        image_describer=(
+            None
+            if config.stages.image_description is None
+            else create_image_describer(
+                resolve_stage_adapter(config, "image_description")
+            )
         ),
-        image_title_guesser=None,
-        text_title_guesser=create_text_title_guesser(
-            resolve_stage_adapter(config, "title_guessing")
+        image_title_guesser=(
+            None
+            if config.stages.title_guessing.direct is None
+            else create_image_title_guesser(
+                resolve_stage_adapter(config, "title_guessing_direct")
+            )
+        ),
+        text_title_guesser=(
+            None
+            if config.stages.title_guessing.from_description is None
+            else create_text_title_guesser(
+                resolve_stage_adapter(config, "title_guessing_from_description")
+            )
         ),
     )

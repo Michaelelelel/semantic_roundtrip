@@ -221,8 +221,11 @@ def run_results(
         run=run,
         run_path=run_directory.relative_to(runs_root).as_posix(),
         result_page=result_page,
-        has_description_stage=any(
-            stage.name == "image_description" for stage in run.stages
+        has_direct_route=any(
+            stage.name == "title_guessing_direct" for stage in run.stages
+        ),
+        has_description_route=any(
+            stage.name == "title_guessing_from_description" for stage in run.stages
         ),
         auto_refresh=run.status not in TERMINAL_STATUSES,
     )

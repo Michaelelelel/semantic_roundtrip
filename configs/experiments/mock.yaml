@@ -1,4 +1,4 @@
-schema_version: 2
+schema_version: 3
 
 run:
   name: mock_smoke
@@ -34,8 +34,8 @@ stages:
     backend: mock
 
   title_guessing:
-    input: image
-    backend: mock
+    direct:
+      backend: mock
 
 evaluation:
   failed_verification: count_as_failure

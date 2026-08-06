@@ -1,7 +1,7 @@
 schema_version: 3
 
 run:
-  name: mock_description
+  name: mock_both
   output_directory: runs
 
 dataset:
@@ -30,13 +30,14 @@ stages:
 
   verification:
     backend: mock
-    template_path: prompts/verification/json_v1.txt
 
   image_description:
     backend: mock
     template_path: prompts/image_description/plain_v1.txt
 
   title_guessing:
+    direct:
+      backend: mock
     from_description:
       backend: mock
       template_path: prompts/title_guessing/description_plain_v1.txt
