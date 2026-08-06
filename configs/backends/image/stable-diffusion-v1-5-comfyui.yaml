@@ -6,7 +6,19 @@ settings:
   base_url: http://image_runtime:8188
   model_id: stable-diffusion-v1-5
   workflow_path: workflows/sd15_api.json
-  checkpoint: v1-5-pruned-emaonly.safetensors
+  workflow_inputs:
+    prompt:
+      node_id: "6"
+      input_name: text
+    seed:
+      node_id: "3"
+      input_name: seed
+    filename_prefix:
+      node_id: "9"
+      input_name: filename_prefix
+  workflow_overrides:
+    "4":
+      ckpt_name: v1-5-pruned-emaonly.safetensors
   generation_timeout_seconds: 300
 
 runtime:

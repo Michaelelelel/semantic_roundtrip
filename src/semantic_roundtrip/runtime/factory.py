@@ -28,17 +28,10 @@ def resolve_runtime_target(
     model_id = _optional_text_setting(backend.settings, "model_id")
     model_reference = model_id
 
-    if runtime.controller == "llama_cpp_router" and model_id is None:
+    if runtime.controller in {"llama_cpp_router", "comfyui"} and model_id is None:
         raise ValueError(
-            f"llama.cpp backend '{backend_alias}' requires settings.model_id."
+            f"Runtime backend '{backend_alias}' requires settings.model_id."
         )
-    if runtime.controller == "comfyui":
-        checkpoint = _optional_text_setting(backend.settings, "checkpoint")
-        if checkpoint is None:
-            raise ValueError(
-                f"ComfyUI backend '{backend_alias}' requires settings.checkpoint."
-            )
-        model_reference = checkpoint
 
     return RuntimeTarget(
         stage=stage,

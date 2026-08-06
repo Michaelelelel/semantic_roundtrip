@@ -15,17 +15,29 @@ from semantic_roundtrip.config import ConfigModel
 from semantic_roundtrip.domain import ImageArtifact
 
 
+class ComfyUIWorkflowInput(ConfigModel):
+    """Location of one configurable input in a ComfyUI workflow."""
+
+    node_id: str = Field(min_length=1)
+    input_name: str = Field(min_length=1)
+
+
+class ComfyUIWorkflowInputs(ConfigModel):
+    """Workflow inputs supplied dynamically for every generated image."""
+
+    prompt: ComfyUIWorkflowInput
+    seed: ComfyUIWorkflowInput
+    filename_prefix: ComfyUIWorkflowInput
+
+
 class ComfyUIImageSettings(ConfigModel):
     """Settings for ComfyUI image generation."""
 
     base_url: str = Field(min_length=1)
     model_id: str = Field(min_length=1)
     workflow_path: Path
-    checkpoint: str = Field(min_length=1)
-    sampler_node_id: str = "3"
-    checkpoint_node_id: str = "4"
-    positive_prompt_node_id: str = "6"
-    save_image_node_id: str = "9"
+    workflow_inputs: ComfyUIWorkflowInputs
+    workflow_overrides: dict[str, dict[str, Any]] = Field(default_factory=dict)
     request_timeout_seconds: float = Field(default=30, gt=0)
     generation_timeout_seconds: float = Field(default=900, gt=0)
     poll_interval_seconds: float = Field(default=2, gt=0)
@@ -91,20 +103,54 @@ class ComfyUIImageGenerator:
         identifier: str,
     ) -> dict[str, Any]:
         workflow = copy.deepcopy(self._workflow)
-        try:
-            workflow[self._config.positive_prompt_node_id]["inputs"]["text"] = prompt
-            workflow[self._config.sampler_node_id]["inputs"]["seed"] = seed
-            workflow[self._config.checkpoint_node_id]["inputs"]["ckpt_name"] = (
-                self._config.checkpoint
-            )
-            workflow[self._config.save_image_node_id]["inputs"]["filename_prefix"] = (
-                f"semantic_roundtrip_{identifier}"
-            )
-        except KeyError as error:
-            raise AdapterError(
-                f"Configured ComfyUI workflow node or input is missing: {error}"
-            ) from error
+        for node_id, inputs in self._config.workflow_overrides.items():
+            for input_name, value in inputs.items():
+                self._set_workflow_input(
+                    workflow,
+                    node_id=node_id,
+                    input_name=input_name,
+                    value=value,
+                )
+
+        dynamic_inputs = self._config.workflow_inputs
+        self._set_bound_input(workflow, dynamic_inputs.prompt, prompt)
+        self._set_bound_input(workflow, dynamic_inputs.seed, seed)
+        self._set_bound_input(
+            workflow,
+            dynamic_inputs.filename_prefix,
+            f"semantic_roundtrip_{identifier}",
+        )
         return workflow
+
+    def _set_bound_input(
+        self,
+        workflow: dict[str, Any],
+        binding: ComfyUIWorkflowInput,
+        value: Any,
+    ) -> None:
+        self._set_workflow_input(
+            workflow,
+            node_id=binding.node_id,
+            input_name=binding.input_name,
+            value=value,
+        )
+
+    @staticmethod
+    def _set_workflow_input(
+        workflow: dict[str, Any],
+        *,
+        node_id: str,
+        input_name: str,
+        value: Any,
+    ) -> None:
+        node = workflow.get(node_id)
+        inputs = None if not isinstance(node, dict) else node.get("inputs")
+        if not isinstance(inputs, dict) or input_name not in inputs:
+            raise AdapterError(
+                "Configured ComfyUI workflow input is missing: "
+                f"node '{node_id}', input '{input_name}'."
+            )
+        inputs[input_name] = copy.deepcopy(value)
 
     def _post_json(
         self,
