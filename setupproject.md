@@ -35,7 +35,7 @@ Download the currently configured baseline models and chat templates:
 ./chat_templates/download.sh
 ./models/text/download.sh "$DATA_ROOT/models"
 ./models/vision/download.sh "$DATA_ROOT/models"
-./models/image/download.sh "$DATA_ROOT/models"
+./models/image/download-stable-diffusion-v1-5-fp16.sh "$DATA_ROOT/models"
 ```
 
 ## 2. Build the runner

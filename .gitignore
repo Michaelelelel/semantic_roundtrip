@@ -34,7 +34,7 @@ models/vision/*
 !models/text/.gitkeep
 !models/text/download.sh
 !models/image/.gitkeep
-!models/image/download.sh
+!models/image/download-*.sh
 !models/image/checkpoints/
 models/image/checkpoints/*
 !models/image/checkpoints/.gitkeep

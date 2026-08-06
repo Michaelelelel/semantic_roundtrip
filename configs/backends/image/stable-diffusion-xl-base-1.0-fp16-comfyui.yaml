@@ -1,0 +1,27 @@
+schema_version: 1
+
+adapter: comfyui
+
+settings:
+  base_url: http://image_runtime:8188
+  model_id: stable-diffusion-xl-base-1.0-fp16
+  workflow_path: workflows/sdxl_base_1_0_api.json
+  workflow_inputs:
+    prompt:
+      node_id: "6"
+      input_name: text
+    seed:
+      node_id: "3"
+      input_name: seed
+    filename_prefix:
+      node_id: "9"
+      input_name: filename_prefix
+  workflow_overrides:
+    "4":
+      ckpt_name: sd_xl_base_1.0.safetensors
+  generation_timeout_seconds: 600
+
+runtime:
+  controller: comfyui
+  control_url: http://image_runtime:8188
+  resource_group: dgx-main
