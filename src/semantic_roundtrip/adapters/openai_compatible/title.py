@@ -21,6 +21,12 @@ def title_prediction_from_completion(
     completion: ChatCompletion,
 ) -> TitlePrediction:
     """Convert one chat completion into a title prediction."""
+    if completion.finish_reason == "length":
+        raise AdapterError(
+            "Title response was truncated because the token limit was reached.",
+            completion.raw_response,
+        )
+
     guessed_title = completion.content.strip()
     if not guessed_title:
         raise AdapterError(

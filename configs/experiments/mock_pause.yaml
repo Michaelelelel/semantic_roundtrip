@@ -1,4 +1,4 @@
-schema_version: 4
+schema_version: 5
 
 run:
   name: mock_pause
@@ -56,6 +56,3 @@ stages:
       template_path: prompts/title_guessing/description_plain_v1.txt
       parameters:
         delay_seconds: 1
-
-evaluation:
-  failed_verification: count_as_failure

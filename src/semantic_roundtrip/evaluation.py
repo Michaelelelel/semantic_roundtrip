@@ -1,7 +1,9 @@
-"""Versioned evaluation rules for title predictions."""
+"""Versioned strict and supplementary title-comparison rules."""
+
+import unicodedata
 
 EXACT_MATCH_METHOD = "strict_trimmed_exact_v1"
-CONTAINS_MATCH_METHOD = "casefold_contains_v1"
+NORMALIZED_EXACT_METHOD = "casefold_whitespace_exact_v1"
 
 
 def title_exact_match(expected_title: str, predicted_title: str) -> bool:
@@ -9,27 +11,14 @@ def title_exact_match(expected_title: str, predicted_title: str) -> bool:
     return expected_title.strip() == predicted_title.strip()
 
 
-def title_casefold_contains_match(
+def title_normalized_exact_match(
     expected_title: str,
     predicted_title: str,
 ) -> bool:
-    """Check whether the complete expected title occurs in the prediction."""
-    expected = expected_title.strip().casefold()
-    predicted = predicted_title.strip().casefold()
-    return expected in predicted
+    """Compare titles after conservative case and whitespace normalization."""
 
+    def normalize(value: str) -> str:
+        normalized = unicodedata.normalize("NFC", value)
+        return " ".join(normalized.casefold().split())
 
-def apply_verification_policy(
-    *,
-    title_matches: bool,
-    verification_passed: bool,
-    failed_verification: str,
-) -> tuple[bool, bool | None]:
-    """Return whether a result is included and its score under the policy."""
-    if verification_passed:
-        return True, title_matches
-
-    if failed_verification == "count_as_failure":
-        return True, False
-
-    return False, None
+    return normalize(expected_title) == normalize(predicted_title)

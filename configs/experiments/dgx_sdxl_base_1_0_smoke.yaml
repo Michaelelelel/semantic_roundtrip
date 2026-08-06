@@ -1,4 +1,4 @@
-schema_version: 4
+schema_version: 5
 
 run:
   name: dgx_sdxl_base_1_0_smoke
@@ -75,6 +75,3 @@ stages:
         top_p: 1.0
         max_tokens: 64
         seed: 3003
-
-evaluation:
-  failed_verification: count_as_failure

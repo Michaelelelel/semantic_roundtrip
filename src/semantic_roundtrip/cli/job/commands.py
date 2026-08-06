@@ -5,6 +5,8 @@ from pathlib import Path
 
 import typer
 
+from semantic_roundtrip.analysis import evaluate_job
+from semantic_roundtrip.cli.analysis_output import print_analysis_result
 from semantic_roundtrip.cli.common import (
     EXPECTED_COMMAND_ERRORS,
     exit_with_error,
@@ -193,6 +195,17 @@ def resume(job_directory: Path = _job_directory_option()) -> None:
 
 
 @app.command("evaluate")
-def evaluate(job_directory: Path = _job_directory_option()) -> None:
-    """Evaluate"""
-    print("Evaluating job...")
+def evaluate(
+    job_directory: Path = _job_directory_option(),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Replace an existing analysis directory atomically.",
+    ),
+) -> None:
+    """Combine child runs into deterministic title-level study results."""
+    try:
+        result = evaluate_job(job_directory, force=force)
+    except EXPECTED_COMMAND_ERRORS as error:
+        exit_with_error(error)
+    print_analysis_result(result)

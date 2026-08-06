@@ -8,13 +8,9 @@ from semantic_roundtrip.config_resolution import configured_prediction_inputs
 from semantic_roundtrip.domain import (
     BenchmarkItem,
     GeneratedPrompt,
-    VerificationResult,
 )
 from semantic_roundtrip.evaluation import (
-    CONTAINS_MATCH_METHOD,
     EXACT_MATCH_METHOD,
-    apply_verification_policy,
-    title_casefold_contains_match,
     title_exact_match,
 )
 from semantic_roundtrip.persistence.run.database import RunDatabase
@@ -303,25 +299,21 @@ def execute_evaluation_stage(
         if verification_entry is None:
             raise RuntimeError(f"Image {image.image_id} is missing verification data.")
 
-        verification_id, verification = verification_entry
+        verification_id, _ = verification_entry
         for input_kind in configured_prediction_inputs(config):
             _evaluate_prediction(
-                config=config,
                 database=database,
                 image=image,
                 verification_id=verification_id,
-                verification=verification,
                 input_kind=input_kind,
             )
 
 
 def _evaluate_prediction(
     *,
-    config: ResolvedAppConfig,
     database: RunDatabase,
     image: ImageWorkItem,
     verification_id: int,
-    verification: VerificationResult,
     input_kind: PredictionInputKind,
 ) -> None:
     """Evaluate one configured prediction route for one image."""
@@ -352,24 +344,11 @@ def _evaluate_prediction(
 
     def evaluate() -> int:
         exact_match = title_exact_match(image.item.title, prediction.title)
-        contains_match = title_casefold_contains_match(
-            image.item.title,
-            prediction.title,
-        )
-        included, score = apply_verification_policy(
-            title_matches=exact_match,
-            verification_passed=verification.passed,
-            failed_verification=config.evaluation.failed_verification,
-        )
         return database.results.add_evaluation_if_missing(
             verification_id=verification_id,
             prediction_id=prediction_id,
             exact_match=exact_match,
-            casefold_contains_match=contains_match,
-            included=included,
-            primary_score=score,
             exact_method=EXACT_MATCH_METHOD,
-            contains_method=CONTAINS_MATCH_METHOD,
         )
 
     run_task(

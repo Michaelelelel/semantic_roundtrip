@@ -132,7 +132,22 @@ sudo docker compose \
 On the DGX, open `http://127.0.0.1:$STATUS_PORT`. From another computer, use an
 SSH tunnel to that localhost port.
 
-## 6. Test pause and resume
+## 6. Export finished results
+
+Run the analysis only after the selected run or job has finished:
+
+```bash
+sudo docker compose -f compose.yaml run --rm runner \
+  semantic-roundtrip run evaluate --run "runs/$RUN_ID"
+
+sudo docker compose -f compose.yaml run --rm runner \
+  semantic-roundtrip job evaluate --job "runs/$JOB_ID"
+```
+
+The CSV files, manifest, and figures are written to the selected directory's
+`analysis/` folder. Add `--force` only when you intentionally want to replace it.
+
+## 7. Test pause and resume
 
 Start `configs/experiments/mock_pause.yaml` in one terminal. In a second terminal,
 copy its ID from `run list`, then pause and resume it:
@@ -147,7 +162,7 @@ sudo docker compose -f compose.yaml run --rm runner \
 
 Use `configs/jobs/mock_pause.yaml` in the same way to test job-level pause and resume.
 
-## 7. Stop everything
+## 8. Stop everything
 
 Run artifacts remain in `RUN_ROOT`.
 
@@ -160,7 +175,7 @@ sudo docker compose \
   down --remove-orphans
 ```
 
-## 8. Copy results to the local computer
+## 9. Copy results to the local computer
 
 ```bash
 rsync -avz --progress \

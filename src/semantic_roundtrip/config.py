@@ -225,33 +225,27 @@ class StagesConfig(ConfigModel):
         return self
 
 
-class EvaluationConfig(ConfigModel):
-    failed_verification: Literal["count_as_failure", "exclude"]
-
-
 class InputAppConfig(ConfigModel):
     """Human-maintained experiment configuration with backend references."""
 
-    schema_version: Literal[4]
+    schema_version: Literal[5]
     run: RunConfig
     dataset: InputDatasetConfig
     experiment: ExperimentConfig
     backends: dict[BackendAlias, BackendReference] = Field(min_length=1)
     stages: StagesConfig
-    evaluation: EvaluationConfig
 
 
 class ResolvedAppConfig(ConfigModel):
     """Self-contained effective configuration stored with a run."""
 
-    schema_version: Literal[4]
+    schema_version: Literal[5]
     configuration_kind: Literal["effective"] = "effective"
     run: RunConfig
     dataset: ResolvedDatasetConfig
     experiment: ExperimentConfig
     backends: dict[BackendAlias, ResolvedBackend] = Field(min_length=1)
     stages: StagesConfig
-    evaluation: EvaluationConfig
 
 
 class StageAdapterConfig(ConfigModel):

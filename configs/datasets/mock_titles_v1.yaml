@@ -5,3 +5,18 @@ items:
   - id: songs_imagine
     domain: songs
     title: Imagine
+  - id: songs_yellow_submarine
+    domain: songs
+    title: Yellow Submarine
+  - id: movies_the_matrix
+    domain: movies
+    title: The Matrix
+  - id: movies_iron_man
+    domain: movies
+    title: Iron Man
+  - id: bands_queen
+    domain: bands
+    title: Queen
+  - id: bands_nirvana
+    domain: bands
+    title: Nirvana

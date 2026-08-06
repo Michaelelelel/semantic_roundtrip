@@ -12,7 +12,7 @@ from semantic_roundtrip.persistence.sqlite import (
 
 
 DATABASE_FILENAME = "pipeline_state.sqlite"
-DATABASE_SCHEMA_VERSION = 7
+DATABASE_SCHEMA_VERSION = 8
 
 
 def database_path_for_run(run_directory: Path) -> Path:
@@ -175,13 +175,7 @@ def initialize_database(
                     REFERENCES predictions(prediction_id) ON DELETE CASCADE,
                 exact_match INTEGER NOT NULL
                     CHECK (exact_match IN (0, 1)),
-                casefold_contains_match INTEGER NOT NULL
-                    CHECK (casefold_contains_match IN (0, 1)),
-                included INTEGER NOT NULL CHECK (included IN (0, 1)),
-                primary_score INTEGER
-                    CHECK (primary_score IS NULL OR primary_score IN (0, 1)),
-                exact_method TEXT NOT NULL,
-                contains_method TEXT NOT NULL
+                exact_method TEXT NOT NULL
             );
 
             CREATE TABLE runtime_events (

@@ -473,11 +473,7 @@ class RunResultStore:
         verification_id: int,
         prediction_id: int,
         exact_match: bool,
-        casefold_contains_match: bool,
-        included: bool,
-        primary_score: bool | None,
         exact_method: str,
-        contains_method: str,
     ) -> int:
         row = self._connection.execute(
             """
@@ -490,30 +486,21 @@ class RunResultStore:
         if row is not None:
             return int(row["evaluation_id"])
 
-        stored_score = None if primary_score is None else int(primary_score)
         return self._insert(
             """
             INSERT INTO evaluations (
                 verification_id,
                 prediction_id,
                 exact_match,
-                casefold_contains_match,
-                included,
-                primary_score,
-                exact_method,
-                contains_method
+                exact_method
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?)
             """,
             (
                 verification_id,
                 prediction_id,
                 int(exact_match),
-                int(casefold_contains_match),
-                int(included),
-                stored_score,
                 exact_method,
-                contains_method,
             ),
         )
 

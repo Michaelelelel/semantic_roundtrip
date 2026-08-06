@@ -18,14 +18,6 @@
         <span class="value--{{ 'yes' if result.exact_match else 'no' }}">
           {{ "yes" if result.exact_match else "no" }}
         </span>
-        · Contains:
-        <span class="value--{{ 'yes' if result.contains_match else 'no' }}">
-          {{ "yes" if result.contains_match else "no" }}
-        </span>
-        · Included:
-        <span class="value--{{ 'yes' if result.included else 'no' }}">
-          {{ "yes" if result.included else "no" }}
-        </span>
       {% endif %}
     </small>
   {% endif %}

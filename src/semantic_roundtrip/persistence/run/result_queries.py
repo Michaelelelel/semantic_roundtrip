@@ -18,8 +18,6 @@ class PredictionTrace:
     confidence: float | None
     confidence_type: str | None
     exact_match: bool | None
-    contains_match: bool | None
-    included: bool | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,8 +76,6 @@ def _prediction_trace(row: sqlite3.Row, prefix: str) -> PredictionTrace | None:
         confidence=None if confidence is None else float(confidence),
         confidence_type=row[f"{prefix}_confidence_type"],
         exact_match=_optional_bool(row[f"{prefix}_exact_match"]),
-        contains_match=_optional_bool(row[f"{prefix}_contains_match"]),
-        included=_optional_bool(row[f"{prefix}_included"]),
     )
 
 
@@ -131,19 +127,13 @@ def read_result_trace_page(
                 direct_predictions.confidence AS direct_confidence,
                 direct_predictions.confidence_type AS direct_confidence_type,
                 direct_evaluations.exact_match AS direct_exact_match,
-                direct_evaluations.casefold_contains_match
-                    AS direct_contains_match,
-                direct_evaluations.included AS direct_included,
                 description_predictions.prediction_id
                     AS description_prediction_id,
                 description_predictions.title AS description_title,
                 description_predictions.confidence AS description_confidence,
                 description_predictions.confidence_type
                     AS description_confidence_type,
-                description_evaluations.exact_match AS description_exact_match,
-                description_evaluations.casefold_contains_match
-                    AS description_contains_match,
-                description_evaluations.included AS description_included
+                description_evaluations.exact_match AS description_exact_match
             FROM prompts
             JOIN dataset_items AS items
                 ON items.item_id = prompts.item_id
