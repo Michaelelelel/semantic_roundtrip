@@ -7,7 +7,7 @@ from semantic_roundtrip.persistence.run.manager import RunContext
 
 
 MANIFEST_FILENAME = "manifest.json"
-MANIFEST_SCHEMA_VERSION = 3
+MANIFEST_SCHEMA_VERSION = 4
 
 
 def _relative_path(path: Path, run_directory: Path) -> str:
@@ -22,12 +22,17 @@ def create_manifest(
     database_path: Path,
     images_directory: Path,
     prompt_paths: dict[str, Path],
+    workflow_paths: dict[str, Path],
 ) -> Path:
     """Write the static identity and artifact index for a run."""
     manifest_path = run_context.directory / MANIFEST_FILENAME
     prompt_artifacts = {
         name: _relative_path(path, run_context.directory)
         for name, path in prompt_paths.items()
+    }
+    workflow_artifacts = {
+        name: _relative_path(path, run_context.directory)
+        for name, path in workflow_paths.items()
     }
 
     manifest = {
@@ -53,6 +58,7 @@ def create_manifest(
                 run_context.directory,
             ),
             "prompts": prompt_artifacts,
+            "workflows": workflow_artifacts,
         },
     }
 

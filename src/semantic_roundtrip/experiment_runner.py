@@ -27,6 +27,10 @@ from semantic_roundtrip.persistence.run.schema import (
     database_path_for_run,
     initialize_database,
 )
+from semantic_roundtrip.persistence.run.workflow_snapshot import (
+    create_workflow_snapshots,
+    use_workflow_snapshots,
+)
 from semantic_roundtrip.pipeline import PipelineSummary, run_pipeline
 from semantic_roundtrip.prompting import PromptProfile, load_prompt_profile
 
@@ -89,6 +93,10 @@ def prepare_experiment(
         loaded_prompt_profile,
         run_context.directory,
     )
+    workflow_paths = create_workflow_snapshots(
+        config,
+        run_context.directory,
+    )
     images_directory = run_context.directory / "images"
     images_directory.mkdir()
     database_path = initialize_database(
@@ -105,6 +113,7 @@ def prepare_experiment(
         database_path,
         images_directory,
         prompt_paths,
+        workflow_paths,
     )
 
     return PreparedExperiment(
@@ -162,8 +171,11 @@ def resume_experiment(
     if record.status not in allowed_statuses:
         raise ValueError(f"Cannot resume a run with status '{record.status}'.")
 
-    config = use_prompt_snapshots(
-        load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME),
+    config = use_workflow_snapshots(
+        use_prompt_snapshots(
+            load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME),
+            run_directory,
+        ),
         run_directory,
     )
     loaded_prompt_profile = load_prompt_profile(
