@@ -8,11 +8,9 @@ dataset:
   items:
     - domain: songs
       title: Imagine
-    - domain: movies
-      title: The Matrix
 
 experiment:
-  prompts_per_title: 2
+  prompts_per_title: 1
   prompt_seed: 1000
   image_seeds:
     - 42
@@ -33,9 +31,16 @@ stages:
   verification:
     backend: mock
 
+  image_description:
+    backend: mock
+    template_path: prompts/image_description/plain_v1.txt
+
   title_guessing:
     direct:
       backend: mock
+    from_description:
+      backend: mock
+      template_path: prompts/title_guessing/description_plain_v1.txt
 
 evaluation:
   failed_verification: count_as_failure

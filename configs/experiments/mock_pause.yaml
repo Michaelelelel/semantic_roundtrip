@@ -8,11 +8,9 @@ dataset:
   items:
     - domain: songs
       title: Imagine
-    - domain: movies
-      title: The Matrix
 
 experiment:
-  prompts_per_title: 5
+  prompts_per_title: 2
   prompt_seed: 1000
   image_seeds:
     - 41
@@ -28,23 +26,34 @@ stages:
     backend: mock
     prompt_profile: prompts/prompt_generation/visual_single_v1.yaml
     parameters:
-      delay_seconds: 2
+      delay_seconds: 1
 
   image_generation:
     backend: mock
     parameters:
-      delay_seconds: 2
+      delay_seconds: 1
 
   verification:
     backend: mock
     parameters:
-      delay_seconds: 2
+      delay_seconds: 1
+
+  image_description:
+    backend: mock
+    template_path: prompts/image_description/plain_v1.txt
+    parameters:
+      delay_seconds: 1
 
   title_guessing:
     direct:
       backend: mock
       parameters:
-        delay_seconds: 2
+        delay_seconds: 1
+    from_description:
+      backend: mock
+      template_path: prompts/title_guessing/description_plain_v1.txt
+      parameters:
+        delay_seconds: 1
 
 evaluation:
   failed_verification: count_as_failure

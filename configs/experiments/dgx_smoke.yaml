@@ -21,7 +21,9 @@ backends:
     profile: ../backends/text/mistral-7b-instruct-v0.1-q4_k_m-llamacpp.yaml
   image_model:
     profile: ../backends/image/stable-diffusion-v1-5-comfyui.yaml
-  vision_llm:
+  verifier_vlm:
+    profile: ../backends/vision/llava-v1.5-7b-q4_k-llamacpp.yaml
+  title_vlm:
     profile: ../backends/vision/llava-v1.5-7b-q4_k-llamacpp.yaml
 
 stages:
@@ -37,16 +39,29 @@ stages:
     backend: image_model
 
   verification:
-    backend: vision_llm
+    backend: verifier_vlm
     template_path: prompts/verification/json_v1.txt
     parameters:
       max_tokens: 128
 
+  image_description:
+    backend: title_vlm
+    template_path: prompts/image_description/plain_v1.txt
+    parameters:
+      max_tokens: 256
+
   title_guessing:
     direct:
-      backend: vision_llm
+      backend: title_vlm
       template_path: prompts/title_guessing/plain_v1.txt
       parameters:
+        max_tokens: 64
+    from_description:
+      backend: prompt_llm
+      template_path: prompts/title_guessing/description_plain_v1.txt
+      parameters:
+        temperature: 0.0
+        top_p: 1.0
         max_tokens: 64
 
 evaluation:
