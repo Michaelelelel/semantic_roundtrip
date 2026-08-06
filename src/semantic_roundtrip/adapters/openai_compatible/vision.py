@@ -78,6 +78,7 @@ class OpenAICompatibleImageVerifier:
             temperature=self._config.temperature,
             top_p=self._config.top_p,
             max_tokens=self._config.max_tokens,
+            seed=self._config.seed,
             response_format=VERIFICATION_RESPONSE_FORMAT,
         )
 
@@ -136,6 +137,7 @@ class OpenAICompatibleImageDescriber:
             temperature=self._config.temperature,
             top_p=self._config.top_p,
             max_tokens=self._config.max_tokens,
+            seed=self._config.seed,
         )
 
         description = completion.content.strip()
@@ -188,6 +190,7 @@ class OpenAICompatibleImageTitleGuesser:
             temperature=self._config.temperature,
             top_p=self._config.top_p,
             max_tokens=self._config.max_tokens,
+            seed=self._config.seed,
             include_token_logprobs=True,
         )
 

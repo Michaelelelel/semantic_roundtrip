@@ -1,12 +1,14 @@
-schema_version: 3
+schema_version: 4
 
 run:
   name: mock_pause
   output_directory: runs
 
 dataset:
+  dataset_id: mock_pause_v1
   items:
-    - domain: songs
+    - id: songs_imagine
+      domain: songs
       title: Imagine
 
 experiment:

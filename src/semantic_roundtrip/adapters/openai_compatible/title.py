@@ -78,6 +78,7 @@ class OpenAICompatibleTextTitleGuesser:
             temperature=self._config.temperature,
             top_p=self._config.top_p,
             max_tokens=self._config.max_tokens,
+            seed=self._config.seed,
             include_token_logprobs=True,
         )
         return title_prediction_from_completion(completion)

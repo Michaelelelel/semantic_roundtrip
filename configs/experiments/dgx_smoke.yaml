@@ -1,12 +1,14 @@
-schema_version: 3
+schema_version: 4
 
 run:
   name: dgx_smoke
   output_directory: runs
 
 dataset:
+  dataset_id: dgx_smoke_v1
   items:
-    - domain: songs
+    - id: songs_imagine
+      domain: songs
       title: Imagine
 
 experiment:
@@ -42,20 +44,29 @@ stages:
     backend: verifier_vlm
     template_path: prompts/verification/json_v1.txt
     parameters:
+      temperature: 0.0
+      top_p: 1.0
       max_tokens: 128
+      seed: 3001
 
   image_description:
     backend: title_vlm
     template_path: prompts/image_description/plain_v1.txt
     parameters:
+      temperature: 0.0
+      top_p: 1.0
       max_tokens: 256
+      seed: 3002
 
   title_guessing:
     direct:
       backend: title_vlm
       template_path: prompts/title_guessing/plain_v1.txt
       parameters:
+        temperature: 0.0
+        top_p: 1.0
         max_tokens: 64
+        seed: 3003
     from_description:
       backend: prompt_llm
       template_path: prompts/title_guessing/description_plain_v1.txt
@@ -63,6 +74,7 @@ stages:
         temperature: 0.0
         top_p: 1.0
         max_tokens: 64
+        seed: 3003
 
 evaluation:
   failed_verification: count_as_failure

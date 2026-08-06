@@ -18,6 +18,7 @@ class RunConfig(ConfigModel):
 
 
 class DatasetItem(ConfigModel):
+    id: Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]*$")]
     domain: str = Field(min_length=1)
     title: str = Field(min_length=1)
 
@@ -29,8 +30,64 @@ class DatasetItem(ConfigModel):
         return value
 
 
-class DatasetConfig(ConfigModel):
+def _require_unique_item_ids(items: list[DatasetItem]) -> None:
+    item_ids = [item.id for item in items]
+    if len(item_ids) != len(set(item_ids)):
+        raise ValueError("Every dataset item ID must be unique.")
+
+
+class DatasetProfile(ConfigModel):
+    """Reusable, versioned title collection referenced by experiments."""
+
+    schema_version: Literal[1]
+    dataset_id: Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]*$")]
     items: list[DatasetItem] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_unique_item_ids(self) -> Self:
+        _require_unique_item_ids(self.items)
+        return self
+
+
+class InputDatasetConfig(ConfigModel):
+    """Dataset profile reference or an inline dataset for a small smoke run."""
+
+    profile: Path | None = None
+    dataset_id: (
+        Annotated[
+            str,
+            Field(pattern=r"^[a-z][a-z0-9_]*$"),
+        ]
+        | None
+    ) = None
+    items: list[DatasetItem] | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def require_profile_or_complete_inline_dataset(self) -> Self:
+        if self.profile is not None:
+            if self.dataset_id is not None or self.items is not None:
+                raise ValueError(
+                    "A dataset profile cannot be combined with dataset_id or items."
+                )
+            return self
+
+        if self.dataset_id is None or self.items is None:
+            raise ValueError("An inline dataset requires both dataset_id and items.")
+        _require_unique_item_ids(self.items)
+        return self
+
+
+class ResolvedDatasetConfig(ConfigModel):
+    """Self-contained title collection stored in the effective snapshot."""
+
+    dataset_id: Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]*$")]
+    source_profile: Path | None = None
+    items: list[DatasetItem] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_unique_item_ids(self) -> Self:
+        _require_unique_item_ids(self.items)
+        return self
 
 
 class ExperimentConfig(ConfigModel):
@@ -175,9 +232,9 @@ class EvaluationConfig(ConfigModel):
 class InputAppConfig(ConfigModel):
     """Human-maintained experiment configuration with backend references."""
 
-    schema_version: Literal[3]
+    schema_version: Literal[4]
     run: RunConfig
-    dataset: DatasetConfig
+    dataset: InputDatasetConfig
     experiment: ExperimentConfig
     backends: dict[BackendAlias, BackendReference] = Field(min_length=1)
     stages: StagesConfig
@@ -187,10 +244,10 @@ class InputAppConfig(ConfigModel):
 class ResolvedAppConfig(ConfigModel):
     """Self-contained effective configuration stored with a run."""
 
-    schema_version: Literal[3]
+    schema_version: Literal[4]
     configuration_kind: Literal["effective"] = "effective"
     run: RunConfig
-    dataset: DatasetConfig
+    dataset: ResolvedDatasetConfig
     experiment: ExperimentConfig
     backends: dict[BackendAlias, ResolvedBackend] = Field(min_length=1)
     stages: StagesConfig

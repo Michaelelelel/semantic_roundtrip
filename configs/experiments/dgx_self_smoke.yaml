@@ -1,7 +1,7 @@
 schema_version: 4
 
 run:
-  name: dgx_sdxl_base_1_0_smoke
+  name: dgx_self_smoke
   output_directory: runs
 
 dataset:
@@ -22,7 +22,7 @@ backends:
   prompt_llm:
     profile: ../backends/text/mistral-7b-instruct-v0.1-q4_k_m-llamacpp.yaml
   image_model:
-    profile: ../backends/image/stable-diffusion-xl-base-1.0-fp16-comfyui.yaml
+    profile: ../backends/image/stable-diffusion-v1-5-comfyui.yaml
   verifier_vlm:
     profile: ../backends/vision/llava-v1.5-7b-q4_k-llamacpp.yaml
   title_vlm:
@@ -68,7 +68,7 @@ stages:
         max_tokens: 64
         seed: 3003
     from_description:
-      backend: prompt_llm
+      backend: title_vlm
       template_path: prompts/title_guessing/description_plain_v1.txt
       parameters:
         temperature: 0.0

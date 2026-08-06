@@ -82,14 +82,18 @@ class RunResultStore:
     ) -> int:
         row = self._connection.execute(
             """
-            SELECT item_id, domain, title
+            SELECT item_id, item_key, domain, title
             FROM dataset_items
             WHERE run_id = ? AND item_index = ?
             """,
             (self._run_context.run_id, item_index),
         ).fetchone()
         if row is not None:
-            if row["domain"] != item.domain or row["title"] != item.title:
+            if (
+                row["item_key"] != item.item_key
+                or row["domain"] != item.domain
+                or row["title"] != item.title
+            ):
                 raise ValueError(
                     f"Stored dataset item {item_index} differs from the snapshot."
                 )
@@ -97,12 +101,19 @@ class RunResultStore:
 
         return self._insert(
             """
-            INSERT INTO dataset_items (run_id, item_index, domain, title)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO dataset_items (
+                run_id,
+                item_index,
+                item_key,
+                domain,
+                title
+            )
+            VALUES (?, ?, ?, ?, ?)
             """,
             (
                 self._run_context.run_id,
                 item_index,
+                item.item_key,
                 item.domain,
                 item.title,
             ),
@@ -168,6 +179,7 @@ class RunResultStore:
             SELECT
                 items.item_id,
                 items.item_index,
+                items.item_key,
                 items.domain,
                 items.title,
                 prompts.prompt_id,
@@ -185,7 +197,11 @@ class RunResultStore:
             PromptWorkItem(
                 item_id=int(row["item_id"]),
                 item_index=int(row["item_index"]),
-                item=BenchmarkItem(domain=row["domain"], title=row["title"]),
+                item=BenchmarkItem(
+                    item_key=row["item_key"],
+                    domain=row["domain"],
+                    title=row["title"],
+                ),
                 prompt_id=int(row["prompt_id"]),
                 prompt=GeneratedPrompt(
                     index=int(row["prompt_index"]),
@@ -248,6 +264,7 @@ class RunResultStore:
             SELECT
                 items.item_id,
                 items.item_index,
+                items.item_key,
                 items.domain,
                 items.title,
                 prompts.prompt_id,
@@ -272,7 +289,11 @@ class RunResultStore:
             ImageWorkItem(
                 item_id=int(row["item_id"]),
                 item_index=int(row["item_index"]),
-                item=BenchmarkItem(domain=row["domain"], title=row["title"]),
+                item=BenchmarkItem(
+                    item_key=row["item_key"],
+                    domain=row["domain"],
+                    title=row["title"],
+                ),
                 prompt_id=int(row["prompt_id"]),
                 prompt=GeneratedPrompt(
                     index=int(row["prompt_index"]),
@@ -422,7 +443,6 @@ class RunResultStore:
                 "Description predictions require description_id; "
                 "image predictions must not provide one."
             )
-
         return self._insert(
             """
             INSERT INTO predictions (

@@ -9,6 +9,7 @@ from typing import Literal
 class BenchmarkItem:
     """One title and its domain from the benchmark dataset."""
 
+    item_key: str
     domain: str
     title: str
 

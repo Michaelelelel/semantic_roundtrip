@@ -1,4 +1,4 @@
-"""Resolve input backend profiles into self-contained run configurations."""
+"""Resolve input profiles into self-contained run configurations."""
 
 from pathlib import Path
 from typing import Any
@@ -7,11 +7,13 @@ import yaml
 
 from semantic_roundtrip.config import (
     BackendProfile,
+    DatasetProfile,
     InputAppConfig,
     PipelineStageName,
     PredictionInputKind,
     ResolvedAppConfig,
     ResolvedBackend,
+    ResolvedDatasetConfig,
     StageAdapterConfig,
     StageConfig,
     StageName,
@@ -35,6 +37,34 @@ def _read_yaml(path: Path) -> Any:
 
 def _load_backend_profile(path: Path) -> BackendProfile:
     return BackendProfile.model_validate(_read_yaml(path))
+
+
+def _load_dataset_profile(path: Path) -> DatasetProfile:
+    return DatasetProfile.model_validate(_read_yaml(path))
+
+
+def get_stage_config(
+    config: ResolvedAppConfig,
+    stage_name: StageName,
+) -> StageConfig | None:
+    """Return the configuration represented by one executable stage name."""
+    if stage_name == "title_guessing_direct":
+        return config.stages.title_guessing.direct
+    if stage_name == "title_guessing_from_description":
+        return config.stages.title_guessing.from_description
+    return getattr(config.stages, stage_name)
+
+
+def configured_prediction_inputs(
+    config: ResolvedAppConfig,
+) -> tuple[PredictionInputKind, ...]:
+    """Return configured prediction inputs in pipeline execution order."""
+    inputs: list[PredictionInputKind] = []
+    if config.stages.title_guessing.direct is not None:
+        inputs.append("image")
+    if config.stages.title_guessing.from_description is not None:
+        inputs.append("description")
+    return tuple(inputs)
 
 
 def resolve_stage_adapter(
@@ -76,30 +106,6 @@ def resolve_stage_adapter(
     )
 
 
-def get_stage_config(
-    config: ResolvedAppConfig,
-    stage_name: StageName,
-) -> StageConfig | None:
-    """Return the configuration represented by one executable stage name."""
-    if stage_name == "title_guessing_direct":
-        return config.stages.title_guessing.direct
-    if stage_name == "title_guessing_from_description":
-        return config.stages.title_guessing.from_description
-    return getattr(config.stages, stage_name)
-
-
-def configured_prediction_inputs(
-    config: ResolvedAppConfig,
-) -> tuple[PredictionInputKind, ...]:
-    """Return configured prediction inputs in pipeline execution order."""
-    inputs: list[PredictionInputKind] = []
-    if config.stages.title_guessing.direct is not None:
-        inputs.append("image")
-    if config.stages.title_guessing.from_description is not None:
-        inputs.append("description")
-    return tuple(inputs)
-
-
 def _validate_resolved_config(config: ResolvedAppConfig) -> None:
     for stage_name in STAGE_NAMES:
         if get_stage_config(config, stage_name) is None:
@@ -107,8 +113,32 @@ def _validate_resolved_config(config: ResolvedAppConfig) -> None:
         resolve_stage_adapter(config, stage_name)
 
 
+def _resolve_dataset(
+    input_config: InputAppConfig,
+    base_directory: Path,
+) -> ResolvedDatasetConfig:
+    dataset = input_config.dataset
+    if dataset.profile is None:
+        if dataset.dataset_id is None or dataset.items is None:
+            raise ValueError("Inline dataset was not fully configured.")
+        return ResolvedDatasetConfig(
+            dataset_id=dataset.dataset_id,
+            items=dataset.items,
+        )
+
+    profile_path = dataset.profile
+    if not profile_path.is_absolute():
+        profile_path = (base_directory / profile_path).resolve()
+    profile = _load_dataset_profile(profile_path)
+    return ResolvedDatasetConfig(
+        dataset_id=profile.dataset_id,
+        source_profile=dataset.profile,
+        items=profile.items,
+    )
+
+
 def load_input_config(path: Path) -> ResolvedAppConfig:
-    """Load an experiment and resolve every referenced backend profile."""
+    """Load an experiment and resolve all referenced profiles."""
     input_config = InputAppConfig.model_validate(_read_yaml(path))
     base_directory = path.resolve().parent
     profile_cache: dict[Path, BackendProfile] = {}
@@ -133,6 +163,7 @@ def load_input_config(path: Path) -> ResolvedAppConfig:
 
     raw_resolved = input_config.model_dump(mode="python")
     raw_resolved["configuration_kind"] = "effective"
+    raw_resolved["dataset"] = _resolve_dataset(input_config, base_directory)
     raw_resolved["backends"] = resolved_backends
     resolved_config = ResolvedAppConfig.model_validate(raw_resolved)
     _validate_resolved_config(resolved_config)
@@ -140,7 +171,7 @@ def load_input_config(path: Path) -> ResolvedAppConfig:
 
 
 def load_effective_config(path: Path) -> ResolvedAppConfig:
-    """Load a self-contained snapshot without reopening backend profiles."""
+    """Load a self-contained snapshot without reopening source profiles."""
     config = ResolvedAppConfig.model_validate(_read_yaml(path))
     _validate_resolved_config(config)
     return config
@@ -156,6 +187,7 @@ def expected_stage_outputs(config: ResolvedAppConfig) -> dict[PipelineStageName,
         "verification": image_count,
         "evaluation": image_count * len(configured_prediction_inputs(config)),
     }
+
     if config.stages.title_guessing.direct is not None:
         expected["title_guessing_direct"] = image_count
     if config.stages.image_description is not None:

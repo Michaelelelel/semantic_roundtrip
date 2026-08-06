@@ -12,7 +12,7 @@ from semantic_roundtrip.persistence.sqlite import (
 
 
 DATABASE_FILENAME = "pipeline_state.sqlite"
-DATABASE_SCHEMA_VERSION = 6
+DATABASE_SCHEMA_VERSION = 7
 
 
 def database_path_for_run(run_directory: Path) -> Path:
@@ -54,7 +54,7 @@ def initialize_database(
     input_config_path: Path,
     effective_config_path: Path,
 ) -> Path:
-    """Create a schema-v6 database for a new experiment run."""
+    """Create a schema-v7 database for a new experiment run."""
     database_path = database_path_for_run(run_context.directory)
     if database_path.exists():
         raise FileExistsError(f"Database already exists: {database_path}")
@@ -94,9 +94,11 @@ def initialize_database(
                 run_id TEXT NOT NULL REFERENCES run_metadata(run_id)
                     ON DELETE CASCADE,
                 item_index INTEGER NOT NULL,
+                item_key TEXT NOT NULL,
                 domain TEXT NOT NULL,
                 title TEXT NOT NULL,
-                UNIQUE (run_id, item_index)
+                UNIQUE (run_id, item_index),
+                UNIQUE (run_id, item_key)
             );
 
             CREATE TABLE prompts (

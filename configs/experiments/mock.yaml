@@ -1,13 +1,11 @@
-schema_version: 3
+schema_version: 4
 
 run:
   name: mock_smoke
   output_directory: runs
 
 dataset:
-  items:
-    - domain: songs
-      title: Imagine
+  profile: ../datasets/mock_titles_v1.yaml
 
 experiment:
   prompts_per_title: 1

@@ -33,7 +33,6 @@ def _load_or_generate_prompt(
     adapters: AdapterBundle,
     prompt_profile: PromptProfile,
     item: BenchmarkItem,
-    item_index: int,
     item_id: int,
     prompt_index: int,
     sampling_seed: int,
@@ -41,7 +40,7 @@ def _load_or_generate_prompt(
 ) -> tuple[int, GeneratedPrompt]:
     raise_if_pause_requested(database)
     task = database.tasks.get_or_create(
-        task_key=f"prompt_generation:{item_index}:{prompt_index}",
+        task_key=f"prompt_generation:{item.item_key}:{prompt_index}",
         stage="prompt_generation",
         expected_outputs=1,
         item_id=item_id,
@@ -88,7 +87,7 @@ def _load_or_generate_prompt(
 
 
 def _image_task_suffix(image: ImageWorkItem) -> str:
-    return f"{image.item_index}:{image.prompt.index}:{image.image.seed}"
+    return f"{image.item.item_key}:{image.prompt.index}:{image.image.seed}"
 
 
 def execute_prompt_generation_stage(
@@ -101,6 +100,7 @@ def execute_prompt_generation_stage(
     """Generate every missing visual prompt before the next stage starts."""
     for item_index, configured_item in enumerate(config.dataset.items):
         item = BenchmarkItem(
+            item_key=configured_item.id,
             domain=configured_item.domain,
             title=configured_item.title,
         )
@@ -111,7 +111,6 @@ def execute_prompt_generation_stage(
                 adapters=adapters,
                 prompt_profile=prompt_profile,
                 item=item,
-                item_index=item_index,
                 item_id=item_id,
                 prompt_index=prompt_index,
                 sampling_seed=config.experiment.prompt_seed + prompt_index,
@@ -129,7 +128,7 @@ def execute_image_generation_stage(
     """Generate every missing image from the persisted prompts."""
     for prompt in database.results.list_prompts():
         for seed in config.experiment.image_seeds:
-            task_suffix = f"{prompt.item_index}:{prompt.prompt.index}:{seed}"
+            task_suffix = f"{prompt.item.item_key}:{prompt.prompt.index}:{seed}"
             load_or_run_single(
                 database=database,
                 stage="image_generation",

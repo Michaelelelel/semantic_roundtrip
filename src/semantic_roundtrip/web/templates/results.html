@@ -68,7 +68,10 @@
           <tbody>
             <tr>
               <th>Input</th>
-              <td>{{ trace.domain }} · <strong>{{ trace.expected_title }}</strong></td>
+              <td>
+                {{ trace.domain }} · <strong>{{ trace.expected_title }}</strong>
+                · <span class="mono">{{ trace.item_key }}</span>
+              </td>
             </tr>
             <tr>
               <th>Generated prompt</th>

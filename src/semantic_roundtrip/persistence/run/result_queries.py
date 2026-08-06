@@ -27,6 +27,7 @@ class ResultTrace:
     """One prompt and its available downstream pipeline products."""
 
     item_index: int
+    item_key: str
     domain: str
     expected_title: str
     prompt_id: int
@@ -113,6 +114,7 @@ def read_result_trace_page(
             """
             SELECT
                 items.item_index,
+                items.item_key,
                 items.domain,
                 items.title AS expected_title,
                 prompts.prompt_id,
@@ -178,6 +180,7 @@ def read_result_trace_page(
     traces = tuple(
         ResultTrace(
             item_index=int(row["item_index"]),
+            item_key=row["item_key"],
             domain=row["domain"],
             expected_title=row["expected_title"],
             prompt_id=int(row["prompt_id"]),

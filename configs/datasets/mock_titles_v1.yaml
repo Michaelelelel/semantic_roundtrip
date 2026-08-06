@@ -1,0 +1,7 @@
+schema_version: 1
+dataset_id: mock_titles_v1
+
+items:
+  - id: songs_imagine
+    domain: songs
+    title: Imagine
