@@ -1,29 +1,32 @@
 schema_version: 5
 
 run:
-  name: dgx_development
+  name: dgx_qwen3_sdxl_smoke
   output_directory: runs
 
 dataset:
-  profile: ../datasets/development_titles_v1.yaml
+  dataset_id: dgx_smoke_v1
+  items:
+    - id: songs_imagine
+      domain: songs
+      title: Imagine
 
 experiment:
-  prompts_per_title: 2
+  prompts_per_title: 1
   prompt_seed: 1000
   image_seeds:
     - 8566257
-    - 2875613
   retry_limit: 1
 
 backends:
   prompt_llm:
-    profile: ../backends/text/mistral-7b-instruct-v0.1-q4_k_m-llamacpp.yaml
+    profile: ../backends/text/qwen3-8b-q8_0-llamacpp.yaml
   image_model:
-    profile: ../backends/image/stable-diffusion-v1-5-comfyui.yaml
+    profile: ../backends/image/stable-diffusion-xl-base-1.0-fp16-comfyui.yaml
   verifier_vlm:
-    profile: ../backends/vision/llava-v1.5-7b-q4_k-llamacpp.yaml
+    profile: ../backends/vision/qwen3-vl-8b-instruct-q8_0-llamacpp.yaml
   title_vlm:
-    profile: ../backends/vision/llava-v1.5-7b-q4_k-llamacpp.yaml
+    profile: ../backends/vision/qwen3-vl-8b-instruct-q8_0-llamacpp.yaml
 
 stages:
   prompt_generation:
