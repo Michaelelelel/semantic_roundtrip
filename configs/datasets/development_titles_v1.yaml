@@ -1,0 +1,24 @@
+schema_version: 1
+dataset_id: development_titles_v1
+
+# These titles were already used while building and debugging the pipeline.
+# They are therefore development data and must not be included in pilot or final scores.
+items:
+  - id: songs_imagine
+    domain: songs
+    title: Imagine
+  - id: songs_yellow_submarine
+    domain: songs
+    title: Yellow Submarine
+  - id: movies_the_matrix
+    domain: movies
+    title: The Matrix
+  - id: movies_iron_man
+    domain: movies
+    title: Iron Man
+  - id: bands_queen
+    domain: bands
+    title: Queen
+  - id: bands_nirvana
+    domain: bands
+    title: Nirvana
