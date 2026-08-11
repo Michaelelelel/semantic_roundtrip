@@ -126,8 +126,11 @@ sudo docker compose \
   -f compose.yaml \
   -f compose.status.yaml \
   --profile status \
-  up -d --build --wait status_web
+  up -d --build --force-recreate --wait status_web
 ```
+
+Rebuilding and recreating the website is required after a database-schema change so
+the web container and the runner use the same installed project version.
 
 On the DGX, open `http://127.0.0.1:$STATUS_PORT`. From another computer, use an
 SSH tunnel to that localhost port.
