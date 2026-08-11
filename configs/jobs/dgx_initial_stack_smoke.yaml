@@ -1,0 +1,13 @@
+schema_version: 2
+
+job:
+  name: dgx_initial_stack_smoke
+  output_directory: runs
+  continue_on_error: true
+
+experiments:
+  - name: legacy_mistral_sd15_llava
+    config: ../experiments/dgx_smoke.yaml
+
+  - name: intermediate_qwen3_sdxl_qwen3vl
+    config: ../experiments/dgx_qwen3_sdxl_smoke.yaml

@@ -25,6 +25,7 @@ dist/
 # Model weights stay local; only category roots and documentation are tracked.
 models/*
 !models/README.md
+!models/download-*.sh
 !models/text/
 !models/image/
 !models/vision/
@@ -32,14 +33,14 @@ models/text/*
 models/image/*
 models/vision/*
 !models/text/.gitkeep
-!models/text/download.sh
+!models/text/download-*.sh
 !models/image/.gitkeep
 !models/image/download-*.sh
 !models/image/checkpoints/
 models/image/checkpoints/*
 !models/image/checkpoints/.gitkeep
 !models/vision/.gitkeep
-!models/vision/download.sh
+!models/vision/download-*.sh
 models_vlm/
 *.gguf
 *.safetensors

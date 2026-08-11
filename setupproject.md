@@ -33,8 +33,8 @@ Download the currently configured baseline models and chat templates:
 
 ```bash
 ./chat_templates/download.sh
-./models/text/download.sh "$DATA_ROOT/models"
-./models/vision/download.sh "$DATA_ROOT/models"
+./models/text/download-mistral-7b-instruct-v0.1-q4_k_m.sh "$DATA_ROOT/models"
+./models/vision/download-llava-v1.5-7b-q4_k.sh "$DATA_ROOT/models"
 ./models/image/download-stable-diffusion-v1-5-fp16.sh "$DATA_ROOT/models"
 ```
 
@@ -93,6 +93,21 @@ sudo docker compose \
 
 The smoke test exercises prompt generation, image generation, verification, image
 description, and both title-reconstruction routes. It is not a scientific experiment.
+
+To run the initial engineering smoke for the legacy and intermediate Qwen3 stacks,
+download their model bundle and execute both one-item checks as one sequential job.
+This verifies integration only; it is not a scientific stack comparison:
+
+```bash
+./models/download-dgx-initial-stack-smoke.sh "$DATA_ROOT/models"
+
+sudo docker compose \
+  -f compose.yaml \
+  -f compose.dgx.yaml \
+  run --rm runner \
+  semantic-roundtrip job start \
+  --config configs/jobs/dgx_initial_stack_smoke.yaml
+```
 
 ## 5. Inspect progress
 
