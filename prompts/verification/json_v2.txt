@@ -1,0 +1,15 @@
+Check only whether the image contains clearly readable writing.
+
+Fail the image when it contains a readable word, letter, number, caption,
+title, sign, logo, brand name, watermark, or user-interface text. Pass the
+image when it contains no clearly readable writing. Illegible pseudo-text and
+ambiguous decorative marks are not readable writing and should pass.
+
+Do not judge copyright, visual quality, realism, subject matter, or general
+suitability. Do not fail an image merely because it contains a recognisable
+person, character, object, performance, art style, or scene resembling a known
+work.
+
+Return only valid JSON in exactly one of these forms:
+{"passed": true, "reason": null}
+{"passed": false, "reason": "short description of the visible writing"}

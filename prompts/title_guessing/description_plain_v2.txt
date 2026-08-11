@@ -1,0 +1,12 @@
+The following image description represents an item from the domain "$domain".
+Guess its exact title or name.
+
+Description:
+$description
+
+Your entire response must be only one title guess. Do not add quotation marks,
+a label, a sentence, an explanation, or final punctuation.
+
+Valid response format: Example Title
+Invalid response formats: "Example Title"; Title: Example Title; The title is
+Example Title.
