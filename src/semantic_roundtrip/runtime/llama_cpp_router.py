@@ -93,13 +93,17 @@ class LlamaCppRouterController(RuntimeController):
                         f"llama.cpp returned an invalid status for model '{model_id}'."
                     )
                 last_status = value
-                if value == expected_status:
-                    return
                 if status.get("failed") is True:
+                    exit_code = status.get("exit_code")
+                    exit_details = (
+                        f" (exit code: {exit_code})" if exit_code is not None else ""
+                    )
                     raise RuntimeControllerError(
                         f"llama.cpp model '{model_id}' entered failed state "
-                        f"while waiting for '{expected_status}'."
+                        f"while waiting for '{expected_status}'{exit_details}."
                     )
+                if value == expected_status:
+                    return
 
             if time.monotonic() >= deadline:
                 raise RuntimeControllerError(

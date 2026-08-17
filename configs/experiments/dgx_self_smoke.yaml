@@ -55,7 +55,7 @@ stages:
     parameters:
       temperature: 0.0
       top_p: 1.0
-      max_tokens: 256
+      max_tokens: 512
       seed: 3002
 
   title_guessing:

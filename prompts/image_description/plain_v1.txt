@@ -1,4 +1,5 @@
-Describe the image accurately and concretely. Include the visible subjects,
-setting, actions, objects, colours, composition, and other details that could
-help identify what the image represents. Do not guess or mention a source title.
-Return only the description without Markdown or an explanation.
+Describe the image accurately and concretely in one concise paragraph. Focus on
+the distinctive visible subjects, setting, actions, objects, colours, and
+composition that could help identify what the image represents. Do not guess or
+mention a source title. Return only the description without Markdown or an
+explanation.

@@ -52,7 +52,6 @@ class RuntimeSession:
 
         self.release()
         controller = self._controller_factory(target)
-        self._active = ActiveRuntime(target=target, controller=controller)
         runtime_event_id = self._begin_event(target, action="load")
         try:
             controller.load(target)
@@ -60,6 +59,7 @@ class RuntimeSession:
             self._database.runtime_events.fail(runtime_event_id, error)
             raise
         else:
+            self._active = ActiveRuntime(target=target, controller=controller)
             self._database.runtime_events.complete(runtime_event_id)
 
     def release(self) -> None:
