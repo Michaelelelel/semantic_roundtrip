@@ -1,0 +1,13 @@
+schema_version: 1
+
+adapter: openai_compatible
+
+settings:
+  endpoint: http://vision_runtime:8080/v1/chat/completions
+  model_id: qwen3.6-27b-q8_0
+  timeout_seconds: 600
+
+runtime:
+  controller: llama_cpp_router
+  control_url: http://vision_runtime:8080
+  resource_group: dgx-main

@@ -29,9 +29,11 @@ models/*
 !models/text/
 !models/image/
 !models/vision/
+!models/multimodal/
 models/text/*
 models/image/*
 models/vision/*
+models/multimodal/*
 !models/text/.gitkeep
 !models/text/download-*.sh
 !models/image/.gitkeep
@@ -41,6 +43,8 @@ models/image/checkpoints/*
 !models/image/checkpoints/.gitkeep
 !models/vision/.gitkeep
 !models/vision/download-*.sh
+!models/multimodal/.gitkeep
+!models/multimodal/download-*.sh
 models_vlm/
 *.gguf
 *.safetensors

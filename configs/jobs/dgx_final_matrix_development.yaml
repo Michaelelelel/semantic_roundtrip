@@ -1,0 +1,25 @@
+schema_version: 2
+
+job:
+  name: dgx_final_matrix_development
+  output_directory: runs
+  continue_on_error: true
+
+experiments:
+  - name: s0_legacy_self
+    config: ../experiments/final_matrix/development/s0_legacy_self.yaml
+
+  - name: s1_intermediate_self
+    config: ../experiments/final_matrix/development/s1_intermediate_self.yaml
+
+  - name: s1_intermediate_cross
+    config: ../experiments/final_matrix/development/s1_intermediate_cross.yaml
+
+  - name: s2_current_dense_self
+    config: ../experiments/final_matrix/development/s2_current_dense_self.yaml
+
+  - name: s3_current_large_self
+    config: ../experiments/final_matrix/development/s3_current_large_self.yaml
+
+  - name: s4_stretch_self
+    config: ../experiments/final_matrix/development/s4_stretch_self.yaml

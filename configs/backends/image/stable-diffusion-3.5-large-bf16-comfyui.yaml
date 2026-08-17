@@ -1,0 +1,31 @@
+schema_version: 1
+
+adapter: comfyui
+
+settings:
+  base_url: http://image_runtime:8188
+  model_id: stable-diffusion-3.5-large-bf16
+  workflow_path: workflows/sd3_5_large_api.json
+  workflow_inputs:
+    prompt:
+      node_id: "16"
+      input_name: text
+    seed:
+      node_id: "3"
+      input_name: seed
+    filename_prefix:
+      node_id: "9"
+      input_name: filename_prefix
+  workflow_overrides:
+    "4":
+      ckpt_name: sd3.5_large.safetensors
+    "43":
+      clip_name1: clip_g.safetensors
+      clip_name2: clip_l.safetensors
+      clip_name3: t5xxl_fp16.safetensors
+  generation_timeout_seconds: 1200
+
+runtime:
+  controller: comfyui
+  control_url: http://image_runtime:8188
+  resource_group: dgx-main

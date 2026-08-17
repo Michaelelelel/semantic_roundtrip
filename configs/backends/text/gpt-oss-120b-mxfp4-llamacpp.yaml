@@ -1,0 +1,13 @@
+schema_version: 1
+
+adapter: openai_compatible
+
+settings:
+  endpoint: http://text_runtime:8080/v1/chat/completions
+  model_id: gpt-oss-120b-mxfp4
+  timeout_seconds: 600
+
+runtime:
+  controller: llama_cpp_router
+  control_url: http://text_runtime:8080
+  resource_group: dgx-main

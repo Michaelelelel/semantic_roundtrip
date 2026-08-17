@@ -1,25 +1,11 @@
 #!/bin/sh
 set -eu
 
-model_root="${1:-$(dirname "$0")/..}"
+script_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+. "${script_directory}/../download-helper.sh"
+
+model_root="${1:-${script_directory}/..}"
 destination_directory="${model_root}/vision/llava-v1.5-7b"
-mkdir -p "$destination_directory"
-
-download_file() {
-    url="$1"
-    destination="$2"
-    checksum="$3"
-    temporary="${destination}.part"
-
-    if [ -f "$destination" ] && printf '%s  %s\n' "$checksum" "$destination" | sha256sum --check --status; then
-        echo "Already downloaded: $destination"
-        return
-    fi
-
-    curl -fL --retry 3 --continue-at - "$url" -o "$temporary"
-    printf '%s  %s\n' "$checksum" "$temporary" | sha256sum --check
-    mv "$temporary" "$destination"
-}
 
 download_file \
     'https://huggingface.co/mys/ggml_llava-v1.5-7b/resolve/9b713a64048c7f982ec3969e60e9f61f7a2730c2/ggml-model-q4_k.gguf?download=true' \

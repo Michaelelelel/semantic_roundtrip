@@ -1,0 +1,22 @@
+schema_version: 2
+
+job:
+  name: dgx_final_matrix_smoke
+  output_directory: runs
+  continue_on_error: true
+
+experiments:
+  - name: s0_legacy
+    config: ../experiments/final_matrix/smoke/s0_legacy.yaml
+
+  - name: s1_intermediate
+    config: ../experiments/final_matrix/smoke/s1_intermediate.yaml
+
+  - name: s2_current_dense
+    config: ../experiments/final_matrix/smoke/s2_current_dense.yaml
+
+  - name: s3_current_large
+    config: ../experiments/final_matrix/smoke/s3_current_large.yaml
+
+  - name: s4_stretch
+    config: ../experiments/final_matrix/smoke/s4_stretch.yaml

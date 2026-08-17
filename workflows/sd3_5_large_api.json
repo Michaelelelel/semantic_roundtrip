@@ -1,0 +1,67 @@
+{
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "cfg": 5.45,
+      "denoise": 1,
+      "latent_image": ["53", 0],
+      "model": ["4", 0],
+      "negative": ["40", 0],
+      "positive": ["16", 0],
+      "sampler_name": "euler",
+      "scheduler": "sgm_uniform",
+      "seed": 8566257,
+      "steps": 20
+    }
+  },
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sd3.5_large.safetensors"
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["4", 2]
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "semantic_roundtrip",
+      "images": ["8", 0]
+    }
+  },
+  "16": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["43", 0],
+      "text": "placeholder"
+    }
+  },
+  "40": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["43", 0],
+      "text": ""
+    }
+  },
+  "43": {
+    "class_type": "TripleCLIPLoader",
+    "inputs": {
+      "clip_name1": "clip_g.safetensors",
+      "clip_name2": "clip_l.safetensors",
+      "clip_name3": "t5xxl_fp16.safetensors"
+    }
+  },
+  "53": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": {
+      "batch_size": 1,
+      "height": 1024,
+      "width": 1024
+    }
+  }
+}

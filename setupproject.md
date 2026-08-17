@@ -9,7 +9,11 @@ DATA_ROOT="$HOME/bachelorthesis/semantic_roundtrip-data"
 
 mkdir -p \
   "$DATA_ROOT/models/text" \
+  "$DATA_ROOT/models/multimodal" \
   "$DATA_ROOT/models/image/checkpoints" \
+  "$DATA_ROOT/models/image/diffusion_models" \
+  "$DATA_ROOT/models/image/text_encoders" \
+  "$DATA_ROOT/models/image/vae" \
   "$DATA_ROOT/models/vision" \
   "$DATA_ROOT/runs" \
   "$DATA_ROOT/runtime/comfyui/mnt" \
@@ -109,7 +113,72 @@ sudo docker compose \
   --config configs/jobs/dgx_initial_stack_smoke.yaml
 ```
 
-## 5. Inspect progress
+## 5. Test the complete model matrix
+
+The complete S0-S4 bundle requires roughly 420 GB of final model storage. Keep at
+least another 70 GB free while a large `.part` file is being downloaded. Check the
+available space first:
+
+```bash
+df -h "$DATA_ROOT"
+```
+
+Stable Diffusion 3.5 Large and FLUX.2 dev are gated; accept both model licences on
+Hugging Face and export a read token before downloading:
+
+```bash
+export HF_TOKEN=<your-hugging-face-read-token>
+./models/download-dgx-final-matrix.sh "$DATA_ROOT/models"
+```
+
+Recreate the runtimes so llama.cpp reads the expanded model catalog and the shared
+multimodal mount:
+
+```bash
+sudo docker compose \
+  -f compose.yaml \
+  -f compose.dgx.yaml \
+  up -d --force-recreate --wait \
+  text_runtime vision_runtime image_runtime
+```
+
+Plan and run one image through every complete stack first:
+
+```bash
+sudo docker compose -f compose.yaml -f compose.dgx.yaml run --rm runner \
+  semantic-roundtrip job plan \
+  --config configs/jobs/dgx_final_matrix_smoke.yaml
+
+sudo docker compose -f compose.yaml -f compose.dgx.yaml run --rm runner \
+  semantic-roundtrip job start \
+  --config configs/jobs/dgx_final_matrix_smoke.yaml
+```
+
+Only after all required smoke entries work, start the shared six-title development
+matrix. It contains S0-S4 plus the bounded S1 self/cross route comparison:
+
+```bash
+sudo docker compose -f compose.yaml -f compose.dgx.yaml run --rm runner \
+  semantic-roundtrip job plan \
+  --config configs/jobs/dgx_final_matrix_development.yaml
+
+sudo docker compose -f compose.yaml -f compose.dgx.yaml run --rm runner \
+  semantic-roundtrip job start \
+  --config configs/jobs/dgx_final_matrix_development.yaml
+```
+
+The development job produces 144 images and 288 evaluation rows. Copy its printed
+job ID, then analyze all child runs together:
+
+```bash
+JOB_ID=<development-job-id>
+
+sudo docker compose -f compose.yaml run --rm runner \
+  semantic-roundtrip job evaluate \
+  --job "runs/$JOB_ID"
+```
+
+## 6. Inspect progress
 
 List runs or jobs when you do not know their IDs:
 
@@ -150,7 +219,7 @@ the web container and the runner use the same installed project version.
 On the DGX, open `http://127.0.0.1:$STATUS_PORT`. From another computer, use an
 SSH tunnel to that localhost port.
 
-## 6. Export finished results
+## 7. Export finished results
 
 Run the analysis only after the selected run or job has finished:
 
@@ -165,7 +234,7 @@ sudo docker compose -f compose.yaml run --rm runner \
 The CSV files, manifest, and figures are written to the selected directory's
 `analysis/` folder. Add `--force` only when you intentionally want to replace it.
 
-## 7. Test pause and resume
+## 8. Test pause and resume
 
 Start `configs/experiments/mock_pause.yaml` in one terminal. In a second terminal,
 copy its ID from `run list`, then pause and resume it:
@@ -180,7 +249,7 @@ sudo docker compose -f compose.yaml run --rm runner \
 
 Use `configs/jobs/mock_pause.yaml` in the same way to test job-level pause and resume.
 
-## 8. Stop everything
+## 9. Stop everything
 
 Run artifacts remain in `RUN_ROOT`.
 
@@ -193,7 +262,7 @@ sudo docker compose \
   down --remove-orphans
 ```
 
-## 9. Copy results to the local computer
+## 10. Copy results to the local computer
 
 ```bash
 rsync -avz --progress \
@@ -201,6 +270,10 @@ rsync -avz --progress \
   /Users/michaelhagmann/uni/Bachelor/bachelor_runs_from_dgx/
 ```
 
-The repository intentionally contains no final DGX study job yet. Final stack
-experiments and jobs are added only after every selected model has passed the smoke
-test and the scientific settings have been reviewed.
+The development matrix is not final thesis evidence. Review its raw outputs and
+analysis before freezing separate pilot and final-title jobs.
+
+S4 is intentionally a stretch stack. Its FLUX.2 BF16 components are close to the
+practical memory limit of one 128 GB DGX Spark, so qualify S4 with its one-image
+smoke before including it in a longer job. A failed S4 entry does not stop the other
+entries because both matrix jobs use `continue_on_error: true`.
