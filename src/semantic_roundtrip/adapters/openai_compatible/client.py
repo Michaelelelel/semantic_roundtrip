@@ -151,7 +151,10 @@ class OpenAICompatibleChatClient:
 
         if stream:
             try:
-                return _parse_streaming_response(raw_response)
+                return _parse_streaming_response(
+                    raw_response,
+                    error_subject=self._error_subject,
+                )
             except (KeyError, IndexError, TypeError, ValueError) as error:
                 raise AdapterError(
                     f"{self._error_subject} endpoint returned an unexpected "
@@ -230,7 +233,11 @@ def _choice_content(choice: dict[str, Any]) -> str:
     return content
 
 
-def _parse_streaming_response(raw_response: str) -> ChatCompletion:
+def _parse_streaming_response(
+    raw_response: str,
+    *,
+    error_subject: str = "OpenAI-compatible chat",
+) -> ChatCompletion:
     content_parts: list[str] = []
     request_id: str | None = None
     finish_reason: str | None = None
@@ -246,6 +253,18 @@ def _parse_streaming_response(raw_response: str) -> ChatCompletion:
         event = json.loads(event_text)
         if not isinstance(event, dict):
             raise TypeError("streaming event is not an object")
+
+        stream_error = event.get("error")
+        if stream_error is not None:
+            if not isinstance(stream_error, dict):
+                raise TypeError("streaming error is not an object")
+            message = stream_error.get("message")
+            if not isinstance(message, str) or not message:
+                raise TypeError("streaming error message is not text")
+            raise AdapterError(
+                f"{error_subject} endpoint returned a streaming error: {message}",
+                raw_response,
+            )
 
         raw_request_id = event.get("id")
         if raw_request_id is not None:
