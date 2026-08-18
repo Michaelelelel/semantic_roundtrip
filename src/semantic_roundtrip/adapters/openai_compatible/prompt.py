@@ -23,6 +23,8 @@ class OpenAICompatiblePromptSettings(ConfigModel):
     max_tokens: int = Field(default=2048, gt=0)
     timeout_seconds: float = Field(default=300, gt=0)
     stream: bool = False
+    reasoning_effort: str | None = Field(default=None, min_length=1)
+    chat_template_kwargs: dict[str, Any] = Field(default_factory=dict)
 
 
 class OpenAICompatiblePromptGenerator:
@@ -53,6 +55,8 @@ class OpenAICompatiblePromptGenerator:
             max_tokens=self._config.max_tokens,
             seed=seed,
             stream=self._config.stream,
+            reasoning_effort=self._config.reasoning_effort,
+            chat_template_kwargs=self._config.chat_template_kwargs,
         )
 
         text = completion.content.strip()

@@ -89,6 +89,8 @@ class OpenAICompatibleChatClient:
         include_token_logprobs: bool = False,
         top_logprobs: int | None = None,
         stream: bool = False,
+        reasoning_effort: str | None = None,
+        chat_template_kwargs: Mapping[str, Any] | None = None,
     ) -> ChatCompletion:
         """Return the normalized first choice from one chat completion."""
         if not messages:
@@ -116,6 +118,10 @@ class OpenAICompatibleChatClient:
 
         if response_format is not None:
             payload["response_format"] = dict(response_format)
+        if reasoning_effort is not None:
+            payload["reasoning_effort"] = reasoning_effort
+        if chat_template_kwargs:
+            payload["chat_template_kwargs"] = dict(chat_template_kwargs)
         if stream:
             payload["stream"] = True
         if include_token_logprobs:

@@ -14,4 +14,4 @@ model_root="${1:-$script_directory}"
 "${script_directory}/image/download-qwen-image-2512-bf16.sh" "$model_root"
 
 "${script_directory}/multimodal/download-mistral-small-4-119b-q4_k_m.sh" "$model_root"
-"${script_directory}/image/download-flux2-dev-bf16.sh" "$model_root"
+"${script_directory}/image/download-flux2-dev-fp8mixed.sh" "$model_root"

@@ -1,6 +1,7 @@
 """Shared settings for templated OpenAI-compatible stage adapters."""
 
 from pathlib import Path
+from typing import Any
 
 from pydantic import Field
 
@@ -18,3 +19,5 @@ class OpenAICompatibleStageSettings(ConfigModel):
     max_tokens: int = Field(gt=0)
     seed: int | None = Field(default=None, ge=0)
     timeout_seconds: float = Field(default=300, gt=0)
+    reasoning_effort: str | None = Field(default=None, min_length=1)
+    chat_template_kwargs: dict[str, Any] = Field(default_factory=dict)

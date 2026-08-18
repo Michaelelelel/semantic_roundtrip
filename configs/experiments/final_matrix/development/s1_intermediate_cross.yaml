@@ -32,7 +32,7 @@ stages:
     parameters:
       temperature: 0.7
       top_p: 0.95
-      max_tokens: 512
+      max_tokens: 4096
 
   image_generation:
     backend: image_model
@@ -68,7 +68,7 @@ stages:
       backend: prompt_llm
       template_path: prompts/title_guessing/description_plain_v1.txt
       parameters:
-        temperature: 0.0
-        top_p: 1.0
-        max_tokens: 64
+        temperature: 0.7
+        top_p: 0.95
+        max_tokens: 4096
         seed: 3003

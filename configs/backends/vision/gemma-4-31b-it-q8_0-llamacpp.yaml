@@ -6,6 +6,8 @@ settings:
   endpoint: http://vision_runtime:8080/v1/chat/completions
   model_id: gemma-4-31b-it-q8_0
   timeout_seconds: 600
+  chat_template_kwargs:
+    enable_thinking: true
 
 runtime:
   controller: llama_cpp_router

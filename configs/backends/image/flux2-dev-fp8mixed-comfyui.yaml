@@ -4,8 +4,8 @@ adapter: comfyui
 
 settings:
   base_url: http://image_runtime:8188
-  model_id: flux2-dev-bf16
-  workflow_path: workflows/flux2_dev_api.json
+  model_id: flux2-dev-fp8mixed
+  workflow_path: workflows/flux2_dev_fp8mixed_api.json
   workflow_inputs:
     prompt:
       node_id: "4"
@@ -18,7 +18,7 @@ settings:
       input_name: filename_prefix
   workflow_overrides:
     "1":
-      unet_name: flux2-dev.safetensors
+      unet_name: flux2_dev_fp8mixed.safetensors
     "2":
       clip_name: mistral_3_small_flux2_bf16.safetensors
     "3":

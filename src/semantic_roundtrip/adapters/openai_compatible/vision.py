@@ -80,6 +80,8 @@ class OpenAICompatibleImageVerifier:
             max_tokens=self._config.max_tokens,
             seed=self._config.seed,
             response_format=VERIFICATION_RESPONSE_FORMAT,
+            reasoning_effort=self._config.reasoning_effort,
+            chat_template_kwargs=self._config.chat_template_kwargs,
         )
 
         try:
@@ -138,6 +140,8 @@ class OpenAICompatibleImageDescriber:
             top_p=self._config.top_p,
             max_tokens=self._config.max_tokens,
             seed=self._config.seed,
+            reasoning_effort=self._config.reasoning_effort,
+            chat_template_kwargs=self._config.chat_template_kwargs,
         )
 
         description = completion.content.strip()
@@ -192,6 +196,8 @@ class OpenAICompatibleImageTitleGuesser:
             max_tokens=self._config.max_tokens,
             seed=self._config.seed,
             include_token_logprobs=True,
+            reasoning_effort=self._config.reasoning_effort,
+            chat_template_kwargs=self._config.chat_template_kwargs,
         )
 
         return title_prediction_from_completion(completion)

@@ -115,16 +115,17 @@ sudo docker compose \
 
 ## 5. Test the complete model matrix
 
-The complete S0-S4 bundle requires roughly 420 GB of final model storage. Keep at
-least another 70 GB free while a large `.part` file is being downloaded. Check the
+The complete S0-S4 bundle requires roughly 390 GB of final model storage. Keep at
+least another 50 GB free while a large `.part` file is being downloaded. Check the
 available space first:
 
 ```bash
 df -h "$DATA_ROOT"
 ```
 
-Stable Diffusion 3.5 Large and FLUX.2 dev are gated; accept both model licences on
-Hugging Face and export a read token before downloading:
+Stable Diffusion 3.5 Large is gated; accept its model licence on Hugging Face and
+export a read token before downloading. The FLUX.2 dev FP8-mixed artifact is public,
+but its non-commercial model licence still applies:
 
 ```bash
 export HF_TOKEN=<your-hugging-face-read-token>
@@ -273,7 +274,8 @@ rsync -avz --progress \
 The development matrix is not final thesis evidence. Review its raw outputs and
 analysis before freezing separate pilot and final-title jobs.
 
-S4 is intentionally a stretch stack. Its FLUX.2 BF16 components are close to the
-practical memory limit of one 128 GB DGX Spark, so qualify S4 with its one-image
-smoke before including it in a longer job. A failed S4 entry does not stop the other
-entries because both matrix jobs use `continue_on_error: true`.
+S4 is intentionally a stretch stack. The full FLUX.2 BF16 workflow exceeded the
+memory available on one 128 GB DGX Spark, so S4 uses the official FP8-mixed FLUX.2
+dev artifact with its BF16 text encoder. Qualify it with the one-image smoke before
+including it in a longer job. A failed S4 entry does not stop the other entries
+because both matrix jobs use `continue_on_error: true`.

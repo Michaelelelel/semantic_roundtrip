@@ -7,6 +7,7 @@ settings:
   model_id: gpt-oss-120b-mxfp4
   timeout_seconds: 600
   stream: true
+  reasoning_effort: high
 
 runtime:
   controller: llama_cpp_router
