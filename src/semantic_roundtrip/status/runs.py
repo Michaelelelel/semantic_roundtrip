@@ -3,8 +3,10 @@
 from pathlib import Path
 from statistics import median
 
+from semantic_roundtrip.config import PipelineStageName, ResolvedAppConfig
 from semantic_roundtrip.config_resolution import (
     expected_stage_outputs,
+    get_stage_config,
     load_effective_config,
 )
 from semantic_roundtrip.persistence.run.config_snapshot import (
@@ -32,6 +34,25 @@ STAGE_ORDER = (
     "evaluation",
 )
 MINIMUM_ETA_SAMPLES = 3
+
+
+def _stage_model(
+    config: ResolvedAppConfig,
+    stage_name: PipelineStageName,
+) -> str | None:
+    """Return the configured model ID for one executable pipeline stage."""
+    if stage_name == "evaluation":
+        return None
+
+    stage = get_stage_config(config, stage_name)
+    if stage is None:
+        return None
+
+    backend = config.backends[stage.backend]
+    model_id = backend.settings.get("model_id")
+    if isinstance(model_id, str) and model_id:
+        return model_id
+    return backend.adapter
 
 
 def _active_stage(status: str, stages: tuple[StageStatus, ...]) -> str | None:
@@ -86,6 +107,7 @@ def get_run_status(run_directory: Path) -> RunStatus:
     stages = tuple(
         StageStatus(
             name=stage_name,
+            model=_stage_model(config, stage_name),
             produced=(
                 progress[stage_name].produced_outputs if stage_name in progress else 0
             ),

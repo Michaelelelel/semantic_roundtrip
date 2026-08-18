@@ -8,7 +8,13 @@
     <span class="status--{{ run.status }}">{{ run.status }}</span>
     <span class="mono">{{ run.run_id }}</span>
   </p>
-  <p><a href="{{ url_for('run_results', run_path=run_path) }}">View results</a></p>
+  <p>
+    {% if parent_job_id %}
+      <a href="{{ url_for('job_detail', job_id=parent_job_id) }}">Back to job</a>
+      ·
+    {% endif %}
+    <a href="{{ url_for('run_results', run_path=run_path) }}">View results</a>
+  </p>
 
   {% if run.last_error %}
     <div class="error-panel">
@@ -30,6 +36,7 @@
         <thead>
           <tr>
             <th>Stage</th>
+            <th>Model</th>
             <th>Outputs</th>
             <th>Pending tasks</th>
             <th>Running tasks</th>
@@ -40,6 +47,7 @@
           {% for stage in run.stages %}
             <tr>
               <td><strong>{{ stage.name|stage }}</strong></td>
+              <td class="mono">{{ stage.model or "-" }}</td>
               <td>{{ stage.produced }} / {{ stage.expected }}</td>
               <td>{{ stage.pending }}</td>
               <td>{{ stage.running }}</td>

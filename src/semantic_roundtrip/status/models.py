@@ -20,6 +20,7 @@ class StageStatus:
     """Persisted progress for one configured pipeline stage."""
 
     name: str
+    model: str | None
     produced: int
     expected: int
     pending: int

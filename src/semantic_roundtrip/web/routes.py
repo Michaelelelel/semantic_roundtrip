@@ -88,6 +88,19 @@ def _resolve_run_directory(runs_root: Path, relative_path: str) -> Path:
     return run_directory
 
 
+def _parent_job_id(run_directory: Path, runs_root: Path) -> str | None:
+    """Return the owning job ID for a child run, otherwise None."""
+    if run_directory.parent.name != "runs":
+        return None
+
+    job_directory = run_directory.parent.parent
+    if job_directory.parent != runs_root:
+        return None
+    if not job_database_path(job_directory).is_file():
+        return None
+    return job_directory.name
+
+
 def _resolve_image_file(run_directory: Path, stored_path: Path) -> Path:
     """Resolve one database-recorded image without escaping its run."""
     image_path = (run_directory / stored_path).resolve()
@@ -184,6 +197,7 @@ def run_detail(
         "run.html",
         run=run,
         run_path=run_directory.relative_to(runs_root).as_posix(),
+        parent_job_id=_parent_job_id(run_directory, runs_root),
         auto_refresh=run.status not in TERMINAL_STATUSES,
     )
 
