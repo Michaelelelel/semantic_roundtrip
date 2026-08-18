@@ -244,7 +244,24 @@ def _parse_streaming_response(raw_response: str) -> ChatCompletion:
             break
 
         event = json.loads(event_text)
-        choice = _first_choice(event)
+        if not isinstance(event, dict):
+            raise TypeError("streaming event is not an object")
+
+        raw_request_id = event.get("id")
+        if raw_request_id is not None:
+            request_id = str(raw_request_id)
+
+        choices = event.get("choices")
+        if not isinstance(choices, list):
+            raise TypeError("streaming choices is not a list")
+        if not choices:
+            # OpenAI-compatible servers may finish with a usage/timing event
+            # that deliberately contains no choice.
+            continue
+
+        choice = choices[0]
+        if not isinstance(choice, dict):
+            raise TypeError("streaming choice is not an object")
         delta = choice.get("delta")
         if not isinstance(delta, dict):
             raise TypeError("streaming delta is not an object")
@@ -260,10 +277,6 @@ def _parse_streaming_response(raw_response: str) -> ChatCompletion:
             if not isinstance(raw_finish_reason, str):
                 raise TypeError("streaming finish reason is not text")
             finish_reason = raw_finish_reason
-
-        raw_request_id = event.get("id")
-        if raw_request_id is not None:
-            request_id = str(raw_request_id)
 
     return ChatCompletion(
         content="".join(content_parts),
