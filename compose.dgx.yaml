@@ -1,7 +1,7 @@
 services:
   text_runtime:
     image: >-
-      ghcr.io/ggml-org/llama.cpp:server-cuda
+      ghcr.io/ggml-org/llama.cpp:server-cuda13@sha256:a4e80bbbf4c8ce61816f5142e14e9f5e8fd8504d66e6fb7075adb6b41a15c66d
     volumes:
       - "${MODEL_ROOT:?MODEL_ROOT must be set}/text:/models:ro"
       - "${MODEL_ROOT:?MODEL_ROOT must be set}/multimodal:/multimodal:ro"
