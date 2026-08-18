@@ -140,7 +140,12 @@ class OpenAICompatibleChatClient:
                 f"{self._error_subject} request failed: {error}"
             ) from error
 
-        raw_response = response.text
+        try:
+            raw_response = response.content.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise AdapterError(
+                f"{self._error_subject} endpoint returned invalid UTF-8."
+            ) from error
         try:
             response.raise_for_status()
         except requests.HTTPError as error:
