@@ -25,7 +25,6 @@ from semantic_roundtrip.domain import (
     VerificationResult,
 )
 
-
 VERIFICATION_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -81,6 +80,7 @@ class OpenAICompatibleImageVerifier:
             seed=self._config.seed,
             response_format=VERIFICATION_RESPONSE_FORMAT,
             reasoning_effort=self._config.reasoning_effort,
+            thinking_budget_tokens=self._config.thinking_budget_tokens,
             chat_template_kwargs=self._config.chat_template_kwargs,
         )
 
@@ -141,6 +141,7 @@ class OpenAICompatibleImageDescriber:
             max_tokens=self._config.max_tokens,
             seed=self._config.seed,
             reasoning_effort=self._config.reasoning_effort,
+            thinking_budget_tokens=self._config.thinking_budget_tokens,
             chat_template_kwargs=self._config.chat_template_kwargs,
         )
 
@@ -197,6 +198,7 @@ class OpenAICompatibleImageTitleGuesser:
             seed=self._config.seed,
             include_token_logprobs=True,
             reasoning_effort=self._config.reasoning_effort,
+            thinking_budget_tokens=self._config.thinking_budget_tokens,
             chat_template_kwargs=self._config.chat_template_kwargs,
         )
 

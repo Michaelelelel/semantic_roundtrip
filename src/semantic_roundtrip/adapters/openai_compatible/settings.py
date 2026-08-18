@@ -20,4 +20,5 @@ class OpenAICompatibleStageSettings(ConfigModel):
     seed: int | None = Field(default=None, ge=0)
     timeout_seconds: float = Field(default=300, gt=0)
     reasoning_effort: str | None = Field(default=None, min_length=1)
+    thinking_budget_tokens: int | None = Field(default=None, ge=0)
     chat_template_kwargs: dict[str, Any] = Field(default_factory=dict)

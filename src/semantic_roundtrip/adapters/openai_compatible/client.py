@@ -90,6 +90,7 @@ class OpenAICompatibleChatClient:
         top_logprobs: int | None = None,
         stream: bool = False,
         reasoning_effort: str | None = None,
+        thinking_budget_tokens: int | None = None,
         chat_template_kwargs: Mapping[str, Any] | None = None,
     ) -> ChatCompletion:
         """Return the normalized first choice from one chat completion."""
@@ -111,6 +112,7 @@ class OpenAICompatibleChatClient:
             "top_p": top_p,
             "max_tokens": max_tokens,
             "seed": seed,
+            "thinking_budget_tokens": thinking_budget_tokens,
         }
         payload.update(
             {key: value for key, value in optional_values.items() if value is not None}
