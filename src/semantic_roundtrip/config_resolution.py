@@ -179,7 +179,7 @@ def load_effective_config(path: Path) -> ResolvedAppConfig:
 
 def expected_stage_outputs(config: ResolvedAppConfig) -> dict[PipelineStageName, int]:
     """Calculate the number of outputs expected from every pipeline stage."""
-    prompt_count = len(config.dataset.items) * config.experiment.prompts_per_title
+    prompt_count = len(config.dataset.items) * len(config.experiment.prompt_seeds)
     image_count = prompt_count * len(config.experiment.image_seeds)
     expected: dict[PipelineStageName, int] = {
         "prompt_generation": prompt_count,

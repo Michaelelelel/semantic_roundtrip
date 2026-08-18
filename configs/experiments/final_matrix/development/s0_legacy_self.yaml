@@ -1,4 +1,4 @@
-schema_version: 5
+schema_version: 6
 
 run:
   name: dgx_matrix_s0_legacy_development_self
@@ -8,8 +8,9 @@ dataset:
   profile: ../../../datasets/development_titles_v1.yaml
 
 experiment:
-  prompts_per_title: 2
-  prompt_seed: 1000
+  prompt_seeds:
+    - 1000
+    - 1001
   image_seeds:
     - 8566257
     - 2875613

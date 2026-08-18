@@ -91,16 +91,15 @@ class ResolvedDatasetConfig(ConfigModel):
 
 
 class ExperimentConfig(ConfigModel):
-    prompts_per_title: int = Field(gt=0)
-    prompt_seed: int = Field(default=0, ge=0)
+    prompt_seeds: list[Annotated[int, Field(ge=0)]] = Field(min_length=1)
     image_seeds: list[Annotated[int, Field(ge=0)]] = Field(min_length=1)
     retry_limit: int = Field(ge=0)
 
-    @field_validator("image_seeds")
+    @field_validator("prompt_seeds", "image_seeds")
     @classmethod
-    def require_unique_image_seeds(cls, seeds: list[int]) -> list[int]:
+    def require_unique_seeds(cls, seeds: list[int]) -> list[int]:
         if len(seeds) != len(set(seeds)):
-            raise ValueError("Every configured image seed must be unique.")
+            raise ValueError("Every configured seed in a seed list must be unique.")
         return seeds
 
 
@@ -228,7 +227,7 @@ class StagesConfig(ConfigModel):
 class InputAppConfig(ConfigModel):
     """Human-maintained experiment configuration with backend references."""
 
-    schema_version: Literal[5]
+    schema_version: Literal[6]
     run: RunConfig
     dataset: InputDatasetConfig
     experiment: ExperimentConfig
@@ -239,7 +238,7 @@ class InputAppConfig(ConfigModel):
 class ResolvedAppConfig(ConfigModel):
     """Self-contained effective configuration stored with a run."""
 
-    schema_version: Literal[5]
+    schema_version: Literal[6]
     configuration_kind: Literal["effective"] = "effective"
     run: RunConfig
     dataset: ResolvedDatasetConfig

@@ -184,9 +184,10 @@ def extract_run(
     records: list[PredictionRecord] = []
 
     for item_index, item in enumerate(config.dataset.items):
-        for prompt_index in range(config.experiment.prompts_per_title):
+        for prompt_index, expected_prompt_seed in enumerate(
+            config.experiment.prompt_seeds
+        ):
             prompt = prompts.get((item.id, prompt_index))
-            expected_prompt_seed = config.experiment.prompt_seed + prompt_index
             if prompt is not None and prompt.sampling_seed != expected_prompt_seed:
                 raise ValueError(
                     f"Stored prompt seed for {item.id}:{prompt_index} differs "

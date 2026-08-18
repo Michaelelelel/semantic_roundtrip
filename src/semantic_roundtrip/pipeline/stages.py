@@ -101,7 +101,7 @@ def execute_prompt_generation_stage(
             title=configured_item.title,
         )
         item_id = database.results.get_or_add_dataset_item(item_index, item)
-        for prompt_index in range(config.experiment.prompts_per_title):
+        for prompt_index, sampling_seed in enumerate(config.experiment.prompt_seeds):
             _load_or_generate_prompt(
                 database=database,
                 adapters=adapters,
@@ -109,7 +109,7 @@ def execute_prompt_generation_stage(
                 item=item,
                 item_id=item_id,
                 prompt_index=prompt_index,
-                sampling_seed=config.experiment.prompt_seed + prompt_index,
+                sampling_seed=sampling_seed,
                 retry_limit=config.experiment.retry_limit,
             )
 

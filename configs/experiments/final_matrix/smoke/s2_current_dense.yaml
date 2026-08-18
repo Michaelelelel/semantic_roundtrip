@@ -1,4 +1,4 @@
-schema_version: 5
+schema_version: 6
 
 run:
   name: dgx_matrix_s2_current_dense_smoke
@@ -12,8 +12,8 @@ dataset:
       title: Imagine
 
 experiment:
-  prompts_per_title: 1
-  prompt_seed: 1000
+  prompt_seeds:
+    - 1000
   image_seeds:
     - 8566257
   retry_limit: 1

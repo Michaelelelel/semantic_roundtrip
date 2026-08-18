@@ -72,7 +72,7 @@ sudo docker compose -f compose.yaml run --rm runner \
   --config configs/jobs/mock.yaml
 ```
 
-## 4. Test the real DGX pipeline
+## 4. Start the DGX runtimes
 
 Start the three model runtimes:
 
@@ -82,35 +82,6 @@ sudo docker compose \
   -f compose.dgx.yaml \
   up -d --wait \
   text_runtime vision_runtime image_runtime
-```
-
-Run the one-item DGX smoke test:
-
-```bash
-sudo docker compose \
-  -f compose.yaml \
-  -f compose.dgx.yaml \
-  run --rm runner \
-  semantic-roundtrip run start \
-  --config configs/experiments/dgx_smoke.yaml
-```
-
-The smoke test exercises prompt generation, image generation, verification, image
-description, and both title-reconstruction routes. It is not a scientific experiment.
-
-To run the initial engineering smoke for the legacy and intermediate Qwen3 stacks,
-download their model bundle and execute both one-item checks as one sequential job.
-This verifies integration only; it is not a scientific stack comparison:
-
-```bash
-./models/download-dgx-initial-stack-smoke.sh "$DATA_ROOT/models"
-
-sudo docker compose \
-  -f compose.yaml \
-  -f compose.dgx.yaml \
-  run --rm runner \
-  semantic-roundtrip job start \
-  --config configs/jobs/dgx_initial_stack_smoke.yaml
 ```
 
 ## 5. Test the complete model matrix
