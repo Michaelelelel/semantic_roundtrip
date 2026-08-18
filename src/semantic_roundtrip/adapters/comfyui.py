@@ -197,11 +197,18 @@ class ComfyUIImageGenerator:
                             return image, last_raw_response
 
                 status = prompt_history.get("status", {})
-                if isinstance(status, dict) and status.get("completed"):
-                    raise AdapterError(
-                        "ComfyUI completed the job without an output image.",
-                        last_raw_response,
-                    )
+                if isinstance(status, dict):
+                    if status.get("status_str") == "error":
+                        raise AdapterError(
+                            f"ComfyUI job {prompt_id} failed: "
+                            f"{_execution_error_message(status)}",
+                            last_raw_response,
+                        )
+                    if status.get("completed"):
+                        raise AdapterError(
+                            "ComfyUI completed the job without an output image.",
+                            last_raw_response,
+                        )
 
             time.sleep(self._config.poll_interval_seconds)
 
@@ -267,3 +274,17 @@ def build_comfyui_image_generator(
 ) -> ComfyUIImageGenerator:
     settings = ComfyUIImageSettings.model_validate(raw_settings)
     return ComfyUIImageGenerator(settings)
+
+
+def _execution_error_message(status: dict[str, Any]) -> str:
+    """Return ComfyUI's most useful execution-error message."""
+    for message in reversed(status.get("messages", [])):
+        if not isinstance(message, list) or len(message) != 2:
+            continue
+        event, details = message
+        if event != "execution_error" or not isinstance(details, dict):
+            continue
+        error = details.get("exception_message")
+        if isinstance(error, str) and error.strip():
+            return error.strip()
+    return "ComfyUI reported an execution error."

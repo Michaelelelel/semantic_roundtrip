@@ -6,6 +6,7 @@ settings:
   endpoint: http://text_runtime:8080/v1/chat/completions
   model_id: gpt-oss-120b-mxfp4
   timeout_seconds: 600
+  stream: true
 
 runtime:
   controller: llama_cpp_router

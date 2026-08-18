@@ -22,6 +22,7 @@ class OpenAICompatiblePromptSettings(ConfigModel):
     top_p: float = Field(default=0.95, gt=0, le=1)
     max_tokens: int = Field(default=2048, gt=0)
     timeout_seconds: float = Field(default=300, gt=0)
+    stream: bool = False
 
 
 class OpenAICompatiblePromptGenerator:
@@ -51,6 +52,7 @@ class OpenAICompatiblePromptGenerator:
             top_p=self._config.top_p,
             max_tokens=self._config.max_tokens,
             seed=seed,
+            stream=self._config.stream,
         )
 
         text = completion.content.strip()

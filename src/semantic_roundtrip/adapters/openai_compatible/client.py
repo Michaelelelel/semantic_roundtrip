@@ -1,6 +1,7 @@
 """Shared transport for OpenAI-compatible chat-completion endpoints."""
 
 import base64
+import json
 import mimetypes
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -59,7 +60,7 @@ def image_file_data_url(path: Path) -> str:
 
 
 class OpenAICompatibleChatClient:
-    """Send non-streaming requests through one OpenAI-compatible endpoint."""
+    """Send requests through one OpenAI-compatible chat endpoint."""
 
     def __init__(
         self,
@@ -87,6 +88,7 @@ class OpenAICompatibleChatClient:
         response_format: Mapping[str, Any] | None = None,
         include_token_logprobs: bool = False,
         top_logprobs: int | None = None,
+        stream: bool = False,
     ) -> ChatCompletion:
         """Return the normalized first choice from one chat completion."""
         if not messages:
@@ -95,6 +97,8 @@ class OpenAICompatibleChatClient:
             raise ValueError("top_logprobs requires include_token_logprobs=True.")
         if top_logprobs is not None and top_logprobs < 0:
             raise ValueError("top_logprobs must be non-negative.")
+        if stream and include_token_logprobs:
+            raise ValueError("Streaming token logprobs are not supported.")
 
         payload: dict[str, Any] = {
             "model": self._model_id,
@@ -112,6 +116,8 @@ class OpenAICompatibleChatClient:
 
         if response_format is not None:
             payload["response_format"] = dict(response_format)
+        if stream:
+            payload["stream"] = True
         if include_token_logprobs:
             payload["logprobs"] = True
             if top_logprobs is not None:
@@ -136,6 +142,16 @@ class OpenAICompatibleChatClient:
                 f"{self._error_subject} endpoint returned HTTP {response.status_code}.",
                 raw_response,
             ) from error
+
+        if stream:
+            try:
+                return _parse_streaming_response(raw_response)
+            except (KeyError, IndexError, TypeError, ValueError) as error:
+                raise AdapterError(
+                    f"{self._error_subject} endpoint returned an unexpected "
+                    "streaming response structure.",
+                    raw_response,
+                ) from error
 
         try:
             response_data = response.json()
@@ -206,6 +222,50 @@ def _choice_content(choice: dict[str, Any]) -> str:
     if not isinstance(content, str):
         raise TypeError("message content is not text")
     return content
+
+
+def _parse_streaming_response(raw_response: str) -> ChatCompletion:
+    content_parts: list[str] = []
+    request_id: str | None = None
+    finish_reason: str | None = None
+
+    for line in raw_response.splitlines():
+        if not line.startswith("data: "):
+            continue
+
+        event_text = line.removeprefix("data: ")
+        if event_text == "[DONE]":
+            break
+
+        event = json.loads(event_text)
+        choice = _first_choice(event)
+        delta = choice.get("delta")
+        if not isinstance(delta, dict):
+            raise TypeError("streaming delta is not an object")
+
+        content = delta.get("content")
+        if content is not None:
+            if not isinstance(content, str):
+                raise TypeError("streaming content is not text")
+            content_parts.append(content)
+
+        raw_finish_reason = choice.get("finish_reason")
+        if raw_finish_reason is not None:
+            if not isinstance(raw_finish_reason, str):
+                raise TypeError("streaming finish reason is not text")
+            finish_reason = raw_finish_reason
+
+        raw_request_id = event.get("id")
+        if raw_request_id is not None:
+            request_id = str(raw_request_id)
+
+    return ChatCompletion(
+        content="".join(content_parts),
+        raw_response=raw_response,
+        request_id=request_id,
+        finish_reason=finish_reason,
+        token_logprobs=None,
+    )
 
 
 def _parse_token_logprobs(choice: dict[str, Any]) -> tuple[float, ...]:
