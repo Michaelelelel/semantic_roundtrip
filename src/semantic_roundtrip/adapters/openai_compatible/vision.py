@@ -84,6 +84,13 @@ class OpenAICompatibleImageVerifier:
             chat_template_kwargs=self._config.chat_template_kwargs,
         )
 
+        if completion.finish_reason == "length":
+            raise AdapterError(
+                "Verification response was truncated because the token limit was "
+                "reached.",
+                completion.raw_response,
+            )
+
         try:
             parsed = json.loads(completion.content)
             if not isinstance(parsed, dict):
@@ -145,15 +152,16 @@ class OpenAICompatibleImageDescriber:
             chat_template_kwargs=self._config.chat_template_kwargs,
         )
 
+        if completion.finish_reason == "length":
+            raise AdapterError(
+                "Image description was truncated because the token limit was reached.",
+                completion.raw_response,
+            )
+
         description = completion.content.strip()
         if not description:
             raise AdapterError(
                 "Image describer returned an empty response.",
-                completion.raw_response,
-            )
-        if completion.finish_reason == "length":
-            raise AdapterError(
-                "Image description was truncated because the token limit was reached.",
                 completion.raw_response,
             )
 

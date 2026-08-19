@@ -6,6 +6,7 @@ settings:
   endpoint: http://text_runtime:8080/v1/chat/completions
   model_id: qwen3.6-27b-q8_0
   timeout_seconds: 600
+  thinking_budget_tokens: 2048
   chat_template_kwargs:
     enable_thinking: true
 

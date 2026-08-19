@@ -61,15 +61,16 @@ class OpenAICompatiblePromptGenerator:
             chat_template_kwargs=self._config.chat_template_kwargs,
         )
 
+        if completion.finish_reason == "length":
+            raise AdapterError(
+                "Prompt response was truncated because the token limit was reached.",
+                completion.raw_response,
+            )
+
         text = completion.content.strip()
         if not text:
             raise AdapterError(
                 "Prompt endpoint returned an empty response.",
-                completion.raw_response,
-            )
-        if completion.finish_reason == "length":
-            raise AdapterError(
-                "Prompt response was truncated because the token limit was reached.",
                 completion.raw_response,
             )
 

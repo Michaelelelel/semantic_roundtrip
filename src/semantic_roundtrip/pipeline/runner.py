@@ -1,6 +1,7 @@
 """Top-level lifecycle and stage ordering for one experiment run."""
 
 from collections.abc import Callable
+from contextlib import suppress
 from pathlib import Path
 
 from semantic_roundtrip.adapters.factory import AdapterBundle
@@ -21,7 +22,6 @@ from semantic_roundtrip.pipeline.stages import (
 from semantic_roundtrip.pipeline.tasks import PauseRequested, raise_if_pause_requested
 from semantic_roundtrip.prompting import PromptProfile
 from semantic_roundtrip.runtime import RuntimeSession
-
 
 StageOperation = Callable[[], None]
 
@@ -83,7 +83,7 @@ def execute_stages(
     prompt_profile: PromptProfile,
     runtime_session: RuntimeSession,
 ) -> None:
-    """Execute all missing work in complete, sequential pipeline stages."""
+    """Execute all missing model-backed work in sequential pipeline stages."""
     _execute_runtime_stage(
         config=config,
         database=database,
@@ -152,11 +152,6 @@ def execute_stages(
             adapters=adapters,
         ),
     )
-    runtime_session.release()
-    execute_evaluation_stage(
-        config=config,
-        database=database,
-    )
 
 
 def run_pipeline(
@@ -185,8 +180,17 @@ def run_pipeline(
                     prompt_profile=prompt_profile,
                     runtime_session=runtime_session,
                 )
-            finally:
-                runtime_session.release()
+            except BaseException:
+                # release() persists normal cleanup failures in runtime_events.
+                with suppress(Exception):
+                    runtime_session.release()
+                raise
+
+            runtime_session.release()
+            execute_evaluation_stage(
+                config=config,
+                database=database,
+            )
         except PauseRequested:
             database.update_status("paused")
             return _summary(database, "paused")

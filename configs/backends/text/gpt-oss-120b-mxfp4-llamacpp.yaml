@@ -7,6 +7,7 @@ settings:
   model_id: gpt-oss-120b-mxfp4
   timeout_seconds: 600
   stream: true
+  thinking_budget_tokens: 2048
   chat_template_kwargs:
     reasoning_effort: high
 
