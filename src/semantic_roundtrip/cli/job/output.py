@@ -136,6 +136,8 @@ def show_job_status(job_directory: Path) -> str:
 
     console.print(f"[bold]Job:[/bold] {status.name} ({status.job_id})")
     console.print(f"[bold]Status:[/bold] {status.status}")
+    if status.failed_tasks:
+        console.print(f"[bold red]Failed tasks:[/bold red] {status.failed_tasks}")
     if status.started_at is not None:
         console.print(f"[bold]Started:[/bold] {format_timestamp(status.started_at)}")
         console.print(
@@ -166,6 +168,8 @@ def show_job_status(job_directory: Path) -> str:
     for entry in status.entries:
         run_name = entry.run_directory.name
         child_status = entry.child.status
+        if entry.failed_tasks:
+            child_status += f" ({entry.failed_tasks} failed)"
         table.add_row(
             str(entry.index + 1),
             entry.name,
@@ -224,8 +228,11 @@ def show_job_list(
         active_run = result.active_entry_name or "-"
         if result.active_run_id is not None:
             active_run = f"{active_run} ({result.active_run_id})"
+        displayed_status = result.status
+        if result.failed_tasks:
+            displayed_status += f" ({result.failed_tasks} failed)"
         table.add_row(
-            result.status,
+            displayed_status,
             result.name,
             result.job_id,
             format_timestamp(result.started_at or result.created_at),

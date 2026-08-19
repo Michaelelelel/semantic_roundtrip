@@ -119,6 +119,7 @@ def get_run_status(run_directory: Path) -> RunStatus:
         for stage_name in STAGE_ORDER
         if stage_name in expected
     )
+    failed_tasks = sum(stage.failed for stage in stages)
     active_stage_name = _active_stage(record.status, stages)
     active_stage = next(
         (stage for stage in stages if stage.name == active_stage_name),
@@ -155,7 +156,7 @@ def get_run_status(run_directory: Path) -> RunStatus:
         eta_seconds=eta_seconds,
         last_error=(
             read_latest_stage_error(database_path)
-            if record.status == "failed"
+            if record.status == "failed" or failed_tasks > 0
             else None
         ),
     )

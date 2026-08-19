@@ -6,6 +6,11 @@
   <h1>{{ run.name }}</h1>
   <p>
     <span class="status--{{ run.status }}">{{ run.status }}</span>
+    {% if run.failed_tasks %}
+      <span class="error-text">
+        · {{ run.failed_tasks }} failed task{% if run.failed_tasks != 1 %}s{% endif %}
+      </span>
+    {% endif %}
     <span class="mono">{{ run.run_id }}</span>
   </p>
   <p>

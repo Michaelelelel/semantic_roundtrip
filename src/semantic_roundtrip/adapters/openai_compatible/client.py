@@ -28,6 +28,7 @@ class ImageContent:
 
 
 ChatContentPart = TextContent | ImageContent
+ReasoningFormat = Literal["auto", "none", "deepseek", "deepseek-legacy"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +91,7 @@ class OpenAICompatibleChatClient:
         top_logprobs: int | None = None,
         stream: bool = False,
         reasoning_effort: str | None = None,
+        reasoning_format: ReasoningFormat | None = None,
         thinking_budget_tokens: int | None = None,
         chat_template_kwargs: Mapping[str, Any] | None = None,
     ) -> ChatCompletion:
@@ -112,6 +114,7 @@ class OpenAICompatibleChatClient:
             "top_p": top_p,
             "max_tokens": max_tokens,
             "seed": seed,
+            "reasoning_format": reasoning_format,
             "thinking_budget_tokens": thinking_budget_tokens,
         }
         payload.update(
@@ -158,7 +161,7 @@ class OpenAICompatibleChatClient:
 
         if stream:
             try:
-                return _parse_streaming_response(
+                completion = _parse_streaming_response(
                     raw_response,
                     error_subject=self._error_subject,
                 )
@@ -168,6 +171,13 @@ class OpenAICompatibleChatClient:
                     "streaming response structure.",
                     raw_response,
                 ) from error
+            _reject_reasoning_markup(
+                completion.content,
+                finish_reason=completion.finish_reason,
+                raw_response=raw_response,
+                error_subject=self._error_subject,
+            )
+            return completion
 
         try:
             response_data = response.json()
@@ -186,6 +196,13 @@ class OpenAICompatibleChatClient:
                 raw_response,
             ) from error
 
+        _reject_reasoning_markup(
+            content,
+            finish_reason=finish_reason,
+            raw_response=raw_response,
+            error_subject=self._error_subject,
+        )
+
         request_id = response_data.get("id")
         return ChatCompletion(
             content=content,
@@ -193,6 +210,24 @@ class OpenAICompatibleChatClient:
             request_id=(str(request_id) if request_id is not None else None),
             finish_reason=finish_reason,
             token_logprobs=token_logprobs,
+        )
+
+
+def _reject_reasoning_markup(
+    content: str,
+    *,
+    finish_reason: str | None,
+    raw_response: str,
+    error_subject: str,
+) -> None:
+    """Reject reasoning that leaked into the provider's final-answer field."""
+    if finish_reason == "length":
+        return
+    normalized = content.casefold()
+    if "<think>" in normalized or "</think>" in normalized:
+        raise AdapterError(
+            f"{error_subject} endpoint returned reasoning markup in final content.",
+            raw_response,
         )
 
 

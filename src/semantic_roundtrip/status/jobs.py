@@ -8,7 +8,11 @@ from semantic_roundtrip.persistence.job.database import (
     read_job_record,
 )
 from semantic_roundtrip.persistence.job.schema import job_database_path
-from semantic_roundtrip.persistence.run.queries import read_run_record
+from semantic_roundtrip.persistence.run.queries import (
+    read_latest_stage_error,
+    read_run_record,
+    read_stage_progress,
+)
 from semantic_roundtrip.persistence.run.schema import database_path_for_run
 from semantic_roundtrip.status.common import (
     STATUS_READ_ERRORS,
@@ -43,11 +47,21 @@ def get_job_status(job_directory: Path) -> JobStatus:
             raise ValueError(f"Missing job snapshot entry {entry.entry_index}.")
 
         try:
-            child_record = read_run_record(database_path_for_run(entry.run_directory))
+            child_database_path = database_path_for_run(entry.run_directory)
+            child_record = read_run_record(child_database_path)
+            failed_tasks = sum(
+                stage.failed for stage in read_stage_progress(child_database_path)
+            )
             child = ChildRunStatus(
                 run_id=child_record.run_id,
                 status=child_record.status,
                 last_update=child_record.heartbeat_at,
+                failed_tasks=failed_tasks,
+                last_error=(
+                    read_latest_stage_error(child_database_path)
+                    if failed_tasks > 0
+                    else None
+                ),
             )
         except STATUS_READ_ERRORS as error:
             child = unavailable("run", entry.run_directory, error)
@@ -60,7 +74,7 @@ def get_job_status(job_directory: Path) -> JobStatus:
         elif isinstance(child, UnavailableStatus):
             last_error = child.error
         else:
-            last_error = None
+            last_error = child.last_error
         entries.append(
             JobEntryStatus(
                 index=entry.entry_index,

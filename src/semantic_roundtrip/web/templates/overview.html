@@ -32,7 +32,14 @@
                 </tr>
               {% else %}
                 <tr>
-                  <td><span class="status--{{ job.status }}">{{ job.status }}</span></td>
+                  <td>
+                    <span class="status--{{ job.status }}">{{ job.status }}</span>
+                    {% if job.failed_tasks %}
+                      <span class="secondary error-text">
+                        {{ job.failed_tasks }} failed task{% if job.failed_tasks != 1 %}s{% endif %}
+                      </span>
+                    {% endif %}
+                  </td>
                   <td>
                     <a href="{{ url_for('job_detail', job_id=job.directory.name) }}">
                       {{ job.name }}
@@ -83,7 +90,14 @@
                 {% set produced = run.stages|sum(attribute='produced') %}
                 {% set expected = run.stages|sum(attribute='expected') %}
                 <tr>
-                  <td><span class="status--{{ run.status }}">{{ run.status }}</span></td>
+                  <td>
+                    <span class="status--{{ run.status }}">{{ run.status }}</span>
+                    {% if run.failed_tasks %}
+                      <span class="secondary error-text">
+                        {{ run.failed_tasks }} failed task{% if run.failed_tasks != 1 %}s{% endif %}
+                      </span>
+                    {% endif %}
+                  </td>
                   <td>
                     <a href="{{ url_for('run_detail', run_path=run.directory.name) }}">
                       {{ run.name }}

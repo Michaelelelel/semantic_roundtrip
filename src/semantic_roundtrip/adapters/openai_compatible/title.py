@@ -87,6 +87,7 @@ class OpenAICompatibleTextTitleGuesser:
             seed=self._config.seed,
             include_token_logprobs=True,
             reasoning_effort=self._config.reasoning_effort,
+            reasoning_format=self._config.reasoning_format,
             thinking_budget_tokens=self._config.thinking_budget_tokens,
             chat_template_kwargs=self._config.chat_template_kwargs,
         )

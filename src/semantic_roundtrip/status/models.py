@@ -47,6 +47,11 @@ class RunStatus:
     eta_seconds: float | None
     last_error: str | None
 
+    @property
+    def failed_tasks(self) -> int:
+        """Return terminal adapter-task failures without changing run lifecycle."""
+        return sum(stage.failed for stage in self.stages)
+
 
 @dataclass(frozen=True, slots=True)
 class UnavailableStatus:
@@ -65,6 +70,8 @@ class ChildRunStatus:
     run_id: str
     status: str
     last_update: datetime | None
+    failed_tasks: int
+    last_error: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,6 +85,13 @@ class JobEntryStatus:
     child: ChildRunStatus | UnavailableStatus
     models: tuple[str, ...]
     last_error: str | None
+
+    @property
+    def failed_tasks(self) -> int:
+        """Return failed tasks from the child run when it is readable."""
+        if isinstance(self.child, UnavailableStatus):
+            return 0
+        return self.child.failed_tasks
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,6 +116,11 @@ class JobStatus:
     eta_state: EtaState
     eta_seconds: float | None
     last_error: str | None
+
+    @property
+    def failed_tasks(self) -> int:
+        """Return failed adapter tasks across every readable child run."""
+        return sum(entry.failed_tasks for entry in self.entries)
 
 
 JobDiscoveryResult = JobStatus | UnavailableStatus

@@ -241,6 +241,7 @@ def run_results(
         has_description_route=any(
             stage.name == "title_guessing_from_description" for stage in run.stages
         ),
+        is_terminal=run.status in TERMINAL_STATUSES,
         auto_refresh=run.status not in TERMINAL_STATUSES,
     )
 

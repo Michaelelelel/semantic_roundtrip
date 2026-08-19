@@ -40,6 +40,7 @@ def print_run_summary(summary: PipelineSummary) -> None:
     typer.echo(f"Image descriptions: {summary.image_descriptions}")
     typer.echo(f"Predictions: {summary.predictions}")
     typer.echo(f"Evaluations: {summary.evaluations}")
+    typer.echo(f"Failed tasks: {summary.failed_tasks}")
 
 
 def print_run_pause_summary(summary: RunPauseSummary) -> None:
@@ -57,6 +58,8 @@ def show_run_status(run_directory: Path) -> str:
 
     console.print(f"[bold]Run:[/bold] {status.name} ({status.run_id})")
     console.print(f"[bold]Status:[/bold] {status.status}")
+    if status.failed_tasks:
+        console.print(f"[bold red]Failed tasks:[/bold red] {status.failed_tasks}")
     if status.started_at is not None:
         console.print(f"[bold]Started:[/bold] {format_timestamp(status.started_at)}")
         console.print(
@@ -145,8 +148,11 @@ def show_run_list(
             None,
         )
         progress = "-" if active is None else f"{active.produced}/{active.expected}"
+        displayed_status = result.status
+        if result.failed_tasks:
+            displayed_status += f" ({result.failed_tasks} failed)"
         table.add_row(
-            result.status,
+            displayed_status,
             result.name,
             result.run_id,
             format_timestamp(result.started_at or result.created_at),

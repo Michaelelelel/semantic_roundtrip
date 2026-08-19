@@ -46,6 +46,7 @@ def _summary(database: RunDatabase, status: str) -> PipelineSummary:
         image_descriptions=counts.image_descriptions,
         predictions=counts.predictions,
         evaluations=counts.evaluations,
+        failed_tasks=database.tasks.count_failed(),
     )
 
 

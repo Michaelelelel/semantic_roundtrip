@@ -8,6 +8,7 @@ from semantic_roundtrip.adapters.errors import AdapterError
 from semantic_roundtrip.adapters.openai_compatible.client import (
     ChatMessage,
     OpenAICompatibleChatClient,
+    ReasoningFormat,
 )
 from semantic_roundtrip.config import ConfigModel
 from semantic_roundtrip.domain import PromptMessage, PromptResponse
@@ -24,6 +25,7 @@ class OpenAICompatiblePromptSettings(ConfigModel):
     timeout_seconds: float = Field(default=300, gt=0)
     stream: bool = False
     reasoning_effort: str | None = Field(default=None, min_length=1)
+    reasoning_format: ReasoningFormat | None = None
     thinking_budget_tokens: int | None = Field(default=None, ge=0)
     chat_template_kwargs: dict[str, Any] = Field(default_factory=dict)
 
@@ -57,6 +59,7 @@ class OpenAICompatiblePromptGenerator:
             seed=seed,
             stream=self._config.stream,
             reasoning_effort=self._config.reasoning_effort,
+            reasoning_format=self._config.reasoning_format,
             thinking_budget_tokens=self._config.thinking_budget_tokens,
             chat_template_kwargs=self._config.chat_template_kwargs,
         )

@@ -98,6 +98,18 @@ class RunTaskStore:
             raise ValueError(f"Unknown task ID: {task_id}")
         return self._task_from_row(row)
 
+    def count_failed(self) -> int:
+        """Count exhausted adapter tasks for the current run."""
+        row = self._connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM stage_tasks
+            WHERE run_id = ? AND status = 'failed'
+            """,
+            (self._run_context.run_id,),
+        ).fetchone()
+        return int(row[0])
+
     @staticmethod
     def _task_from_row(row: sqlite3.Row) -> TaskRecord:
         return TaskRecord(

@@ -6,6 +6,11 @@
   <h1>{{ job.name }}</h1>
   <p>
     <span class="status--{{ job.status }}">{{ job.status }}</span>
+    {% if job.failed_tasks %}
+      <span class="error-text">
+        · {{ job.failed_tasks }} failed task{% if job.failed_tasks != 1 %}s{% endif %}
+      </span>
+    {% endif %}
     <span class="mono">{{ job.job_id }}</span>
   </p>
 
@@ -41,7 +46,14 @@
           {% for entry in job.entries %}
             <tr>
               <td>{{ entry.index + 1 }}</td>
-              <td><span class="status--{{ entry.status }}">{{ entry.status }}</span></td>
+              <td>
+                <span class="status--{{ entry.status }}">{{ entry.status }}</span>
+                {% if entry.failed_tasks %}
+                  <span class="secondary error-text">
+                    {{ entry.failed_tasks }} failed task{% if entry.failed_tasks != 1 %}s{% endif %}
+                  </span>
+                {% endif %}
+              </td>
               <td><strong>{{ entry.name }}</strong></td>
               <td>
                 {% if entry.child.status == "unavailable" %}

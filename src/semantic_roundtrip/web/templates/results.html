@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% macro show_prediction(result) %}
+{% macro show_prediction(result, missing_label) %}
   {% if result is none %}
-    Pending
+    {{ missing_label }}
   {% else %}
     <strong>{{ result.title }}</strong>
     {% if result.confidence is not none %}
@@ -12,7 +12,7 @@
     <br>
     <small>
       {% if result.exact_match is none %}
-        Evaluation pending
+        {{ "Evaluation not produced" if is_terminal else "Evaluation pending" }}
       {% else %}
         Exact:
         <span class="value--{{ 'yes' if result.exact_match else 'no' }}">
@@ -29,9 +29,22 @@
   <h1>{{ run.name }} results</h1>
   <p>
     <span class="status--{{ run.status }}">{{ run.status }}</span>
+    {% if run.failed_tasks %}
+      <span class="error-text">
+        · {{ run.failed_tasks }} failed task{% if run.failed_tasks != 1 %}s{% endif %}
+      </span>
+    {% endif %}
     <span class="mono">{{ run.run_id }}</span>
   </p>
   <p><a href="{{ url_for('run_detail', run_path=run_path) }}">Back to run status</a></p>
+
+  {% if run.last_error %}
+    <div class="error-panel">
+      <strong>Latest error:</strong> {{ run.last_error }}
+    </div>
+  {% endif %}
+
+  {% set missing_label = "Not produced" if is_terminal else "Pending" %}
 
   {% if result_page.traces %}
     <p>
@@ -52,7 +65,7 @@
             </a>
             <p>Image seed: <span class="mono">{{ trace.image_seed }}</span></p>
           {% else %}
-            <p>Image pending.</p>
+            <p>{{ missing_label }}.</p>
           {% endif %}
         </div>
 
@@ -80,7 +93,7 @@
               <th>Verification</th>
               <td>
                 {% if trace.verification_passed is none %}
-                  Pending
+                  {{ missing_label }}
                 {% elif trace.verification_passed %}
                   <span class="value--yes">Passed</span>
                 {% else %}
@@ -92,17 +105,17 @@
             {% if has_direct_route %}
               <tr>
                 <th>Direct route</th>
-                <td>{{ show_prediction(trace.direct_result) }}</td>
+                <td>{{ show_prediction(trace.direct_result, missing_label) }}</td>
               </tr>
             {% endif %}
             {% if has_description_route %}
               <tr>
                 <th>Image description</th>
-                <td>{{ trace.image_description or "Pending" }}</td>
+                <td>{{ trace.image_description or missing_label }}</td>
               </tr>
               <tr>
                 <th>Description route</th>
-                <td>{{ show_prediction(trace.description_result) }}</td>
+                <td>{{ show_prediction(trace.description_result, missing_label) }}</td>
               </tr>
             {% endif %}
           </tbody>
@@ -124,6 +137,10 @@
       {% endif %}
     </p>
   {% else %}
-    <p>No generated prompts are available yet.</p>
+    {% if is_terminal %}
+      <p>No generated prompts were produced.</p>
+    {% else %}
+      <p>No generated prompts are available yet.</p>
+    {% endif %}
   {% endif %}
 {% endblock %}

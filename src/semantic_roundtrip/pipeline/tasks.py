@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from typing import TypeVar
 
+from semantic_roundtrip.adapters.errors import AdapterError
 from semantic_roundtrip.persistence.run.database import RunDatabase
 from semantic_roundtrip.persistence.run.tasks import TaskRecord
 
@@ -72,8 +73,8 @@ def load_or_run_single(
     prompt_id: int,
     seed: int,
     image_id: int | None = None,
-) -> tuple[int, ResultType]:
-    """Reuse one stored result or execute and persist its adapter task."""
+) -> tuple[int, ResultType] | None:
+    """Reuse a result, skip an exhausted task, or execute and persist it."""
     raise_if_pause_requested(database)
     task = database.tasks.get_or_create(
         task_key=f"{stage}:{task_suffix}",
@@ -92,17 +93,22 @@ def load_or_run_single(
 
     if task.status == "completed":
         raise RuntimeError(f"Task {task.task_key} is completed but has no result.")
+    if task.status == "failed":
+        return None
 
     def execute() -> tuple[int, ResultType]:
         result = operation()
         return save(result), result
 
-    return run_task(
-        execute,
-        database=database,
-        task=task,
-        retry_limit=retry_limit,
-        item_id=item_id,
-        prompt_id=prompt_id,
-        image_id=image_id,
-    )
+    try:
+        return run_task(
+            execute,
+            database=database,
+            task=task,
+            retry_limit=retry_limit,
+            item_id=item_id,
+            prompt_id=prompt_id,
+            image_id=image_id,
+        )
+    except AdapterError:
+        return None

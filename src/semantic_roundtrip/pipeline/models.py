@@ -15,3 +15,4 @@ class PipelineSummary:
     image_descriptions: int
     predictions: int
     evaluations: int
+    failed_tasks: int

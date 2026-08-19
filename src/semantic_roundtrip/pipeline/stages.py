@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from semantic_roundtrip.adapters.errors import AdapterError
 from semantic_roundtrip.adapters.factory import AdapterBundle
 from semantic_roundtrip.config import PredictionInputKind, ResolvedAppConfig
 from semantic_roundtrip.config_resolution import configured_prediction_inputs
@@ -33,7 +34,7 @@ def _load_or_generate_prompt(
     prompt_index: int,
     sampling_seed: int,
     retry_limit: int,
-) -> tuple[int, GeneratedPrompt]:
+) -> tuple[int, GeneratedPrompt] | None:
     raise_if_pause_requested(database)
     task = database.tasks.get_or_create(
         task_key=f"prompt_generation:{item.item_key}:{prompt_index}",
@@ -51,6 +52,8 @@ def _load_or_generate_prompt(
 
     if task.status == "completed":
         raise RuntimeError(f"Task {task.task_key} is completed but has no prompt.")
+    if task.status == "failed":
+        return None
 
     messages = render_prompt_profile(
         prompt_profile,
@@ -73,13 +76,16 @@ def _load_or_generate_prompt(
         )
         return prompt_id, prompt
 
-    return run_task(
-        generate,
-        database=database,
-        task=task,
-        retry_limit=retry_limit,
-        item_id=item_id,
-    )
+    try:
+        return run_task(
+            generate,
+            database=database,
+            task=task,
+            retry_limit=retry_limit,
+            item_id=item_id,
+        )
+    except AdapterError:
+        return None
 
 
 def _image_task_suffix(image: ImageWorkItem) -> str:
@@ -262,7 +268,7 @@ def execute_description_title_guessing_stage(
     for image in database.results.list_images():
         stored_description = database.results.get_image_description(image.image_id)
         if stored_description is None:
-            raise RuntimeError(f"Image {image.image_id} has no stored description.")
+            continue
         description_id, description = stored_description
 
         load_or_run_single(
@@ -297,7 +303,7 @@ def execute_evaluation_stage(
     for image in database.results.list_images():
         verification_entry = database.results.get_verification(image.image_id)
         if verification_entry is None:
-            raise RuntimeError(f"Image {image.image_id} is missing verification data.")
+            continue
 
         verification_id, _ = verification_entry
         for input_kind in configured_prediction_inputs(config):
@@ -320,9 +326,7 @@ def _evaluate_prediction(
     raise_if_pause_requested(database)
     prediction_entry = database.results.get_prediction(image.image_id, input_kind)
     if prediction_entry is None:
-        raise RuntimeError(
-            f"Image {image.image_id} has no {input_kind} title prediction."
-        )
+        return
 
     prediction_id, prediction = prediction_entry
     task = database.tasks.get_or_create(

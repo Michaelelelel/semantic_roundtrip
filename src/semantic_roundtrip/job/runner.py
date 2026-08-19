@@ -309,7 +309,14 @@ def _execute_job_entry(
             )
 
         database.mark_entry_status(entry.entry_index, "completed")
-        _report(report, f"{prefix} completed")
+        if summary.failed_tasks:
+            task_label = "task" if summary.failed_tasks == 1 else "tasks"
+            _report(
+                report,
+                f"{prefix} completed with {summary.failed_tasks} failed {task_label}",
+            )
+        else:
+            _report(report, f"{prefix} completed")
         return "continue"
     except KeyboardInterrupt:
         database.mark_entry_status(entry.entry_index, "interrupted")
