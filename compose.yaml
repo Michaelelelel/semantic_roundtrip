@@ -4,9 +4,12 @@ services:
     build:
       context: .
     init: true
+    stop_signal: SIGINT
+    stop_grace_period: 2m
     user: "${HOST_UID:?HOST_UID must be set}:${HOST_GID:?HOST_GID must be set}"
     working_dir: /app
     environment:
+      MPLCONFIGDIR: /tmp/matplotlib
       PYTHONDONTWRITEBYTECODE: "1"
     volumes:
       - "${RUN_ROOT:?RUN_ROOT must be set}:/app/runs"
