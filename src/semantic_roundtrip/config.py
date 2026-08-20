@@ -129,7 +129,6 @@ class RuntimeSpec(ConfigModel):
         "none",
         "llama_cpp_router",
         "comfyui",
-        "managed_api",
     ]
     control_url: str | None = None
     resource_group: str = Field(min_length=1)

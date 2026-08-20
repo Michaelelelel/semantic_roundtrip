@@ -31,7 +31,7 @@ services:
 
   vision_runtime:
     image: >-
-      ghcr.io/ggml-org/llama.cpp:server-cuda
+      ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:ea610f2c82d033b6765b24fa7c0ab15c267d564f883de7c494f1e3073d496374
     volumes:
       - "${MODEL_ROOT:?MODEL_ROOT must be set}/vision:/models:ro"
       - "${MODEL_ROOT:?MODEL_ROOT must be set}/multimodal:/multimodal:ro"
@@ -61,7 +61,7 @@ services:
 
   image_runtime:
     image: >-
-      mmartial/comfyui-nvidia-docker:ubuntu24_cuda13.1-dgx-latest
+      mmartial/comfyui-nvidia-docker:ubuntu24_cuda13.1-dgx-latest@sha256:35329a99d5e3b96afdd7f24b6b2b9ce71cb45552cf60a904787c2528101310ad
     volumes:
       - "${RUNTIME_ROOT:?RUNTIME_ROOT must be set}/comfyui/mnt:/comfy/mnt"
       - "${RUNTIME_ROOT:?RUNTIME_ROOT must be set}/comfyui/base:/basedir"

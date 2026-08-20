@@ -18,7 +18,6 @@ class RuntimeIdentity:
     control_url: str | None
     resource_group: str
     model_id: str | None
-    model_reference: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,7 +30,6 @@ class RuntimeTarget:
     control_url: str | None
     resource_group: str
     model_id: str | None
-    model_reference: str | None
 
     @property
     def identity(self) -> RuntimeIdentity:
@@ -40,7 +38,6 @@ class RuntimeTarget:
             control_url=self.control_url,
             resource_group=self.resource_group,
             model_id=self.model_id,
-            model_reference=self.model_reference,
         )
 
 

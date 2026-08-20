@@ -26,7 +26,6 @@ def resolve_runtime_target(
         None if runtime.control_url is None else runtime.control_url.rstrip("/")
     )
     model_id = _optional_text_setting(backend.settings, "model_id")
-    model_reference = model_id
 
     if runtime.controller in {"llama_cpp_router", "comfyui"} and model_id is None:
         raise ValueError(
@@ -40,13 +39,12 @@ def resolve_runtime_target(
         control_url=control_url,
         resource_group=runtime.resource_group,
         model_id=model_id,
-        model_reference=model_reference,
     )
 
 
 def create_runtime_controller(target: RuntimeTarget) -> RuntimeController:
     """Create the controller selected by one resolved runtime target."""
-    if target.controller in {"none", "managed_api"}:
+    if target.controller == "none":
         return NoOpRuntimeController()
     if target.control_url is None:
         raise ValueError(
