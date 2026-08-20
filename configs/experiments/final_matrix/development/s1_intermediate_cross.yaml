@@ -29,7 +29,7 @@ backends:
 stages:
   prompt_generation:
     backend: prompt_llm
-    prompt_profile: prompts/prompt_generation/visual_single_v3.yaml
+    prompt_profile: prompts/prompt_generation/visual_single_v4.yaml
     parameters:
       temperature: 0.7
       top_p: 0.95
@@ -40,7 +40,7 @@ stages:
 
   verification:
     backend: verifier_vlm
-    template_path: prompts/verification/json_v2.txt
+    template_path: prompts/verification/json_v3.txt
     parameters:
       temperature: 0.0
       top_p: 1.0
@@ -59,7 +59,7 @@ stages:
   title_guessing:
     direct:
       backend: title_vlm
-      template_path: prompts/title_guessing/plain_v1.txt
+      template_path: prompts/title_guessing/plain_v2.txt
       parameters:
         temperature: 0.0
         top_p: 1.0
@@ -67,7 +67,7 @@ stages:
         seed: 3003
     from_description:
       backend: prompt_llm
-      template_path: prompts/title_guessing/description_plain_v1.txt
+      template_path: prompts/title_guessing/description_plain_v2.txt
       parameters:
         temperature: 0.7
         top_p: 0.95

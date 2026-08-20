@@ -37,9 +37,12 @@ class TitleScore:
     expected_predictions: int
     completed_predictions: int
     verifier_passed_predictions: int
+    raw_exact_accuracy: float
+    raw_normalized_exact_accuracy: float
     end_to_end_accuracy: float
     normalized_end_to_end_accuracy: float
     verifier_passed_exact_accuracy: float | None
+    verifier_passed_normalized_exact_accuracy: float | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,12 +61,15 @@ class StackDomainRouteSummary:
     completed_predictions: int
     verifier_passed_predictions: int
     completion_rate: float
+    mean_title_raw_exact_accuracy: float
+    mean_title_raw_normalized_exact_accuracy: float
     mean_title_accuracy: float
     ci95_low: float | None
     ci95_high: float | None
     mean_title_normalized_accuracy: float
     verifier_passed_title_count: int
     verifier_passed_exact_accuracy: float | None
+    verifier_passed_normalized_exact_accuracy: float | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -182,6 +188,24 @@ def title_scores(records: tuple[PredictionRecord, ...]) -> tuple[TitleScore, ...
                 expected_predictions=len(observations),
                 completed_predictions=completed_count,
                 verifier_passed_predictions=len(verifier_passed),
+                raw_exact_accuracy=_rounded(
+                    _mean(
+                        [
+                            float(record.exact_match is True)
+                            for record in observations
+                        ]
+                    )
+                )
+                or 0.0,
+                raw_normalized_exact_accuracy=_rounded(
+                    _mean(
+                        [
+                            float(record.normalized_exact_match is True)
+                            for record in observations
+                        ]
+                    )
+                )
+                or 0.0,
                 end_to_end_accuracy=_rounded(
                     _mean([float(record.end_to_end_score) for record in observations])
                 )
@@ -198,6 +222,14 @@ def title_scores(records: tuple[PredictionRecord, ...]) -> tuple[TitleScore, ...
                 verifier_passed_exact_accuracy=_rounded(
                     _mean(
                         [float(record.end_to_end_score) for record in verifier_passed]
+                    )
+                ),
+                verifier_passed_normalized_exact_accuracy=_rounded(
+                    _mean(
+                        [
+                            float(record.normalized_exact_match is True)
+                            for record in verifier_passed
+                        ]
                     )
                 ),
             )
@@ -275,6 +307,16 @@ def stack_domain_route_summaries(
                 verifier_passed_predictions=verifier_passed_predictions,
                 completion_rate=_rounded(completed_predictions / expected_predictions)
                 or 0.0,
+                mean_title_raw_exact_accuracy=_rounded(
+                    _mean([row.raw_exact_accuracy for row in title_rows])
+                )
+                or 0.0,
+                mean_title_raw_normalized_exact_accuracy=_rounded(
+                    _mean(
+                        [row.raw_normalized_exact_accuracy for row in title_rows]
+                    )
+                )
+                or 0.0,
                 mean_title_accuracy=_rounded(_mean(end_to_end)) or 0.0,
                 ci95_low=_rounded(ci_low),
                 ci95_high=_rounded(ci_high),
@@ -289,6 +331,15 @@ def stack_domain_route_summaries(
                             row.verifier_passed_exact_accuracy
                             for row in verifier_passed_title_rows
                             if row.verifier_passed_exact_accuracy is not None
+                        ]
+                    )
+                ),
+                verifier_passed_normalized_exact_accuracy=_rounded(
+                    _mean(
+                        [
+                            row.verifier_passed_normalized_exact_accuracy
+                            for row in verifier_passed_title_rows
+                            if row.verifier_passed_normalized_exact_accuracy is not None
                         ]
                     )
                 ),

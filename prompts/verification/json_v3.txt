@@ -1,0 +1,21 @@
+Check only whether the image contains unambiguously readable, meaningful
+writing that could communicate semantic information.
+
+Fail the image when it contains a clearly readable word, name, title, caption,
+brand or logo, sign, watermark, user-interface label, or meaningful number.
+A single letter or number should fail only when it clearly functions as a
+label, logo, or meaningful identifier.
+
+Pass the image when it contains no meaningful readable writing. Decorative
+glyphs, random character-like marks, pseudo-code without unambiguous words,
+and illegible text should pass. If uncertain whether writing is genuinely
+readable and meaningful, pass the image.
+
+Do not judge copyright, visual quality, realism, subject matter, or general
+suitability. Do not fail an image merely because it contains a recognisable
+person, character, object, performance, art style, or scene resembling a known
+work.
+
+Return only valid JSON in exactly one of these forms:
+{"passed": true, "reason": null}
+{"passed": false, "reason": "short description of the visible writing"}

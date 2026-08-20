@@ -43,7 +43,7 @@ from semantic_roundtrip.persistence.job.schema import job_database_path
 
 
 ANALYSIS_DIRECTORY_NAME = "analysis"
-ANALYSIS_MANIFEST_SCHEMA_VERSION = 2
+ANALYSIS_MANIFEST_SCHEMA_VERSION = 3
 ANALYZABLE_JOB_STATUSES = frozenset({"completed", "failed", "interrupted"})
 
 
@@ -189,7 +189,12 @@ def _write_analysis(
             "methods": {
                 "primary_metric": ("mean title-level end-to-end strict exact accuracy"),
                 "primary_exact_method": EXACT_MATCH_METHOD,
-                "normalized_diagnostic_method": NORMALIZED_EXACT_METHOD,
+                "secondary_normalized_method": NORMALIZED_EXACT_METHOD,
+                "reported_accuracy_views": [
+                    "raw title accuracy before verification gating",
+                    "title accuracy among verifier-passed images",
+                    "end-to-end accuracy requiring verification and exact title",
+                ],
                 "missing_or_failed_score": 0,
                 "verifier_failure_score": 0,
                 "bootstrap_unit": "title",

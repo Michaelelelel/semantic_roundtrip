@@ -72,8 +72,8 @@ def _stack_route_accuracy(
     )
     axis.set_xticks(positions, labels, rotation=25, ha="right")
     axis.set_ylim(-0.02, 1.02)
-    axis.set_ylabel("Mean title-level exact accuracy")
-    axis.set_title("Complete-stack accuracy by reconstruction route")
+    axis.set_ylabel("Mean title-level end-to-end strict exact accuracy")
+    axis.set_title("Complete-stack end-to-end accuracy by reconstruction route")
     axis.grid(axis="y", alpha=0.25)
     _save(figure, path)
     return True
@@ -109,7 +109,7 @@ def _domain_heatmap(
     image = axis.imshow(matrix, vmin=0, vmax=1, cmap="Blues", aspect="auto")
     axis.set_xticks(range(len(domains)), domains)
     axis.set_yticks(range(len(labels)), labels)
-    axis.set_title("Title-level exact accuracy by domain")
+    axis.set_title("Title-level end-to-end strict exact accuracy by domain")
     for row_index, values in enumerate(matrix):
         for column_index, value in enumerate(values):
             if value == value:
