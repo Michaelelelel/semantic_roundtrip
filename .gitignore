@@ -59,3 +59,6 @@ runs/
 /runtime/
 *.sqlite
 *.db
+
+# Large or licensed source snapshots used to build the title benchmark stay local.
+/data/title_sources/

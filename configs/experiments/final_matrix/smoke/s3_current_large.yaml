@@ -65,7 +65,7 @@ stages:
       parameters:
         temperature: 0.7
         top_p: 0.95
-        max_tokens: 8192
+        max_tokens: 16384
         seed: 3003
     from_description:
       backend: title_vlm
@@ -73,5 +73,5 @@ stages:
       parameters:
         temperature: 0.7
         top_p: 0.95
-        max_tokens: 8192
+        max_tokens: 16384
         seed: 3003
