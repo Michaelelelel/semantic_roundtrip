@@ -59,7 +59,7 @@ stages:
   title_guessing:
     direct:
       backend: title_vlm
-      template_path: prompts/title_guessing/plain_v2.txt
+      template_path: prompts/title_guessing/plain_v3.txt
       parameters:
         temperature: 0.0
         top_p: 1.0
@@ -67,7 +67,7 @@ stages:
         seed: 3003
     from_description:
       backend: prompt_llm
-      template_path: prompts/title_guessing/description_plain_v2.txt
+      template_path: prompts/title_guessing/description_plain_v3.txt
       parameters:
         temperature: 0.7
         top_p: 0.95

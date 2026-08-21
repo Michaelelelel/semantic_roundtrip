@@ -27,7 +27,7 @@ its run directory. Jobs execute multiple independent runs sequentially.
 - `src/semantic_roundtrip/runtime/`: model loading and unloading
 - `src/semantic_roundtrip/pipeline/`: stage orchestration
 - `src/semantic_roundtrip/persistence/`: SQLite run and job state
-- `src/semantic_roundtrip/analysis/`: result extraction, metrics, CSV files, and plots
+- `src/semantic_roundtrip/analysis/`: selected-run study metrics, CSV files, and plots
 - `src/semantic_roundtrip/status/` and `web/`: read-only status views
 - `models/` and `chat_templates/`: reproducible download scripts
 
@@ -44,8 +44,9 @@ semantic-roundtrip run start --config configs/experiments/mock.yaml
 semantic-roundtrip run list
 ```
 
-Use `semantic-roundtrip --help`, `semantic-roundtrip run --help`, or
-`semantic-roundtrip job --help` for the available commands.
+Use `semantic-roundtrip --help`, `semantic-roundtrip run --help`,
+`semantic-roundtrip job --help`, or `semantic-roundtrip study --help` for the
+available commands.
 
 ## DGX setup and experiments
 

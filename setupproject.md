@@ -139,16 +139,9 @@ sudo docker compose -f compose.yaml -f compose.dgx.yaml run --rm runner \
   --config configs/jobs/dgx_final_matrix_development.yaml
 ```
 
-The development job produces 144 images and 288 evaluation rows. Copy its printed
-job ID, then analyze all child runs together:
-
-```bash
-JOB_ID=<development-job-id>
-
-sudo docker compose -f compose.yaml run --rm runner \
-  semantic-roundtrip job evaluate \
-  --job "runs/$JOB_ID"
-```
+The development job produces 144 images and 288 evaluation rows. Inspect it through
+the status commands below. Scientific comparisons are selected separately in a
+`study.yaml` file; job membership does not define what is compared.
 
 ## 6. Inspect progress
 
@@ -191,20 +184,26 @@ the web container and the runner use the same installed project version.
 On the DGX, open `http://127.0.0.1:$STATUS_PORT`. From another computer, use an
 SSH tunnel to that localhost port.
 
-## 7. Export finished results
+## 7. Analyze selected completed runs
 
-Run the analysis only after the selected run or job has finished:
+Create one study directory below `RUN_ROOT`, copy the example, and replace its run
+placeholders. Paths in `study.yaml` are relative to the study directory and can
+point to child runs from different jobs.
 
 ```bash
-sudo docker compose -f compose.yaml run --rm runner \
-  semantic-roundtrip run evaluate --run "runs/$RUN_ID"
+mkdir -p "$RUN_ROOT/final-study"
+cp configs/studies/final_study.example.yaml \
+  "$RUN_ROOT/final-study/study.yaml"
+
+${EDITOR:-nano} "$RUN_ROOT/final-study/study.yaml"
 
 sudo docker compose -f compose.yaml run --rm runner \
-  semantic-roundtrip job evaluate --job "runs/$JOB_ID"
+  semantic-roundtrip study analyze --study runs/final-study
 ```
 
-The CSV files, manifest, and figures are written to the selected directory's
-`analysis/` folder. Add `--force` only when you intentionally want to replace it.
+The command reads completed run databases without modifying them. Tables, figures,
+the study snapshot, and the manifest are written to `final-study/results/`. Add
+`--force` only when you intentionally want to replace those results.
 
 ## 8. Test pause and resume
 

@@ -1,20 +1,17 @@
-"""Convert persisted run state into deterministic expected prediction rows."""
+"""Convert one persisted run into every expected study observation."""
 
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from semantic_roundtrip.analysis.models import ExtractedRun, PredictionRecord
+from semantic_roundtrip.analysis.models import ExtractedRun, Observation
 from semantic_roundtrip.config import ResolvedAppConfig, StageName
 from semantic_roundtrip.config_resolution import (
-    STAGE_NAMES,
     configured_prediction_inputs,
     get_stage_config,
     load_effective_config,
 )
 from semantic_roundtrip.evaluation import (
-    EXACT_MATCH_METHOD,
-    NORMALIZED_EXACT_METHOD,
     title_exact_match,
     title_normalized_exact_match,
 )
@@ -32,13 +29,8 @@ from semantic_roundtrip.persistence.run.queries import read_run_record
 from semantic_roundtrip.persistence.run.schema import database_path_for_run
 
 
-ANALYZABLE_RUN_STATUSES = frozenset({"completed", "failed", "interrupted"})
-ACTIVE_RUN_STATUSES = frozenset({"running", "pausing"})
-
-
 @dataclass(frozen=True, slots=True)
 class BackendIdentity:
-    alias: str
     model: str
 
 
@@ -55,7 +47,7 @@ def _backend_identity(
         or backend.settings.get("checkpoint")
         or backend.adapter
     )
-    return BackendIdentity(alias=stage.backend, model=str(model))
+    return BackendIdentity(model=str(model))
 
 
 def _optional_backend_identity(
@@ -65,15 +57,6 @@ def _optional_backend_identity(
     if get_stage_config(config, stage_name) is None:
         return None
     return _backend_identity(config, stage_name)
-
-
-def _stack_id(config: ResolvedAppConfig) -> str:
-    parts: list[str] = []
-    for stage_name in STAGE_NAMES:
-        identity = _optional_backend_identity(config, stage_name)
-        if identity is not None:
-            parts.append(f"{stage_name}={identity.model}")
-    return " | ".join(parts)
 
 
 def _unique_map[T, K](
@@ -104,7 +87,6 @@ def _latest_matching_error(
         "image_generation",
         "verification",
         prediction_stage,
-        "evaluation",
     }
     if prediction_stage == "title_guessing_from_description":
         relevant_stages.add("image_description")
@@ -127,27 +109,22 @@ def _latest_matching_error(
     return None
 
 
-def _validate_run_state(status: str, *, require_terminal: bool) -> None:
-    if status in ACTIVE_RUN_STATUSES:
-        raise ValueError(f"Cannot evaluate a run while its status is '{status}'.")
-    if require_terminal and status not in ANALYZABLE_RUN_STATUSES:
-        raise ValueError(
-            f"Run status '{status}' is not terminal; complete or stop it first."
-        )
-
-
 def extract_run(
     run_directory: Path,
     *,
-    job_id: str | None = None,
-    job_entry: str | None = None,
-    require_terminal: bool = True,
+    condition_id: str,
+    condition_label: str,
 ) -> ExtractedRun:
-    """Create every expected image-route row for one persisted run."""
+    """Read one completed run without depending on its stored evaluation rows."""
     run_directory = run_directory.resolve()
     database_path = database_path_for_run(run_directory)
     run_record = read_run_record(database_path)
-    _validate_run_state(run_record.status, require_terminal=require_terminal)
+    if run_record.status != "completed":
+        raise ValueError(
+            f"Study condition '{condition_id}' uses run status "
+            f"'{run_record.status}'; only completed runs can be analyzed."
+        )
+
     config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
     if config.run.name != run_record.name:
         raise ValueError("Run snapshot and database names do not match.")
@@ -169,19 +146,18 @@ def extract_run(
         "prediction",
     )
 
-    prompt_backend = _backend_identity(config, "prompt_generation")
-    image_backend = _backend_identity(config, "image_generation")
-    verifier_backend = _backend_identity(config, "verification")
-    describer_backend = _optional_backend_identity(config, "image_description")
-    route_backends = {
+    prompt_model = _backend_identity(config, "prompt_generation").model
+    image_model = _backend_identity(config, "image_generation").model
+    verifier_model = _backend_identity(config, "verification").model
+    describer = _optional_backend_identity(config, "image_description")
+    route_models = {
         "image": _optional_backend_identity(config, "title_guessing_direct"),
         "description": _optional_backend_identity(
             config,
             "title_guessing_from_description",
         ),
     }
-    stack_id = _stack_id(config)
-    records: list[PredictionRecord] = []
+    records: list[Observation] = []
 
     for item_index, item in enumerate(config.dataset.items):
         for prompt_index, expected_prompt_seed in enumerate(
@@ -203,66 +179,44 @@ def extract_run(
                         if input_kind == "image"
                         else "title_guessing_from_description"
                     )
-                    backend = route_backends[input_kind]
-                    if backend is None:
-                        raise ValueError(
-                            f"Missing backend for configured {route} route."
-                        )
+                    route_model = route_models[input_kind]
+                    if route_model is None:
+                        raise ValueError(f"Missing model for configured {route} route.")
+
                     prediction: StoredPrediction | None = None
                     if image is not None:
                         prediction = predictions.get((image.image_id, input_kind))
-                    error = _latest_matching_error(
-                        stored.errors,
-                        item_id=item.id,
-                        prompt=prompt,
-                        image=image,
-                        image_seed=image_seed,
-                        prediction_stage=prediction_stage,
-                    )
-
+                    error = None
                     if prediction is None:
-                        prediction_status = "failed" if error is not None else "missing"
-                    elif prediction.exact_match is None:
-                        prediction_status = "incomplete_evaluation"
-                    else:
-                        prediction_status = "completed"
-
-                    exact_match: bool | None = None
-                    normalized_match: bool | None = None
-                    if prediction is not None and prediction.exact_match is not None:
-                        if prediction.exact_method != EXACT_MATCH_METHOD:
-                            raise ValueError(
-                                f"Unsupported exact-match method for prediction "
-                                f"{prediction.prediction_id}: "
-                                f"{prediction.exact_method!r}"
-                            )
-                        calculated_exact = title_exact_match(
-                            item.title,
-                            prediction.title,
-                        )
-                        if calculated_exact != prediction.exact_match:
-                            raise ValueError(
-                                f"Stored exact-match result for prediction "
-                                f"{prediction.prediction_id} is inconsistent."
-                            )
-                        exact_match = prediction.exact_match
-                        normalized_match = title_normalized_exact_match(
-                            item.title,
-                            prediction.title,
+                        error = _latest_matching_error(
+                            stored.errors,
+                            item_id=item.id,
+                            prompt=prompt,
+                            image=image,
+                            image_seed=image_seed,
+                            prediction_stage=prediction_stage,
                         )
 
+                    strict_match = (
+                        None
+                        if prediction is None
+                        else title_exact_match(item.title, prediction.title)
+                    )
+                    normalized_match = (
+                        None
+                        if prediction is None
+                        else title_normalized_exact_match(item.title, prediction.title)
+                    )
                     verification_passed = (
                         image is not None and image.verification_passed is True
                     )
 
                     records.append(
-                        PredictionRecord(
-                            job_id=job_id,
-                            job_entry=job_entry,
+                        Observation(
+                            condition_id=condition_id,
+                            condition_label=condition_label,
                             run_id=run_record.run_id,
                             experiment_name=run_record.name,
-                            run_status=run_record.status,
-                            stack_id=stack_id,
                             dataset_id=config.dataset.dataset_id,
                             item_id=item.id,
                             item_index=item_index,
@@ -272,39 +226,33 @@ def extract_run(
                             prompt_seed=expected_prompt_seed,
                             prompt_id=None if prompt is None else prompt.prompt_id,
                             prompt_text=None if prompt is None else prompt.text,
-                            prompt_backend=prompt_backend.alias,
-                            prompt_model=prompt_backend.model,
+                            prompt_model=prompt_model,
                             image_seed=image_seed,
                             image_id=None if image is None else image.image_id,
                             image_path=None if image is None else image.path,
-                            image_backend=image_backend.alias,
-                            image_model=image_backend.model,
+                            image_model=image_model,
                             verification_passed=(
                                 None if image is None else image.verification_passed
                             ),
                             verification_reason=(
                                 None if image is None else image.verification_reason
                             ),
-                            verifier_backend=verifier_backend.alias,
-                            verifier_model=verifier_backend.model,
+                            verifier_model=verifier_model,
                             image_description=(
                                 None if image is None else image.description
                             ),
-                            describer_backend=(
-                                None
-                                if describer_backend is None
-                                else describer_backend.alias
-                            ),
                             describer_model=(
-                                None
-                                if describer_backend is None
-                                else describer_backend.model
+                                None if describer is None else describer.model
                             ),
                             route=route,
-                            prediction_input=input_kind,
-                            prediction_backend=backend.alias,
-                            prediction_model=backend.model,
-                            prediction_status=prediction_status,
+                            prediction_model=route_model.model,
+                            prediction_status=(
+                                "completed"
+                                if prediction is not None
+                                else "failed"
+                                if error is not None
+                                else "missing"
+                            ),
                             prediction_id=(
                                 None if prediction is None else prediction.prediction_id
                             ),
@@ -319,20 +267,12 @@ def extract_run(
                                 if prediction is None
                                 else prediction.confidence_type
                             ),
-                            exact_match=exact_match,
+                            strict_exact_match=strict_match,
                             normalized_exact_match=normalized_match,
-                            exact_method=(
-                                None if prediction is None else prediction.exact_method
+                            end_to_end_strict_score=int(
+                                verification_passed and strict_match is True
                             ),
-                            normalized_method=(
-                                NORMALIZED_EXACT_METHOD
-                                if normalized_match is not None
-                                else None
-                            ),
-                            end_to_end_score=int(
-                                verification_passed and exact_match is True
-                            ),
-                            normalized_end_to_end_score=int(
+                            end_to_end_normalized_score=int(
                                 verification_passed and normalized_match is True
                             ),
                             error_stage=None if error is None else error.stage,
@@ -342,9 +282,11 @@ def extract_run(
                     )
 
     return ExtractedRun(
+        condition_id=condition_id,
+        condition_label=condition_label,
+        run_directory=run_directory,
         run_id=run_record.run_id,
         experiment_name=run_record.name,
-        run_status=run_record.status,
         records=tuple(records),
         tasks=stored.tasks,
         runtime_events=stored.runtime_events,

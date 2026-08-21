@@ -1,7 +1,7 @@
-"""Read-only study export and statistical analysis."""
+"""Read-only statistical analysis for explicitly selected completed runs."""
 
 from semantic_roundtrip.analysis.models import AnalysisResult
-from semantic_roundtrip.analysis.output import evaluate_job, evaluate_run
+from semantic_roundtrip.analysis.output import analyze_study
 
 
-__all__ = ["AnalysisResult", "evaluate_job", "evaluate_run"]
+__all__ = ["AnalysisResult", "analyze_study"]

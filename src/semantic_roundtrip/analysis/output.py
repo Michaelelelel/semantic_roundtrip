@@ -1,4 +1,4 @@
-"""Atomic CSV, JSON, and figure publication for run and job analysis."""
+"""Read selected SQLite runs and atomically publish one study analysis."""
 
 import csv
 import json
@@ -13,38 +13,33 @@ from semantic_roundtrip.analysis.bootstrap import (
     BOOTSTRAP_REPETITIONS,
     BOOTSTRAP_SEED,
 )
+from semantic_roundtrip.analysis.config import load_study
+from semantic_roundtrip.analysis.comparisons import (
+    comparison_summaries,
+    validate_groups,
+)
+from semantic_roundtrip.analysis.diagnostics import (
+    failure_rows,
+    stage_runtime_summaries,
+    verification_summaries,
+)
 from semantic_roundtrip.analysis.extraction import extract_run
+from semantic_roundtrip.analysis.metrics import condition_summaries, title_scores
 from semantic_roundtrip.analysis.models import (
     AnalysisResult,
-    ExtractedRun,
-    PredictionRecord,
-)
-from semantic_roundtrip.analysis.summaries import (
-    PairedRouteDifference,
-    PairedRouteSummary,
-    StackDomainRouteSummary,
+    ComparisonSummary,
+    ConditionSummary,
+    FailureRow,
+    Observation,
     StageRuntimeSummary,
     TitleScore,
     VerificationSummary,
-    paired_route_differences,
-    paired_route_summaries,
-    stack_domain_route_summaries,
-    stage_runtime_summaries,
-    title_scores,
-    verification_summaries,
 )
 from semantic_roundtrip.evaluation import EXACT_MATCH_METHOD, NORMALIZED_EXACT_METHOD
-from semantic_roundtrip.job import JOB_SNAPSHOT_FILENAME, load_job_snapshot
-from semantic_roundtrip.persistence.job.database import (
-    read_job_entries,
-    read_job_record,
-)
-from semantic_roundtrip.persistence.job.schema import job_database_path
 
 
-ANALYSIS_DIRECTORY_NAME = "analysis"
-ANALYSIS_MANIFEST_SCHEMA_VERSION = 3
-ANALYZABLE_JOB_STATUSES = frozenset({"completed", "failed", "interrupted"})
+ANALYSIS_MANIFEST_SCHEMA_VERSION = 1
+STUDY_SNAPSHOT_FILENAME = "study_snapshot.yaml"
 
 
 def _software_version() -> str:
@@ -86,7 +81,7 @@ def _publish_directory(
         return
     if not force:
         raise FileExistsError(
-            f"Analysis already exists: {destination}. Use --force to replace it."
+            f"Study results already exist: {destination}. Use --force to replace them."
         )
 
     backup = destination.parent / f".{destination.name}.backup-{uuid4().hex}"
@@ -100,16 +95,31 @@ def _publish_directory(
         rmtree(backup)
 
 
-def _write_analysis(
-    source_directory: Path,
+def analyze_study(
+    study_directory: Path,
     *,
-    scope: str,
-    source_id: str,
-    source_name: str,
-    source_status: str,
-    runs: tuple[ExtractedRun, ...],
-    force: bool,
+    force: bool = False,
 ) -> AnalysisResult:
+    """Analyze exactly the completed runs selected by one study.yaml file."""
+    loaded = load_study(study_directory)
+    runs = tuple(
+        extract_run(
+            loaded.run_directories[condition_id],
+            condition_id=condition_id,
+            condition_label=condition.label or condition_id,
+        )
+        for condition_id, condition in loaded.config.conditions.items()
+    )
+    records = tuple(record for run in runs for record in run.records)
+    validate_groups(records, loaded.config.groups)
+
+    titles = title_scores(records)
+    summaries = condition_summaries(titles)
+    comparisons = comparison_summaries(titles, loaded.config.groups)
+    verifications = verification_summaries(records)
+    failures = failure_rows(records)
+    runtimes = stage_runtime_summaries(runs)
+
     try:
         from semantic_roundtrip.analysis.plots import create_figures
     except ModuleNotFoundError as error:
@@ -120,110 +130,92 @@ def _write_analysis(
             "Install the project with the 'analysis' extra."
         ) from error
 
-    records = tuple(record for run in runs for record in run.records)
-    titles = title_scores(records)
-    summaries = stack_domain_route_summaries(titles)
-    differences = paired_route_differences(titles)
-    route_summaries = paired_route_summaries(differences)
-    verifications = verification_summaries(records)
-    runtimes = stage_runtime_summaries(runs)
-
-    destination = source_directory / ANALYSIS_DIRECTORY_NAME
+    destination = loaded.output_directory
+    destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.exists() and not force:
         raise FileExistsError(
-            f"Analysis already exists: {destination}. Use --force to replace it."
+            f"Study results already exist: {destination}. Use --force to replace them."
         )
-    temporary = source_directory / f".{ANALYSIS_DIRECTORY_NAME}.tmp-{uuid4().hex}"
+    temporary = destination.parent / f".{destination.name}.tmp-{uuid4().hex}"
     temporary.mkdir()
     try:
+        (temporary / STUDY_SNAPSHOT_FILENAME).write_bytes(loaded.source_bytes)
         csv_specs = (
-            ("predictions.csv", records, PredictionRecord),
+            ("observations.csv", records, Observation),
             ("title_scores.csv", titles, TitleScore),
-            (
-                "stack_domain_route_summary.csv",
-                summaries,
-                StackDomainRouteSummary,
-            ),
-            (
-                "paired_route_differences.csv",
-                differences,
-                PairedRouteDifference,
-            ),
-            (
-                "paired_route_summary.csv",
-                route_summaries,
-                PairedRouteSummary,
-            ),
-            (
-                "verification_and_failures.csv",
-                verifications,
-                VerificationSummary,
-            ),
-            ("stage_runtime.csv", runtimes, StageRuntimeSummary),
+            ("summaries.csv", summaries, ConditionSummary),
+            ("comparisons.csv", comparisons, ComparisonSummary),
+            ("verification.csv", verifications, VerificationSummary),
+            ("failures.csv", failures, FailureRow),
+            ("runtimes.csv", runtimes, StageRuntimeSummary),
         )
-        generated_files: list[str] = []
+        generated_files = [STUDY_SNAPSHOT_FILENAME]
         for filename, rows, row_type in csv_specs:
             _write_csv(temporary / filename, rows, row_type)
             generated_files.append(filename)
 
+        labels = {
+            condition_id: condition.label or condition_id
+            for condition_id, condition in loaded.config.conditions.items()
+        }
         plot_result = create_figures(
             temporary / "figures",
-            records=records,
+            groups=loaded.config.groups,
+            labels=labels,
             summaries=summaries,
-            differences=differences,
-            route_summaries=route_summaries,
+            comparisons=comparisons,
         )
         generated_files.extend(
             f"figures/{filename}" for filename in plot_result.generated
         )
-        manifest_filename = "analysis_manifest.json"
-        manifest_generated_files = [manifest_filename, *generated_files]
+
+        manifest_filename = "manifest.json"
+        manifest_files = [manifest_filename, *generated_files]
         manifest = {
             "analysis_manifest_schema_version": ANALYSIS_MANIFEST_SCHEMA_VERSION,
             "software_version": _software_version(),
-            "scope": scope,
-            "source_id": source_id,
-            "source_name": source_name,
-            "source_status": source_status,
-            "run_ids": [run.run_id for run in runs],
+            "study_name": loaded.config.study.name,
+            "conditions": {
+                run.condition_id: {
+                    "label": run.condition_label,
+                    "run_id": run.run_id,
+                    "experiment_name": run.experiment_name,
+                    "run_directory": str(run.run_directory),
+                }
+                for run in runs
+            },
+            "groups": {
+                group_id: group.model_dump(mode="json")
+                for group_id, group in loaded.config.groups.items()
+            },
             "methods": {
-                "primary_metric": ("mean title-level end-to-end strict exact accuracy"),
+                "primary_metric": "title-level end-to-end strict exact accuracy",
                 "primary_exact_method": EXACT_MATCH_METHOD,
                 "secondary_normalized_method": NORMALIZED_EXACT_METHOD,
-                "reported_accuracy_views": [
-                    "raw title accuracy before verification gating",
-                    "title accuracy among verifier-passed images",
-                    "end-to-end accuracy requiring verification and exact title",
-                ],
-                "missing_or_failed_score": 0,
-                "verifier_failure_score": 0,
-                "bootstrap_unit": "title",
+                "missing_prediction_score": 0,
+                "verifier_rejection_score": 0,
+                "independent_unit": "title",
+                "seed_repetitions": "averaged within each title",
                 "bootstrap_repetitions": BOOTSTRAP_REPETITIONS,
                 "bootstrap_seed": BOOTSTRAP_SEED,
-                "confidence_interval": "95% percentile bootstrap",
-                "overall_bootstrap": "domain-stratified title bootstrap",
-                "paired_difference": "description minus direct within run and title",
-                "confidence_scope": "within prediction model, route, and type",
+                "confidence_interval": "95% percentile bootstrap by title",
+                "overall_bootstrap": "stratified by domain",
             },
             "row_counts": {
-                "predictions": len(records),
+                "conditions": len(runs),
+                "observations": len(records),
                 "titles": len(titles),
-                "stack_domain_route_summaries": len(summaries),
-                "paired_route_differences": len(differences),
-                "paired_route_summaries": len(route_summaries),
-                "verification_summaries": len(verifications),
-                "stage_runtime_summaries": len(runtimes),
+                "summaries": len(summaries),
+                "comparisons": len(comparisons),
+                "failures": len(failures),
+                "runtimes": len(runtimes),
             },
-            "generated_files": manifest_generated_files,
+            "generated_files": manifest_files,
             "omitted_figures": plot_result.omitted,
         }
-        with (temporary / manifest_filename).open(
-            "x",
-            encoding="utf-8",
-        ) as file:
+        with (temporary / manifest_filename).open("x", encoding="utf-8") as file:
             json.dump(manifest, file, indent=2, ensure_ascii=False, sort_keys=True)
             file.write("\n")
-        generated_files = manifest_generated_files
 
         _publish_directory(temporary, destination, force=force)
     except Exception:
@@ -232,65 +224,12 @@ def _write_analysis(
         raise
 
     return AnalysisResult(
-        scope=scope,
-        source_id=source_id,
+        study_name=loaded.config.study.name,
         output_directory=destination,
-        prediction_rows=len(records),
+        condition_count=len(runs),
+        observation_rows=len(records),
         title_rows=len(titles),
         summary_rows=len(summaries),
-        generated_files=tuple(generated_files),
-    )
-
-
-def evaluate_run(run_directory: Path, *, force: bool = False) -> AnalysisResult:
-    """Analyze one terminal run without modifying its inference database."""
-    run_directory = run_directory.resolve()
-    extracted = extract_run(run_directory)
-    return _write_analysis(
-        run_directory,
-        scope="run",
-        source_id=extracted.run_id,
-        source_name=extracted.experiment_name,
-        source_status=extracted.run_status,
-        runs=(extracted,),
-        force=force,
-    )
-
-
-def evaluate_job(job_directory: Path, *, force: bool = False) -> AnalysisResult:
-    """Combine every child run from one terminal persisted job."""
-    job_directory = job_directory.resolve()
-    database_path = job_database_path(job_directory)
-    record = read_job_record(database_path)
-    if record.status not in ANALYZABLE_JOB_STATUSES:
-        raise ValueError(
-            f"Job status '{record.status}' is not terminal; complete or stop it first."
-        )
-    snapshot = load_job_snapshot(job_directory / JOB_SNAPSHOT_FILENAME)
-    persisted_entries = read_job_entries(database_path, job_directory)
-    configured_entries = {entry.index: entry for entry in snapshot.entries}
-    if len(configured_entries) != len(persisted_entries):
-        raise ValueError("Job snapshot and database entry counts do not match.")
-
-    runs: list[ExtractedRun] = []
-    for persisted in persisted_entries:
-        configured = configured_entries.get(persisted.entry_index)
-        if configured is None:
-            raise ValueError(f"Missing job snapshot entry {persisted.entry_index}.")
-        runs.append(
-            extract_run(
-                persisted.run_directory,
-                job_id=record.job_id,
-                job_entry=configured.name,
-                require_terminal=False,
-            )
-        )
-    return _write_analysis(
-        job_directory,
-        scope="job",
-        source_id=record.job_id,
-        source_name=record.name,
-        source_status=record.status,
-        runs=tuple(runs),
-        force=force,
+        comparison_rows=len(comparisons),
+        generated_files=tuple(manifest_files),
     )

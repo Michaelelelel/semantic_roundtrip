@@ -40,8 +40,6 @@ class StoredPrediction:
     title: str
     confidence: float | None
     confidence_type: str | None
-    exact_match: bool | None
-    exact_method: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -139,12 +137,8 @@ def read_analysis_rows(database_path: Path) -> StoredAnalysisRows:
                 predictions.prediction_id,
                 predictions.title,
                 predictions.confidence,
-                predictions.confidence_type,
-                evaluations.exact_match,
-                evaluations.exact_method
+                predictions.confidence_type
             FROM predictions
-            LEFT JOIN evaluations
-                ON evaluations.prediction_id = predictions.prediction_id
             ORDER BY predictions.image_id, predictions.input_kind
             """
         ).fetchall()
@@ -232,10 +226,6 @@ def read_analysis_rows(database_path: Path) -> StoredAnalysisRows:
                     None if row["confidence"] is None else float(row["confidence"])
                 ),
                 confidence_type=row["confidence_type"],
-                exact_match=(
-                    None if row["exact_match"] is None else bool(row["exact_match"])
-                ),
-                exact_method=row["exact_method"],
             )
             for row in prediction_rows
         ),

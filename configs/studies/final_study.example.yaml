@@ -1,0 +1,86 @@
+schema_version: 1
+
+study:
+  name: final_semantic_roundtrip_study
+  output_directory: results
+
+# Copy this file into a study directory as study.yaml. Run paths are resolved
+# relative to that directory and may point into different job folders.
+conditions:
+  g0:
+    run: ../REPLACE_SPARK_A_JOB/runs/REPLACE_G0_RUN
+    label: Legacy system
+  g1:
+    run: ../REPLACE_SPARK_A_JOB/runs/REPLACE_G1_RUN
+    label: Intermediate system
+  a_spark_a:
+    run: ../REPLACE_SPARK_A_JOB/runs/REPLACE_A_SPARK_A_RUN
+    label: Current system (Spark A)
+  a_spark_b:
+    run: ../REPLACE_SPARK_B_JOB/runs/REPLACE_A_SPARK_B_RUN
+    label: Current system (Spark B)
+  p0:
+    run: ../REPLACE_SPARK_B_JOB/runs/REPLACE_P0_RUN
+    label: Mistral 7B prompt model
+  p1:
+    run: ../REPLACE_SPARK_B_JOB/runs/REPLACE_P1_RUN
+    label: Qwen3 8B prompt model
+  i0:
+    run: ../REPLACE_SPARK_A_JOB/runs/REPLACE_I0_RUN
+    label: Stable Diffusion 1.5
+  i1:
+    run: ../REPLACE_SPARK_A_JOB/runs/REPLACE_I1_RUN
+    label: SDXL Base
+  i2:
+    run: ../REPLACE_SPARK_A_JOB/runs/REPLACE_I2_RUN
+    label: Stable Diffusion 3.5 Large
+  v0:
+    run: ../REPLACE_SPARK_B_JOB/runs/REPLACE_V0_RUN
+    label: LLaVA 1.5 7B
+  v1:
+    run: ../REPLACE_SPARK_B_JOB/runs/REPLACE_V1_RUN
+    label: Qwen3-VL 8B
+  v2:
+    run: ../REPLACE_SPARK_B_JOB/runs/REPLACE_V2_RUN
+    label: Gemma 4 31B
+
+groups:
+  complete_systems:
+    kind: accuracy
+    conditions:
+      - g0
+      - g1
+      - a_spark_a
+
+  prompt_models:
+    kind: paired
+    conditions:
+      - p0
+      - p1
+      - a_spark_b
+    reference: a_spark_b
+
+  image_models:
+    kind: paired
+    conditions:
+      - i0
+      - i1
+      - i2
+      - a_spark_a
+    reference: a_spark_a
+
+  reconstruction_models:
+    kind: paired
+    conditions:
+      - v0
+      - v1
+      - v2
+      - a_spark_b
+    reference: a_spark_b
+
+  reconstruction_routes:
+    kind: routes
+    conditions:
+      - v0
+      - v1
+      - a_spark_b
