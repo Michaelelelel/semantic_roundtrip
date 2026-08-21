@@ -6,7 +6,7 @@ freeze it before inspecting final model results.
 ## Selection
 
 - Domains: songs, movies and bands.
-- 60 titles per domain: 20 one-word, 20 two-to-three-word and 20 four-or-more-word titles.
+- 30 titles per domain: 10 one-word, 10 two-to-three-word and 10 four-or-more-word titles.
 - Works must be released by 2018; bands must be MusicBrainz `Group` entities formed by 2018.
 - The six development titles are excluded.
 - Only Latin-script titles are included.
@@ -29,6 +29,28 @@ The source files are downloaded once and kept locally because they are large or
 updated over time. The selected YAML and its CSV source report are committed so
 every model stack receives exactly the same titles.
 
+## Why 30 titles per domain
+
+The study currently uses 90 independent titles: 30 songs, 30 movies and 30 bands.
+Every model condition receives exactly the same titles, which allows paired
+title-level comparisons. Two prompt seeds and two image seeds create four repeated
+observations for every title and condition. These repetitions measure generation
+variability, but they are not counted as additional independent titles.
+
+This size is appropriate for the scoped bachelor study because the primary goal is
+to compare complete systems and selected model substitutions across the full
+90-title dataset, not to estimate small population-wide differences inside each
+domain. The balanced design also retains ten short, ten medium and ten long titles
+per domain. Increasing the sample to 60 titles per domain would improve the
+precision of domain-specific estimates, but would also double the largest part of
+the execution cost. Domain-specific results are therefore reported as secondary
+subgroup results with uncertainty intervals and without claims about small effects.
+
+The choice is not a technical limit. The generation script accepts a larger count,
+so a later study can extend the dataset with the same eligibility, balancing and
+fixed-seed selection procedure. Such an extension must be stored under a new dataset
+version and decided before inspecting its final model results.
+
 ## Build
 
 From the repository root:
@@ -44,12 +66,11 @@ second command writes:
 - `configs/datasets/proposed_final_titles_v1.yaml` for the pipeline;
 - `configs/datasets/proposed_final_titles_v1_sources.csv` for review and thesis provenance.
 
-To test another valid size without changing the method:
+To extend the dataset to 60 titles per domain without changing the method:
 
 ```bash
 .venv/bin/python scripts/datasets/build_dataset.py \
-  --titles-per-domain 90 \
-  --candidate-pool-size 600
+  --titles-per-domain 60
 ```
 
 The number must be a positive multiple of three. A larger sample also needs a

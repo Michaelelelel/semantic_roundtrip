@@ -60,7 +60,7 @@ def parse_arguments() -> Namespace:
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--exclusions", type=Path, default=DEFAULT_EXCLUSIONS)
     parser.add_argument("--dataset-id", default="proposed_final_titles_v1")
-    parser.add_argument("--titles-per-domain", type=int, default=60)
+    parser.add_argument("--titles-per-domain", type=int, default=30)
     parser.add_argument("--candidate-pool-size", type=int, default=300)
     parser.add_argument("--cutoff-year", type=int, default=2018)
     parser.add_argument("--seed", type=int, default=20260811)

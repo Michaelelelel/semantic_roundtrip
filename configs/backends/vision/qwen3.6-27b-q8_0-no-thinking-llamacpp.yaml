@@ -5,10 +5,12 @@ adapter: openai_compatible
 settings:
   endpoint: http://vision_runtime:8080/v1/chat/completions
   model_id: qwen3.6-27b-q8_0
-  timeout_seconds: 3600
-  reasoning_format: deepseek
+  timeout_seconds: 1800
+  reasoning_effort: none
+  reasoning_format: none
+  thinking_budget_tokens: 0
   chat_template_kwargs:
-    enable_thinking: true
+    enable_thinking: false
 
 runtime:
   controller: llama_cpp_router

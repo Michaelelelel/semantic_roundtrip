@@ -1,0 +1,25 @@
+schema_version: 2
+
+job:
+  name: final_study_spark_b_prompt_vision_route
+  output_directory: runs
+  continue_on_error: true
+
+experiments:
+  - name: p0_mistral
+    config: ../../experiments/final_study/p0_mistral_direct.yaml
+
+  - name: p1_qwen3
+    config: ../../experiments/final_study/p1_qwen3_direct.yaml
+
+  - name: a_current
+    config: ../../experiments/final_study/a_current_routes.yaml
+
+  - name: v0_llava
+    config: ../../experiments/final_study/v0_llava_routes.yaml
+
+  - name: v1_qwen3_vl
+    config: ../../experiments/final_study/v1_qwen3_vl_routes.yaml
+
+  - name: v2_gemma4
+    config: ../../experiments/final_study/v2_gemma4_direct.yaml

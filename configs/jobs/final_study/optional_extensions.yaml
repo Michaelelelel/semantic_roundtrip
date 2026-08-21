@@ -1,0 +1,28 @@
+schema_version: 2
+
+job:
+  name: final_study_optional_extensions
+  output_directory: runs
+  continue_on_error: true
+
+experiments:
+  - name: a_current
+    config: ../../experiments/final_study/a_current_direct.yaml
+
+  - name: t0_qwen_no_thinking
+    config: ../../experiments/final_study/t0_qwen_no_thinking_direct.yaml
+
+  - name: x1_qwen_prompt_mistral_title
+    config: ../../experiments/final_study/x1_qwen_prompt_mistral_title_direct.yaml
+
+  - name: x2_mistral_prompt_qwen_title
+    config: ../../experiments/final_study/x2_mistral_prompt_qwen_title_direct.yaml
+
+  - name: x3_mistral_self
+    config: ../../experiments/final_study/x3_mistral_self_direct.yaml
+
+  - name: p2_gpt_oss
+    config: ../../experiments/final_study/p2_gpt_oss_direct.yaml
+
+  - name: i3_flux2
+    config: ../../experiments/final_study/i3_flux2_direct.yaml

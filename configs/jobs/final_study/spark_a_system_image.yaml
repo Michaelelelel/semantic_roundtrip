@@ -1,0 +1,25 @@
+schema_version: 2
+
+job:
+  name: final_study_spark_a_system_image
+  output_directory: runs
+  continue_on_error: true
+
+experiments:
+  - name: g0_legacy
+    config: ../../experiments/final_study/g0_legacy_direct.yaml
+
+  - name: g1_intermediate
+    config: ../../experiments/final_study/g1_intermediate_direct.yaml
+
+  - name: a_current
+    config: ../../experiments/final_study/a_current_direct.yaml
+
+  - name: i0_sd15
+    config: ../../experiments/final_study/i0_sd15_direct.yaml
+
+  - name: i1_sdxl
+    config: ../../experiments/final_study/i1_sdxl_direct.yaml
+
+  - name: i2_sd35
+    config: ../../experiments/final_study/i2_sd35_direct.yaml
