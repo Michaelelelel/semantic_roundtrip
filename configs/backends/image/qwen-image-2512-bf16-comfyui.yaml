@@ -20,7 +20,7 @@ settings:
     "1":
       unet_name: qwen_image_2512_bf16.safetensors
     "2":
-      clip_name: qwen_2.5_vl_7b_fp8_scaled.safetensors
+      clip_name: qwen_2.5_vl_7b.safetensors
     "3":
       vae_name: qwen_image_vae.safetensors
   generation_timeout_seconds: 1800

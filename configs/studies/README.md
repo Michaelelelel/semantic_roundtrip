@@ -78,7 +78,9 @@ Zero means no observed difference. The selected runs must contain the same datas
 titles, prompt seeds, image seeds, and repetition counts for the selected route.
 
 Use this group for a controlled local comparison around an anchor, such as changing
-only the prompt, image, or reconstruction model.
+only the prompt, image, or reconstruction model in the configuration. Matching
+datasets and seed grids do not by themselves guarantee byte-identical generated
+artifacts across independently executed runs.
 
 ### `routes`: description route versus direct route
 

@@ -16,9 +16,9 @@ download_file \
     'cbf55390fff27dbc785046d7007b04e0c5dd7421e7ef128f2831eacb53a8e075'
 
 download_file \
-    "${repository}/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors?download=true" \
-    "$encoder_directory/qwen_2.5_vl_7b_fp8_scaled.safetensors" \
-    'cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4'
+    "${repository}/split_files/text_encoders/qwen_2.5_vl_7b.safetensors?download=true" \
+    "$encoder_directory/qwen_2.5_vl_7b.safetensors" \
+    'cfafd739459bc86257397259f612a9aee88e5b98e85b5c0d0d1717e898b3463a'
 
 download_file \
     "${repository}/split_files/vae/qwen_image_vae.safetensors?download=true" \

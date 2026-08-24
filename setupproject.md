@@ -84,19 +84,18 @@ sudo docker compose \
   text_runtime vision_runtime image_runtime
 ```
 
-## 5. Test the complete model matrix
+## 5. Test the final-study models
 
-The complete S0-S4 bundle requires roughly 390 GB of final model storage. Keep at
-least another 50 GB free while a large `.part` file is being downloaded. Check the
-available space first:
+The complete final-study bundle requires roughly 390 GB of model storage. Keep at
+least another 50 GB free while a large `.part` file is being downloaded. Check
+the available space first:
 
 ```bash
 df -h "$DATA_ROOT"
 ```
 
 Stable Diffusion 3.5 Large is gated; accept its model licence on Hugging Face and
-export a read token before downloading. The FLUX.2 dev FP8-mixed artifact is public,
-but its non-commercial model licence still applies:
+export a read token before downloading:
 
 ```bash
 export HF_TOKEN=<your-hugging-face-read-token>
@@ -114,34 +113,48 @@ sudo docker compose \
   text_runtime vision_runtime image_runtime
 ```
 
-Plan and run one image through every complete stack first:
+Plan and run the small native-precision smoke job first. It creates six images
+and loads every model family used by the two primary jobs:
 
 ```bash
 sudo docker compose -f compose.yaml -f compose.dgx.yaml run --rm runner \
   semantic-roundtrip job plan \
-  --config configs/jobs/dgx_final_matrix_smoke.yaml
+  --config configs/jobs/final_study/native_smoke.yaml
 
 sudo docker compose -f compose.yaml -f compose.dgx.yaml run --rm runner \
   semantic-roundtrip job start \
-  --config configs/jobs/dgx_final_matrix_smoke.yaml
+  --config configs/jobs/final_study/native_smoke.yaml
 ```
 
-Only after all required smoke entries work, start the shared six-title development
-matrix. It contains S0-S4 plus the bounded S1 self/cross route comparison:
+Only after all smoke entries work, start one primary job on each DGX Spark.
+
+Spark A:
 
 ```bash
 sudo docker compose -f compose.yaml -f compose.dgx.yaml run --rm runner \
   semantic-roundtrip job plan \
-  --config configs/jobs/dgx_final_matrix_development.yaml
+  --config configs/jobs/final_study/spark_a_system_image.yaml
 
 sudo docker compose -f compose.yaml -f compose.dgx.yaml run --rm runner \
   semantic-roundtrip job start \
-  --config configs/jobs/dgx_final_matrix_development.yaml
+  --config configs/jobs/final_study/spark_a_system_image.yaml
 ```
 
-The development job produces 144 images and 288 evaluation rows. Inspect it through
-the status commands below. Scientific comparisons are selected separately in a
-`study.yaml` file; job membership does not define what is compared.
+Spark B:
+
+```bash
+sudo docker compose -f compose.yaml -f compose.dgx.yaml run --rm runner \
+  semantic-roundtrip job plan \
+  --config configs/jobs/final_study/spark_b_prompt_vision_route.yaml
+
+sudo docker compose -f compose.yaml -f compose.dgx.yaml run --rm runner \
+  semantic-roundtrip job start \
+  --config configs/jobs/final_study/spark_b_prompt_vision_route.yaml
+```
+
+Every experiment executes a complete independent run. Scientific comparisons
+are selected separately in a `study.yaml` file; job membership does not define
+what is compared.
 
 ## 6. Inspect progress
 

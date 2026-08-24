@@ -1,0 +1,25 @@
+schema_version: 2
+
+job:
+  name: final_study_native_smoke
+  output_directory: runs
+  continue_on_error: true
+
+experiments:
+  - name: system_legacy
+    config: ../../experiments/final_study/smoke/system_legacy.yaml
+
+  - name: system_intermediate
+    config: ../../experiments/final_study/smoke/system_intermediate.yaml
+
+  - name: anchor_current
+    config: ../../experiments/final_study/smoke/anchor_current.yaml
+
+  - name: prompt_qwen30
+    config: ../../experiments/final_study/smoke/prompt_qwen30.yaml
+
+  - name: family_gemma_qwen
+    config: ../../experiments/final_study/smoke/family_gemma_qwen.yaml
+
+  - name: image_sd35
+    config: ../../experiments/final_study/smoke/image_sd35.yaml

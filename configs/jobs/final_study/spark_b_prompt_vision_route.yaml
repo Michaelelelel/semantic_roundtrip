@@ -1,25 +1,31 @@
 schema_version: 2
 
 job:
-  name: final_study_spark_b_prompt_vision_route
+  name: final_study_spark_b_prompts_and_reconstruction
   output_directory: runs
   continue_on_error: true
 
 experiments:
-  - name: p0_mistral
-    config: ../../experiments/final_study/p0_mistral_direct.yaml
+  - name: prompt_mistral7
+    config: ../../experiments/final_study/controlled/prompt_mistral7_direct.yaml
 
-  - name: p1_qwen3
-    config: ../../experiments/final_study/p1_qwen3_direct.yaml
+  - name: prompt_mistral24
+    config: ../../experiments/final_study/controlled/prompt_mistral24_direct.yaml
 
-  - name: a_current
-    config: ../../experiments/final_study/a_current_routes.yaml
+  - name: prompt_qwen30
+    config: ../../experiments/final_study/controlled/prompt_qwen30_direct.yaml
 
-  - name: v0_llava
-    config: ../../experiments/final_study/v0_llava_routes.yaml
+  - name: prompt_gemma4_gemma_reconstruction
+    config: ../../experiments/final_study/controlled/prompt_gemma4_gemma_direct.yaml
 
-  - name: v1_qwen3_vl
-    config: ../../experiments/final_study/v1_qwen3_vl_routes.yaml
+  - name: family_gemma_prompt_qwen_reconstruction
+    config: ../../experiments/final_study/controlled/family_gemma_prompt_qwen_reconstruction_direct.yaml
 
-  - name: v2_gemma4
-    config: ../../experiments/final_study/v2_gemma4_direct.yaml
+  - name: reconstruction_llava
+    config: ../../experiments/final_study/controlled/reconstruction_llava_routes.yaml
+
+  - name: reconstruction_qwen25
+    config: ../../experiments/final_study/controlled/reconstruction_qwen25_routes.yaml
+
+  - name: reconstruction_qwen38
+    config: ../../experiments/final_study/controlled/reconstruction_qwen38_routes.yaml
