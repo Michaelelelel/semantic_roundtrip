@@ -33,13 +33,11 @@ RUNTIME_ROOT=/home/mhagmann/bachelorthesis/semantic_roundtrip-data/runtime
 STATUS_PORT=18000
 ```
 
-Download the currently configured baseline models and chat templates:
+Download the chat templates. The final-study model bundle is downloaded in
+step 5:
 
 ```bash
 ./chat_templates/download.sh
-./models/text/download-mistral-7b-instruct-v0.1-q4_k_m.sh "$DATA_ROOT/models"
-./models/vision/download-llava-v1.5-7b-q4_k.sh "$DATA_ROOT/models"
-./models/image/download-stable-diffusion-v1-5-fp16.sh "$DATA_ROOT/models"
 ```
 
 ## 2. Build the runner
@@ -99,7 +97,7 @@ export a read token before downloading:
 
 ```bash
 export HF_TOKEN=<your-hugging-face-read-token>
-./models/download-dgx-final-matrix.sh "$DATA_ROOT/models"
+./models/download-final-study.sh "$DATA_ROOT/models"
 ```
 
 Recreate the runtimes so llama.cpp reads the expanded model catalog and the shared

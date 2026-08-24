@@ -28,11 +28,3 @@ Every experiment executes the complete configured pipeline and produces a
 self-contained child run. The dataset, seeds, verifier, and all models outside
 the compared stage remain fixed in the controlled comparisons; no outputs are
 copied between runs.
-
-## Optional job
-
-`optional_extensions.yaml` is not part of the primary matrix. It preserves
-additional expensive comparisons such as reasoning, GPT-OSS, and FLUX for use
-only after the primary jobs have completed and their results have been reviewed.
-These optional configurations still use the earlier Qwen3.6-based anchor and must
-be reviewed before they are included in a separate study.

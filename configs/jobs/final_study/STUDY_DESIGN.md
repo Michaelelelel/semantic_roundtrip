@@ -18,8 +18,8 @@ this file or the current YAML configurations.
 - Uncertainty: 95% intervals are calculated by resampling titles. The overall
   interval preserves the number of titles in each domain.
 - Fixed verifier: Qwen2.5-VL 7B F16 in every primary condition.
-- Main inference mode: no model reasoning. Reasoning is reserved for an optional
-  experiment.
+- Main inference mode: no model reasoning. Reasoning experiments are outside the
+  frozen primary-study scope.
 - Execution: every condition is a complete independent run. No prompts, images,
   database rows, or other artifacts are copied from another run.
 
@@ -141,9 +141,6 @@ analysis of every possible model-family interaction.
 workflow required by the primary study using one image per condition. It is an
 engineering gate only and is not included in the thesis accuracy analysis.
 
-The earlier `final_matrix` S3 smoke may be run separately as a regression test for
-the Qwen empty-`<think>` parsing issue. It is not a primary study condition.
-
 ## Jobs and analysis
 
 1. Run `native_smoke.yaml` and require zero failed tasks.
@@ -156,14 +153,6 @@ the Qwen empty-`<think>` parsing issue. It is not a primary study condition.
 The analysis reads the selected SQLite databases without modifying them. The YAML
 study groups define which conditions may be compared; job membership does not.
 
-## Optional experiments
-
-`optional_extensions.yaml` is not part of the primary study. It contains older,
-expensive candidates for reasoning, GPT-OSS, FLUX, and additional model-family
-combinations. These configurations still reflect the earlier Qwen3.6-based anchor
-and must be reviewed and assigned to a separate study before use. They must not
-delay or silently alter the primary study described above.
-
 ## Thesis result structure
 
 1. Technical validity: completion, verifier, failure, and runtime evidence.
@@ -171,6 +160,6 @@ delay or silently alter the primary study described above.
 3. RQ2: prompt-, image-, and reconstruction-model differences from the anchor.
 4. RQ3: direct versus description-mediated reconstruction.
 5. RQ4: compact domain comparison across the main results.
-6. Secondary family comparison and any optional experiments, clearly separated.
+6. Focused model-family comparison, clearly separated from the primary results.
 7. Discussion of semantic information loss, limitations, runtime, and the fact
    that independent controlled runs do not reuse byte-identical artifacts.
