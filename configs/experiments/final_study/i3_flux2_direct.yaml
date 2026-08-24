@@ -24,7 +24,7 @@ backends:
   verifier:
     profile: ../../backends/vision/qwen3-vl-8b-instruct-q8_0-llamacpp.yaml
   reconstruction_model:
-    profile: ../../backends/vision/qwen3.6-27b-q8_0-llamacpp.yaml
+    profile: ../../backends/vision/qwen3.6-27b-q8_0-no-thinking-llamacpp.yaml
 
 stages:
   prompt_generation:
@@ -53,6 +53,6 @@ stages:
       template_path: prompts/title_guessing/plain_v3.txt
       parameters:
         temperature: 0.7
-        top_p: 0.95
-        max_tokens: 16384
+        top_p: 0.8
+        max_tokens: 128
         seed: 3003

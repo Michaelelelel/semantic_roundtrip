@@ -9,8 +9,8 @@ experiments:
   - name: a_current
     config: ../../experiments/final_study/a_current_direct.yaml
 
-  - name: t0_qwen_no_thinking
-    config: ../../experiments/final_study/t0_qwen_no_thinking_direct.yaml
+  - name: t1_qwen_thinking
+    config: ../../experiments/final_study/t1_qwen_thinking_direct.yaml
 
   - name: x1_qwen_prompt_mistral_title
     config: ../../experiments/final_study/x1_qwen_prompt_mistral_title_direct.yaml
