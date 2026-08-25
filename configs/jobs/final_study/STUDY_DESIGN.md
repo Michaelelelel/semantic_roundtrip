@@ -18,6 +18,9 @@ this file or the current YAML configurations.
 - Uncertainty: 95% intervals are calculated by resampling titles. The overall
   interval preserves the number of titles in each domain.
 - Fixed verifier: Qwen2.5-VL 7B F16 in every primary condition.
+- LLaVA 1.5 uses separately pinned F16 language-model and projector GGUF files
+  derived from the same upstream checkpoint. The projector package is selected
+  for compatibility with the current llama.cpp runtime.
 - Main inference mode: no model reasoning. Reasoning experiments are outside the
   frozen primary-study scope.
 - Execution: every condition is a complete independent run. No prompts, images,
