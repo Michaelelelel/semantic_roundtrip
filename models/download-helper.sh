@@ -1,14 +1,24 @@
 # Shared download functions for the model scripts.
 
-# Usage: download_file URL DESTINATION SHA256 [HF_TOKEN]
+run_hf() {
+    if command -v hf >/dev/null 2>&1; then
+        hf "$@"
+    elif command -v uvx >/dev/null 2>&1; then
+        uvx hf "$@"
+    elif [ -x "$HOME/.venvs/hf-download/bin/hf" ]; then
+        "$HOME/.venvs/hf-download/bin/hf" "$@"
+    else
+        echo "Install the Hugging Face CLI; see setupproject.md." >&2
+        return 1
+    fi
+}
+
+# Usage: download_file HUGGING_FACE_URL DESTINATION SHA256 [HF_TOKEN]
 download_file() (
-    url="$1"
+    url="${1%%\?*}"
     destination="$2"
     checksum="$3"
     token="${4:-}"
-    temporary="${destination}.part"
-
-    mkdir -p "$(dirname -- "$destination")"
 
     if [ -f "$destination" ] &&
         printf '%s  %s\n' "$checksum" "$destination" |
@@ -17,27 +27,29 @@ download_file() (
         return
     fi
 
-    if [ -f "$temporary" ] &&
-        printf '%s  %s\n' "$checksum" "$temporary" |
-            sha256sum --check --status; then
-        mv "$temporary" "$destination"
-        echo "Completed previous download: $destination"
-        return
-    fi
+    hub_path="${url#https://huggingface.co/}"
+    repository="${hub_path%%/resolve/*}"
+    revision_and_file="${hub_path#*/resolve/}"
+    revision="${revision_and_file%%/*}"
+    filename="${revision_and_file#*/}"
+    download_directory="${destination}.download"
+    downloaded="${download_directory}/${filename}"
 
+    mkdir -p "$(dirname -- "$destination")" "$download_directory"
     if [ -n "$token" ]; then
-        curl -fL --retry 3 --continue-at - \
-            -H "Authorization: Bearer $token" \
-            "$url" \
-            -o "$temporary"
-    else
-        curl -fL --retry 3 --continue-at - \
-            "$url" \
-            -o "$temporary"
+        export HF_TOKEN="$token"
     fi
 
-    printf '%s  %s\n' "$checksum" "$temporary" | sha256sum --check
-    mv "$temporary" "$destination"
+    run_hf download \
+        "$repository" \
+        "$filename" \
+        --revision "$revision" \
+        --local-dir "$download_directory"
+
+    printf '%s  %s\n' "$checksum" "$downloaded" | sha256sum --check
+    mv "$downloaded" "$destination"
+    rm -rf "$download_directory"
+    echo "Downloaded: $destination"
 )
 
 # Stop early with a useful message when a gated model needs authentication.

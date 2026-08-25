@@ -84,12 +84,24 @@ sudo docker compose \
 
 ## 5. Test the final-study models
 
-The complete final-study bundle requires roughly 390 GB of model storage. Keep at
-least another 50 GB free while a large `.part` file is being downloaded. Check
+The complete final-study bundle requires roughly 390 GB of model storage. Check
 the available space first:
 
 ```bash
-df -h "$DATA_ROOT"
+set -a
+. ./.env
+set +a
+
+df -h "$MODEL_ROOT"
+```
+
+The model scripts use Hugging Face Xet for fast, resumable downloads. If neither
+`hf` nor `uvx` is installed, create the small downloader environment once:
+
+```bash
+python3 -m venv "$HOME/.venvs/hf-download"
+"$HOME/.venvs/hf-download/bin/python" -m pip install --upgrade \
+  "huggingface_hub[hf_xet]"
 ```
 
 Stable Diffusion 3.5 Large is gated; accept its model licence on Hugging Face and
@@ -97,7 +109,8 @@ export a read token before downloading:
 
 ```bash
 export HF_TOKEN=<your-hugging-face-read-token>
-./models/download-final-study.sh "$DATA_ROOT/models"
+HF_XET_HIGH_PERFORMANCE=1 \
+  ./models/download-final-study.sh "$MODEL_ROOT"
 ```
 
 Recreate the runtimes so llama.cpp reads the expanded model catalog and the shared
