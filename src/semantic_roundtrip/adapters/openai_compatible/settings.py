@@ -14,6 +14,8 @@ class OpenAICompatibleStageSettings(ConfigModel):
 
     endpoint: str = Field(min_length=1)
     model_id: str = Field(min_length=1)
+    api_key_env: str | None = Field(default=None, min_length=1)
+    request_token_logprobs: bool = True
     template_path: Path
     temperature: float = Field(default=0.0, ge=0)
     top_p: float = Field(default=1.0, gt=0, le=1)

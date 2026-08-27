@@ -63,6 +63,7 @@ class OpenAICompatibleImageVerifier:
             endpoint=settings.endpoint,
             model_id=settings.model_id,
             timeout_seconds=settings.timeout_seconds,
+            api_key_env=settings.api_key_env,
             error_subject="Verification",
         )
 
@@ -128,6 +129,7 @@ class OpenAICompatibleImageDescriber:
             endpoint=settings.endpoint,
             model_id=settings.model_id,
             timeout_seconds=settings.timeout_seconds,
+            api_key_env=settings.api_key_env,
             error_subject="Image description",
         )
 
@@ -186,6 +188,7 @@ class OpenAICompatibleImageTitleGuesser:
             endpoint=settings.endpoint,
             model_id=settings.model_id,
             timeout_seconds=settings.timeout_seconds,
+            api_key_env=settings.api_key_env,
             error_subject="Title guessing",
         )
 
@@ -206,7 +209,7 @@ class OpenAICompatibleImageTitleGuesser:
             top_p=self._config.top_p,
             max_tokens=self._config.max_tokens,
             seed=self._config.seed,
-            include_token_logprobs=True,
+            include_token_logprobs=self._config.request_token_logprobs,
             reasoning_effort=self._config.reasoning_effort,
             reasoning_format=self._config.reasoning_format,
             thinking_budget_tokens=self._config.thinking_budget_tokens,

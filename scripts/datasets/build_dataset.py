@@ -1,26 +1,26 @@
 """Build the thesis title dataset from frozen IMDb and ListenBrainz files."""
 
-from argparse import ArgumentParser, Namespace
 import csv
-from dataclasses import dataclass
 import gzip
 import json
-from pathlib import Path
 import random
 import re
 import time
 import unicodedata
-from typing import Any, Iterator
+from argparse import ArgumentParser, Namespace
+from collections.abc import Iterator
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 import requests
 import yaml
 
-
 DOMAINS = ("songs", "movies", "bands")
 LENGTH_GROUPS = ("short", "medium", "long")
 DEFAULT_SOURCE_DIRECTORY = Path("data/title_sources/v1")
-DEFAULT_OUTPUT = Path("configs/datasets/proposed_final_titles_v1.yaml")
-DEFAULT_REPORT = Path("configs/datasets/proposed_final_titles_v1_sources.csv")
+DEFAULT_OUTPUT = Path("configs/datasets/final_titles_v1.yaml")
+DEFAULT_REPORT = Path("configs/datasets/final_titles_v1_sources.csv")
 DEFAULT_EXCLUSIONS = Path("configs/datasets/development_titles_v1.yaml")
 LISTENBRAINZ_METADATA_URL = "https://api.listenbrainz.org/1/metadata"
 VERSION_LABEL = re.compile(
@@ -59,7 +59,7 @@ def parse_arguments() -> Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--exclusions", type=Path, default=DEFAULT_EXCLUSIONS)
-    parser.add_argument("--dataset-id", default="proposed_final_titles_v1")
+    parser.add_argument("--dataset-id", default="final_titles_v1")
     parser.add_argument("--titles-per-domain", type=int, default=30)
     parser.add_argument("--candidate-pool-size", type=int, default=300)
     parser.add_argument("--cutoff-year", type=int, default=2018)
@@ -143,7 +143,7 @@ def fetch_listenbrainz_metadata(source_directory: Path) -> None:
             json={"recording_mbids": batch, "inc": "artist release"},
         )
         if not isinstance(payload, dict):
-            raise ValueError("Unexpected ListenBrainz recording metadata response.")
+            raise TypeError("Unexpected ListenBrainz recording metadata response.")
         recording_metadata.update(payload)
         print(f"Recording metadata: {index}/{len(recording_batches)}")
 
@@ -157,7 +157,7 @@ def fetch_listenbrainz_metadata(source_directory: Path) -> None:
             params={"artist_mbids": ",".join(batch), "inc": "artist"},
         )
         if not isinstance(payload, list):
-            raise ValueError("Unexpected ListenBrainz artist metadata response.")
+            raise TypeError("Unexpected ListenBrainz artist metadata response.")
         artist_metadata.extend(payload)
         print(f"Artist metadata: {index}/{len(artist_batches)}")
 

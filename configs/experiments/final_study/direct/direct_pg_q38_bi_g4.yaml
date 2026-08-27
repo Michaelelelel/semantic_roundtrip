@@ -1,0 +1,25 @@
+schema_version: 7
+run:
+  name: direct_pg_q38_bi_g4
+  output_directory: runs
+experiment:
+  prompt_seeds:
+  - 1000
+  - 1001
+  image_seeds:
+  - 8566257
+  - 2875613
+  retry_limit: 1
+backends:
+  reconstruction_model:
+    profile: ../../../backends/vision/gemma-4-31b-it-bf16-llamacpp.yaml
+stages:
+  title_guessing:
+    direct:
+      backend: reconstruction_model
+      template_path: prompts/title_guessing/plain_v3.txt
+      parameters:
+        temperature: 0.0
+        top_p: 1.0
+        max_tokens: 128
+        seed: 3003

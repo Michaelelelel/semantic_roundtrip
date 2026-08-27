@@ -1,0 +1,18 @@
+schema_version: 1
+
+adapter: openai_compatible
+
+settings:
+  endpoint: http://vision_runtime:8080/v1/chat/completions
+  model_id: qwen3-vl-8b-instruct-f16
+  timeout_seconds: 1200
+  reasoning_effort: none
+  reasoning_format: none
+  thinking_budget_tokens: 0
+  chat_template_kwargs:
+    enable_thinking: false
+
+runtime:
+  controller: llama_cpp_router
+  control_url: http://vision_runtime:8080
+  resource_group: dgx-main

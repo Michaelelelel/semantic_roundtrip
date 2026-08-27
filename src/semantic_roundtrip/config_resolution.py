@@ -14,11 +14,12 @@ from semantic_roundtrip.config import (
     ResolvedAppConfig,
     ResolvedBackend,
     ResolvedDatasetConfig,
+    ResolvedRunInheritance,
     StageAdapterConfig,
     StageConfig,
     StageName,
 )
-
+from semantic_roundtrip.inheritance.dependencies import dependency_closure
 
 STAGE_NAMES: tuple[StageName, ...] = (
     "prompt_generation",
@@ -49,10 +50,27 @@ def get_stage_config(
 ) -> StageConfig | None:
     """Return the configuration represented by one executable stage name."""
     if stage_name == "title_guessing_direct":
-        return config.stages.title_guessing.direct
+        return (
+            None
+            if config.stages.title_guessing is None
+            else config.stages.title_guessing.direct
+        )
     if stage_name == "title_guessing_from_description":
-        return config.stages.title_guessing.from_description
+        return (
+            None
+            if config.stages.title_guessing is None
+            else config.stages.title_guessing.from_description
+        )
     return getattr(config.stages, stage_name)
+
+
+def configured_stage_names(config: ResolvedAppConfig) -> tuple[StageName, ...]:
+    """Return only stages that this run executes locally."""
+    return tuple(
+        stage_name
+        for stage_name in STAGE_NAMES
+        if get_stage_config(config, stage_name) is not None
+    )
 
 
 def configured_prediction_inputs(
@@ -60,9 +78,10 @@ def configured_prediction_inputs(
 ) -> tuple[PredictionInputKind, ...]:
     """Return configured prediction inputs in pipeline execution order."""
     inputs: list[PredictionInputKind] = []
-    if config.stages.title_guessing.direct is not None:
+    title_guessing = config.stages.title_guessing
+    if title_guessing is not None and title_guessing.direct is not None:
         inputs.append("image")
-    if config.stages.title_guessing.from_description is not None:
+    if title_guessing is not None and title_guessing.from_description is not None:
         inputs.append("description")
     return tuple(inputs)
 
@@ -112,12 +131,34 @@ def _validate_resolved_config(config: ResolvedAppConfig) -> None:
             continue
         resolve_stage_adapter(config, stage_name)
 
+    local_stages = set(configured_stage_names(config))
+    imported_stages: set[StageName] = set()
+    if config.inherit is not None:
+        imported_stages.update(dependency_closure(config.inherit.stages))
+    overlap = local_stages & imported_stages
+    if overlap:
+        names = ", ".join(sorted(overlap))
+        raise ValueError(
+            f"Stages cannot be both imported and executed locally: {names}."
+        )
+
+    available = local_stages | imported_stages
+    for stage_name in local_stages:
+        missing = set(dependency_closure((stage_name,))) - available
+        if missing:
+            names = ", ".join(sorted(missing))
+            raise ValueError(
+                f"Local stage '{stage_name}' is missing dependencies: {names}."
+            )
+
 
 def _resolve_dataset(
     input_config: InputAppConfig,
     base_directory: Path,
 ) -> ResolvedDatasetConfig:
     dataset = input_config.dataset
+    if dataset is None:
+        raise ValueError("A root experiment requires a configured dataset.")
     if dataset.profile is None:
         if dataset.dataset_id is None or dataset.items is None:
             raise ValueError("Inline dataset was not fully configured.")
@@ -137,10 +178,82 @@ def _resolve_dataset(
     )
 
 
-def load_input_config(path: Path) -> ResolvedAppConfig:
+def _resolve_standalone_inheritance(
+    input_config: InputAppConfig,
+    base_directory: Path,
+) -> tuple[ResolvedDatasetConfig, ResolvedRunInheritance, ResolvedAppConfig]:
+    if input_config.inherit is None:
+        raise ValueError("This experiment has no standalone inheritance reference.")
+
+    from semantic_roundtrip.inheritance.source import load_source_run
+
+    source_path = input_config.inherit.from_run
+    if not source_path.is_absolute():
+        source_path = (base_directory / source_path).resolve()
+    source = load_source_run(source_path)
+    inheritance = ResolvedRunInheritance(
+        source_kind="from_run",
+        source_run=source.directory,
+        source_run_id=source.run_id,
+        stages=input_config.inherit.stages,
+    )
+    return source.config.dataset, inheritance, source.config
+
+
+def _validate_source_compatibility(
+    config: ResolvedAppConfig,
+    source_config: ResolvedAppConfig | None,
+) -> None:
+    if config.inherit is None or source_config is None:
+        return
+    imported = set(dependency_closure(config.inherit.stages))
+    if "prompt_generation" in imported and (
+        config.experiment.prompt_seeds != source_config.experiment.prompt_seeds
+    ):
+        raise ValueError(
+            "Inherited prompts require the same prompt_seeds as the source run."
+        )
+    if "image_generation" in imported and (
+        config.experiment.image_seeds != source_config.experiment.image_seeds
+    ):
+        raise ValueError(
+            "Inherited images require the same image_seeds as the source run."
+        )
+
+
+def load_input_config(
+    path: Path,
+    *,
+    inherited_dataset: ResolvedDatasetConfig | None = None,
+    resolved_inheritance: ResolvedRunInheritance | None = None,
+    source_config: ResolvedAppConfig | None = None,
+) -> ResolvedAppConfig:
     """Load an experiment and resolve all referenced profiles."""
     input_config = InputAppConfig.model_validate(_read_yaml(path))
-    base_directory = path.resolve().parent
+    path = path.resolve()
+    base_directory = path.parent
+    if input_config.inherit is not None and resolved_inheritance is not None:
+        raise ValueError(
+            "Experiment inheritance and job-entry inheritance cannot be combined."
+        )
+
+    if input_config.inherit is not None:
+        inherited_dataset, resolved_inheritance, source_config = (
+            _resolve_standalone_inheritance(input_config, base_directory)
+        )
+
+    if input_config.dataset is not None:
+        if inherited_dataset is not None or resolved_inheritance is not None:
+            raise ValueError(
+                "A job-derived experiment must omit its own dataset and inheritance."
+            )
+        resolved_dataset = _resolve_dataset(input_config, base_directory)
+    else:
+        if inherited_dataset is None or resolved_inheritance is None:
+            raise ValueError(
+                "An experiment without a dataset requires one resolved source run."
+            )
+        resolved_dataset = inherited_dataset
     profile_cache: dict[Path, BackendProfile] = {}
     resolved_backends: dict[str, ResolvedBackend] = {}
 
@@ -163,10 +276,12 @@ def load_input_config(path: Path) -> ResolvedAppConfig:
 
     raw_resolved = input_config.model_dump(mode="python")
     raw_resolved["configuration_kind"] = "effective"
-    raw_resolved["dataset"] = _resolve_dataset(input_config, base_directory)
+    raw_resolved["dataset"] = resolved_dataset
+    raw_resolved["inherit"] = resolved_inheritance
     raw_resolved["backends"] = resolved_backends
     resolved_config = ResolvedAppConfig.model_validate(raw_resolved)
     _validate_resolved_config(resolved_config)
+    _validate_source_compatibility(resolved_config, source_config)
     return resolved_config
 
 
@@ -178,20 +293,26 @@ def load_effective_config(path: Path) -> ResolvedAppConfig:
 
 
 def expected_stage_outputs(config: ResolvedAppConfig) -> dict[PipelineStageName, int]:
-    """Calculate the number of outputs expected from every pipeline stage."""
+    """Calculate outputs expected only from stages executed by this run."""
     prompt_count = len(config.dataset.items) * len(config.experiment.prompt_seeds)
     image_count = prompt_count * len(config.experiment.image_seeds)
-    expected: dict[PipelineStageName, int] = {
+    expected: dict[PipelineStageName, int] = {}
+
+    counts: dict[StageName, int] = {
         "prompt_generation": prompt_count,
         "image_generation": image_count,
         "verification": image_count,
-        "evaluation": image_count * len(configured_prediction_inputs(config)),
+        "title_guessing_direct": image_count,
+        "image_description": image_count,
+        "title_guessing_from_description": image_count,
     }
-
-    if config.stages.title_guessing.direct is not None:
-        expected["title_guessing_direct"] = image_count
-    if config.stages.image_description is not None:
-        expected["image_description"] = image_count
-    if config.stages.title_guessing.from_description is not None:
-        expected["title_guessing_from_description"] = image_count
+    for stage_name in configured_stage_names(config):
+        expected[stage_name] = counts[stage_name]
     return expected
+
+
+def expected_output_count(config: ResolvedAppConfig, stage_name: StageName) -> int:
+    """Return the theoretical output count for any one pipeline stage."""
+    prompt_count = len(config.dataset.items) * len(config.experiment.prompt_seeds)
+    image_count = prompt_count * len(config.experiment.image_seeds)
+    return prompt_count if stage_name == "prompt_generation" else image_count

@@ -37,8 +37,7 @@ def print_job_plan(plan: JobPlan) -> bool:
         f"direct guesses={plan.expected_outputs['title_guessing_direct']}, "
         f"descriptions={plan.expected_outputs['image_description']}, "
         "description guesses="
-        f"{plan.expected_outputs['title_guessing_from_description']}, "
-        f"evaluations={plan.expected_outputs['evaluation']}"
+        f"{plan.expected_outputs['title_guessing_from_description']}"
     )
 
     table = Table()
@@ -46,6 +45,7 @@ def print_job_plan(plan: JobPlan) -> bool:
     table.add_column("Entry")
     table.add_column("Prompts", justify="right")
     table.add_column("Images", justify="right")
+    table.add_column("Imported stages")
     table.add_column("Backend/model stack")
     for entry in plan.entries:
         stack = ", ".join(
@@ -55,8 +55,9 @@ def print_job_plan(plan: JobPlan) -> bool:
         table.add_row(
             str(entry.index + 1),
             entry.name,
-            str(entry.expected_outputs["prompt_generation"]),
-            str(entry.expected_outputs["image_generation"]),
+            str(entry.expected_outputs.get("prompt_generation", 0)),
+            str(entry.expected_outputs.get("image_generation", 0)),
+            ", ".join(entry.imported_stages) or "-",
             stack,
         )
     console.print(table)

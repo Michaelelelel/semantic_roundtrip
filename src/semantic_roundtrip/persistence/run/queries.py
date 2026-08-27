@@ -35,6 +35,7 @@ class StageProgress:
     completed: int
     failed: int
     produced_outputs: int
+    imported_tasks: int
 
 
 def read_run_record(database_path: Path) -> RunRecord:
@@ -72,7 +73,9 @@ def read_stage_progress(database_path: Path) -> list[StageProgress]:
                 SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) AS running,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed,
                 SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed,
-                SUM(completed_outputs) AS produced_outputs
+                SUM(completed_outputs) AS produced_outputs,
+                SUM(CASE WHEN execution_origin = 'imported' THEN 1 ELSE 0 END)
+                    AS imported_tasks
             FROM stage_tasks
             GROUP BY stage
             ORDER BY stage
@@ -89,6 +92,7 @@ def read_stage_progress(database_path: Path) -> list[StageProgress]:
             completed=int(row["completed"]),
             failed=int(row["failed"]),
             produced_outputs=int(row["produced_outputs"]),
+            imported_tasks=int(row["imported_tasks"]),
         )
         for row in rows
     ]
@@ -108,6 +112,7 @@ def read_completed_task_durations(
             FROM stage_tasks
             WHERE stage = ?
               AND status = 'completed'
+              AND execution_origin = 'local'
               AND attempt = 1
               AND started_at IS NOT NULL
               AND finished_at IS NOT NULL
@@ -138,7 +143,7 @@ def read_active_runtime_action(database_path: Path) -> str | None:
             """
             SELECT action
             FROM runtime_events
-            WHERE status = 'started'
+            WHERE status = 'started' AND execution_origin = 'local'
             ORDER BY runtime_event_id DESC
             LIMIT 1
             """
@@ -146,6 +151,30 @@ def read_active_runtime_action(database_path: Path) -> str | None:
     finally:
         connection.close()
     return None if row is None else str(row["action"])
+
+
+def read_stage_runtime_model(database_path: Path, stage: str) -> str | None:
+    """Read the model identity persisted for one local or imported stage."""
+    connection = connect_run_database(database_path, read_only=True)
+    try:
+        require_run_schema(connection)
+        row = connection.execute(
+            """
+            SELECT model_id, backend_alias
+            FROM runtime_events
+            WHERE stage = ?
+              AND action IN ('load', 'reuse')
+            ORDER BY runtime_event_id DESC
+            LIMIT 1
+            """,
+            (stage,),
+        ).fetchone()
+    finally:
+        connection.close()
+    if row is None:
+        return None
+    model_id = row["model_id"]
+    return str(row["backend_alias"] if model_id is None else model_id)
 
 
 def read_latest_stage_error(database_path: Path) -> str | None:

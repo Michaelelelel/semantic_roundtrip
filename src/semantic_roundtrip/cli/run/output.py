@@ -39,7 +39,6 @@ def print_run_summary(summary: PipelineSummary) -> None:
     typer.echo(f"Verifications: {summary.verifications}")
     typer.echo(f"Image descriptions: {summary.image_descriptions}")
     typer.echo(f"Predictions: {summary.predictions}")
-    typer.echo(f"Evaluations: {summary.evaluations}")
     typer.echo(f"Failed tasks: {summary.failed_tasks}")
 
 
@@ -84,6 +83,7 @@ def show_run_status(run_directory: Path) -> str:
 
     table = Table()
     table.add_column("Stage")
+    table.add_column("Origin")
     table.add_column("Produced", justify="right")
     table.add_column("Expected", justify="right")
     table.add_column("Pending tasks", justify="right")
@@ -93,6 +93,7 @@ def show_run_status(run_directory: Path) -> str:
     for stage in status.stages:
         table.add_row(
             format_stage(stage.name),
+            "imported" if stage.imported else "local",
             str(stage.produced),
             str(stage.expected),
             str(stage.pending),

@@ -9,6 +9,7 @@ from typing import Literal
 import yaml
 
 from semantic_roundtrip.experiment_runner import (
+    PreparedExperiment,
     prepare_experiment,
     resume_experiment,
 )
@@ -25,9 +26,6 @@ from semantic_roundtrip.job.config import (
     load_job_snapshot,
     plan_job,
 )
-from semantic_roundtrip.persistence.run.database import (
-    request_run_pause,
-)
 from semantic_roundtrip.persistence.job.database import (
     JobDatabase,
     read_job_entries,
@@ -37,10 +35,12 @@ from semantic_roundtrip.persistence.job.schema import (
     initialize_job_database,
     job_database_path,
 )
+from semantic_roundtrip.persistence.run.database import (
+    request_run_pause,
+)
 from semantic_roundtrip.persistence.run.manager import create_run
 from semantic_roundtrip.persistence.run.queries import read_run_record
 from semantic_roundtrip.persistence.run.schema import database_path_for_run
-
 
 Report = Callable[[str], None]
 EntryOutcome = Literal["continue", "paused", "failed"]
@@ -141,12 +141,31 @@ def prepare_job(config_path: Path) -> PreparedJob:
     copy2(loaded.source_path, input_config_path)
 
     run_directories: list[Path] = []
+    prepared_children: dict[str, PreparedExperiment] = {}
     for entry in loaded.experiments:
+        config = entry.config
+        inheritance = config.inherit
+        if inheritance is not None and inheritance.source_kind == "from_entry":
+            source_name = inheritance.source_entry
+            if source_name is None or source_name not in prepared_children:
+                raise ValueError(
+                    f"Job entry '{entry.name}' references an unprepared source entry."
+                )
+            source_child = prepared_children[source_name]
+            source_context = source_child.run_context
+            resolved_inheritance = inheritance.model_copy(
+                update={
+                    "source_run": source_context.directory.resolve(),
+                    "source_run_id": source_context.run_id,
+                }
+            )
+            config = config.model_copy(update={"inherit": resolved_inheritance})
         child = prepare_experiment(
-            config=entry.config,
+            config=config,
             input_config_path=entry.source_path,
             output_directory=runs_directory,
         )
+        prepared_children[entry.name] = child
         run_directories.append(
             child.run_context.directory.relative_to(context.directory)
         )
@@ -324,7 +343,9 @@ def _execute_job_entry(
         raise
     except JobStateError:
         raise
-    except Exception as error:
+    # A job entry must persist arbitrary child-run failures and then apply the
+    # configured continue-on-error policy at the job boundary.
+    except Exception as error:  # noqa: BLE001
         database.mark_entry_status(
             entry.entry_index,
             "failed",

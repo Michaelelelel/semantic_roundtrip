@@ -1,0 +1,30 @@
+schema_version: 3
+job:
+  name: final_smoke_local
+  output_directory: runs
+  continue_on_error: true
+experiments:
+- name: direct_pg_q25_bi_q25_smoke
+  config: ../../experiments/final_study/smoke/direct_pg_q25_bi_q25_smoke.yaml
+- name: direct_pg_g3_bi_g3_smoke
+  config: ../../experiments/final_study/smoke/direct_pg_g3_bi_g3_smoke.yaml
+- name: direct_pg_q38_bi_q38_smoke
+  config: ../../experiments/final_study/smoke/direct_pg_q38_bi_q38_smoke.yaml
+- name: direct_pg_g4_bi_g4_smoke
+  config: ../../experiments/final_study/smoke/direct_pg_g4_bi_g4_smoke.yaml
+- name: indirect_pg_d32_bb_q25_bi_d32_smoke
+  config: ../../experiments/final_study/smoke/indirect_pg_d32_bb_q25_bi_d32_smoke.yaml
+- name: indirect_pg_d32_bb_q25_bi_o120_smoke
+  config: ../../experiments/final_study/smoke/indirect_pg_d32_bb_q25_bi_o120_smoke.yaml
+  inherit:
+    from_entry: indirect_pg_d32_bb_q25_bi_d32_smoke
+    stages:
+    - image_description
+- name: indirect_pg_o120_bb_g4_bi_d32_smoke
+  config: ../../experiments/final_study/smoke/indirect_pg_o120_bb_g4_bi_d32_smoke.yaml
+- name: indirect_pg_o120_bb_g4_bi_o120_smoke
+  config: ../../experiments/final_study/smoke/indirect_pg_o120_bb_g4_bi_o120_smoke.yaml
+  inherit:
+    from_entry: indirect_pg_o120_bb_g4_bi_d32_smoke
+    stages:
+    - image_description

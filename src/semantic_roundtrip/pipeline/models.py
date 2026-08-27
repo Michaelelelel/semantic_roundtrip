@@ -14,5 +14,4 @@ class PipelineSummary:
     verifications: int
     image_descriptions: int
     predictions: int
-    evaluations: int
     failed_tasks: int

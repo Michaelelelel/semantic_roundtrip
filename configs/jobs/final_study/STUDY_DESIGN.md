@@ -1,168 +1,158 @@
-# Final study: research questions and experiment mapping
+# Final study design (`final_v1`)
 
-This document is the source of truth for the primary bachelor-thesis study. It
-describes which experiment answers each research question and how the resulting
-runs are analyzed. Older planning notes are historical where they conflict with
-this file or the current YAML configurations.
+This file is the portable source of truth for the executable study. Older
+legacy/intermediate/current matrices are historical and must not be used for a
+production run.
 
-## Shared study protocol
+## Shared protocol
 
-- Dataset: 30 songs, 30 movie titles, and 30 band names.
-- Repetitions: two prompt seeds and two image seeds, producing four images per
-  title and condition (360 images per condition).
-- Primary metric: title-level end-to-end Strict Exact Match accuracy.
-- Supporting results: normalized Exact Match, verifier outcomes, technical
-  failures, and stage/model-loading runtimes.
-- Independent analysis unit: title. The four seed repetitions are averaged
-  within each title before conditions are summarized.
-- Uncertainty: 95% intervals are calculated by resampling titles. The overall
-  interval preserves the number of titles in each domain.
-- Fixed verifier: Qwen2.5-VL 7B F16 in every primary condition.
-- LLaVA 1.5 uses separately pinned F16 language-model and projector GGUF files
-  derived from the same upstream checkpoint. The projector package is selected
-  for compatibility with the current llama.cpp runtime.
-- Main inference mode: no model reasoning. Reasoning experiments are outside the
-  frozen primary-study scope.
-- Execution: every condition is a complete independent run. No prompts, images,
-  database rows, or other artifacts are copied from another run.
+- Dataset: `final_titles_v1` with 30 songs, 30 movie titles, and 30 band names.
+- Prompt seeds: `1000`, `1001`.
+- Image seeds: `8566257`, `2875613`.
+- Four observations per title and condition.
+- Image generator: Stable Diffusion 3.5 Large BF16.
+- Verifier: Qwen3-VL-8B-Instruct F16 with the deterministic `json_v3` prompt.
+- One technical retry with identical settings; no retry because a title is wrong.
+- Primary outcome: title-level end-to-end Strict Exact Match.
+- Supporting evidence: Normalized Exact Match, verifier results, technical
+  failures, and local/imported runtimes.
+- Final study artifacts are not edited manually.
 
-The same dataset, seeds, prompts, stage parameters, and unchanged model profiles
-are used wherever a controlled comparison permits it. Independent execution does
-not guarantee byte-identical artifacts. Component comparisons therefore estimate
-the performance difference between controlled pipeline conditions; they are not
-claims about a deterministic causal effect on one fixed set of images.
+One expected observation scores one only when verification passes, a prediction
+exists, and Strict Exact Match is true. Missing predictions, exhausted retries,
+invalid responses, timeouts, and verifier rejections score zero and are also
+reported separately as technical evidence.
 
-## RQ1: Complete model systems
+## Model identifiers
 
-**Question:** How does strict end-to-end title-reconstruction accuracy differ
-between selected legacy, intermediate, and current locally hosted model systems?
-
-| Condition | Prompt model | Image model | Reconstruction model |
+| ID | Model | Precision | Roles |
 | --- | --- | --- | --- |
-| `system_legacy` | Mistral 7B F16 | Stable Diffusion 1.5 | LLaVA 1.5 7B F16 |
-| `system_intermediate` | Mistral Small 24B F16 | SDXL Base 1.0 | Qwen2.5-VL 7B F16 |
-| `anchor_current` | Qwen3.8 27B BF16 | Qwen-Image 2512 BF16 | Gemma 4 31B BF16 |
+| `Q25` | Qwen2.5-VL-32B-Instruct | F16 | PG, BB, direct BI |
+| `G3` | Gemma 3 27B IT | F16 | PG, BB, direct BI |
+| `Q38` | Qwen3.8-27B | BF16 | PG, BB, direct BI |
+| `G4` | Gemma 4 31B IT | BF16 | PG, BB, direct BI |
+| `D32` | DeepSeek-R1-Distill-Qwen-32B | F16 | PG, text BI |
+| `O120` | GPT-OSS 120B | MXFP4 | PG, text BI |
+| `V4` | Aqueduct `deepseek-v4-flash-284b` | hosted | optional PG, text BI |
 
-- Produced by: `spark_a_system_image.yaml`
-- Study group: `complete_systems`
-- Analysis kind: `accuracy`, direct route
-- Thesis result: one absolute-accuracy figure for the three systems, overall and
-  by domain. Differences describe complete systems and must not be attributed to
-  one individual stage.
+PG is prompt generation, BG image generation, BB image description, and BI title
+interpretation.
 
-## RQ2: Sensitivity to replacing one model stage
+## RQ1: direct Qwen/Gemma comparison
 
-**Question:** How does strict title-reconstruction accuracy change when one model
-stage around the current anchor is replaced while the remaining configuration is
-held fixed?
+**Question:** How does direct end-to-end title reconstruction vary across the
+selected Qwen and Gemma release cohorts and their combinations in PG and BI?
 
-### RQ2a: Prompt model
+The twelve unique PG/BI conditions are:
 
-Conditions: `prompt_mistral7`, `prompt_mistral24`, `prompt_qwen30`,
-`prompt_gemma4_gemma_reconstruction`, and `anchor_current`.
+- `Q25 -> Q25, Q38, G3`
+- `Q38 -> Q38, Q25, G4`
+- `G3 -> G3, G4, Q25`
+- `G4 -> G4, G3, Q38`
 
-- Compared models: Mistral 7B, Mistral Small 24B, Qwen3 30B-A3B, Gemma 4 31B,
-  and Qwen3.8 27B.
-- Produced by: Spark B; the anchor is produced once by Spark A.
-- Study group: `prompt_models`
-- Analysis kind: `paired`, direct route, reference `anchor_current`
+They form four overlapping 2 x 2 comparisons:
 
-### RQ2b: Image model
+1. Qwen 2025 versus Qwen 2026.
+2. Gemma 2025 versus Gemma 2026.
+3. Qwen versus Gemma in the 2025 cohort.
+4. Qwen versus Gemma in the 2026 cohort.
 
-Conditions: `image_sd15`, `image_sdxl`, `image_sd35`, and `anchor_current`.
+For every 2 x 2 comparison the analysis reports the four cell accuracies, the PG
+contrast, the BI contrast, and matching versus mixed PG/BI. These are descriptive
+effects for the selected deployed configurations, not universal family effects.
 
-- Compared models: Stable Diffusion 1.5, SDXL Base 1.0, Stable Diffusion 3.5
-  Large, and Qwen-Image 2512.
-- Produced by: `spark_a_system_image.yaml`
-- Study group: `image_models`
-- Analysis kind: `paired`, direct route, reference `anchor_current`
+The four diagonal conditions `Q25/Q25`, `G3/G3`, `Q38/Q38`, and `G4/G4` also
+execute the description route with `BB=BI`. The other eight execute only the
+direct route.
 
-### RQ2c: Reconstruction model
+Executable job: `direct_core.yaml`.
 
-Conditions: `reconstruction_llava`, `reconstruction_qwen25`,
-`reconstruction_qwen38`, and `anchor_current`.
+## RQ2: local description-route matrix
 
-- Compared models: LLaVA 1.5 7B, Qwen2.5-VL 7B, Qwen3.8 27B, and Gemma 4 31B.
-- Produced by: Spark B; the anchor is produced once by Spark A.
-- Study group: `reconstruction_models`
-- Analysis kind: `paired`, direct route, reference `anchor_current`
+**Question:** How do the selection and combination of PG, BB, and BI relate to
+title reconstruction on the description-mediated route?
 
-For every `paired` group, the plotted value is condition accuracy minus anchor
-accuracy in percentage points. Positive values favor the condition; negative
-values favor the anchor.
+Balanced `2 x 4 x 2` design:
 
-## RQ3: Direct versus description-mediated reconstruction
+- PG: `D32`, `O120`.
+- BB: `Q25`, `G3`, `Q38`, `G4`.
+- BI: `D32`, `O120`.
+- BG: fixed SD3.5 Large.
 
-**Question:** For the same generated images and the same multimodal model, how
-does direct image-to-title reconstruction differ from
-image-to-description-to-title reconstruction?
+The 16 conditions support:
 
-Two panels answer this question:
+- PG and BI marginal differences;
+- marginal BB performance;
+- PG x BI interaction and matching versus mixed PG/BI;
+- whether matching versus mixed changes with BB;
+- domain-specific and technical/runtime summaries.
 
-- `complete_system_routes`: `system_legacy`, `system_intermediate`, and
-  `anchor_current`;
-- `reconstruction_routes`: `reconstruction_llava`, `reconstruction_qwen25`,
-  `reconstruction_qwen38`, and `anchor_current`.
+The models differ in more than one property. Results are comparisons of concrete
+deployed model configurations, not isolated age, size, architecture, or family
+effects.
 
-Both use analysis kind `routes`. Within each condition, the plotted value is
-description-route accuracy minus direct-route accuracy. Both routes receive the
-same image, and the same multimodal model performs the direct prediction, image
-description, and description-based prediction.
+Executable job: `indirect_local.yaml`.
 
-## RQ4: Domain differences
+## RQ3: direct versus description-mediated route
 
-**Question:** How do reconstruction results differ between songs, movie titles,
-and band names?
+**Question:** On the same generated images, how does direct image-to-title
+reconstruction differ from reconstruction through an explicit description?
 
-No additional experiment is required. Every primary group reports an overall
-result and separate results for the three domains. Domain findings are subgroup
-results for this selected dataset and should be interpreted together with their
-uncertainty intervals.
+The four diagonal RQ1 conditions provide both routes. The analysis pairs routes
+per image, reports the title-level accuracy difference and interval, and counts
+the transitions both-correct, direct-only, description-only, and neither-correct.
 
-## Focused secondary comparison: model-family matching
+## RQ4: domains
 
-**Question:** Does reconstruction accuracy differ when prompt generation and
-title reconstruction use matching Qwen or Gemma model families rather than a
-mixed pair?
+All primary results are also reported separately for songs, movie titles, and
+band names. These are subgroup results for the fixed dataset, not universal
+claims about each domain.
 
-The four configured combinations are:
+## Optional Aqueduct extension
 
-| Prompt family | Reconstruction family | Condition |
-| --- | --- | --- |
-| Qwen | Gemma | `anchor_current` |
-| Qwen | Qwen | `reconstruction_qwen38` |
-| Gemma | Gemma | `prompt_gemma4_gemma_reconstruction` |
-| Gemma | Qwen | `family_gemma_prompt_qwen_reconstruction` |
+If access and service stability permit, `V4` expands RQ2 to `3 x 4 x 3`. The 16
+local cells stay unchanged and 20 new cells are added. The extension is reported
+separately because V4 is larger and externally hosted.
 
-The study groups `qwen_family_match` and `gemma_family_match` provide two focused
-paired comparisons. This is supporting evidence, not a complete factorial causal
-analysis of every possible model-family interaction.
+Executable job: `aqueduct_v4_extension.yaml`. Its external source-job directory
+must point to the completed local indirect job.
 
-## Engineering smoke test
+## Artifact reuse and scientific conditions
 
-`native_smoke.yaml` loads and calls every native-precision model family and image
-workflow required by the primary study using one image per condition. It is an
-engineering gate only and is not included in the thesis accuracy analysis.
+Each condition remains a self-contained run. To avoid regenerating unrelated
+random artifacts in a controlled comparison, derived runs materialize completed
+upstream stages from one source run into their own SQLite database and image
+directory. They do not depend on the source afterward.
 
-## Jobs and analysis
+- RQ1: four PG roots generate four image sets (1,440 images); the other BI cells
+  inherit through verification.
+- RQ2: two PG roots generate two image sets (720 images); each PG/BB description
+  set is generated once and reused by the second BI.
+- Local study total: 28 scientific conditions and 2,160 generated images.
 
-1. Run `native_smoke.yaml` and require zero failed tasks.
-2. Run `spark_a_system_image.yaml` and
-   `spark_b_prompt_vision_route.yaml`, sequentially or on independent machines.
-3. Copy `configs/studies/final_study.example.yaml` into a study directory and
-   replace its run placeholders with the completed child-run paths.
-4. Run `semantic-roundtrip study analyze --study <study-directory>`.
+Imported tasks retain terminal failures and provenance. They never load a local
+model and are excluded from local ETA. No content hash or automatic repair is
+used. Final study artifacts are nevertheless left unedited by protocol.
 
-The analysis reads the selected SQLite databases without modifying them. The YAML
-study groups define which conditions may be compared; job membership does not.
+## Analysis
 
-## Thesis result structure
+Run databases are selected through `configs/studies/final_study.yaml`. The loader
+reads SQLite read-only and the notebook
+`../thesis/analysis/final_study.ipynb` computes the analysis directly in Pandas.
+There is no required CSV intermediate.
 
-1. Technical validity: completion, verifier, failure, and runtime evidence.
-2. RQ1: absolute comparison of complete systems.
-3. RQ2: prompt-, image-, and reconstruction-model differences from the anchor.
-4. RQ3: direct versus description-mediated reconstruction.
-5. RQ4: compact domain comparison across the main results.
-6. Focused model-family comparison, clearly separated from the primary results.
-7. Discussion of semantic information loss, limitations, runtime, and the fact
-   that independent controlled runs do not reuse byte-identical artifacts.
+The four repetitions are first averaged per title. Confidence intervals use
+10,000 deterministic, paired resamples of complete titles, stratified by domain
+and the dataset title-length group. Related conditions and both routes use the
+same resampled titles.
+
+Only PNG figures needed by the thesis are written. Raw responses, predictions,
+errors, verifier results, and runtime evidence remain in the run databases.
+
+## Freeze gates
+
+1. The model-free mock job and notebook pass.
+2. Every local model passes `smoke_local.yaml` on a DGX Spark.
+3. External import remains usable after moving its source.
+4. Aqueduct smoke is optional and does not block the local freeze.
+5. The user reviews and commits; automation never commits these changes.

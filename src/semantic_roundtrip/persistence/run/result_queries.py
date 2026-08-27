@@ -4,6 +4,7 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
+from semantic_roundtrip.evaluation import title_exact_match
 from semantic_roundtrip.persistence.run.schema import (
     connect_run_database,
     require_run_schema,
@@ -12,7 +13,7 @@ from semantic_roundtrip.persistence.run.schema import (
 
 @dataclass(frozen=True, slots=True)
 class PredictionTrace:
-    """One route-specific title prediction and its evaluation."""
+    """One route-specific title prediction and its visible exact match."""
 
     title: str
     confidence: float | None
@@ -71,11 +72,12 @@ def _prediction_trace(row: sqlite3.Row, prefix: str) -> PredictionTrace | None:
     if row[f"{prefix}_prediction_id"] is None:
         return None
     confidence = row[f"{prefix}_confidence"]
+    title = row[f"{prefix}_title"]
     return PredictionTrace(
-        title=row[f"{prefix}_title"],
+        title=title,
         confidence=None if confidence is None else float(confidence),
         confidence_type=row[f"{prefix}_confidence_type"],
-        exact_match=_optional_bool(row[f"{prefix}_exact_match"]),
+        exact_match=title_exact_match(row["expected_title"], title),
     )
 
 
@@ -85,7 +87,7 @@ def read_result_trace_page(
     page: int,
     page_size: int,
 ) -> ResultTracePage:
-    """Read one deterministic page of prompt-to-evaluation traces."""
+    """Read one deterministic page of prompt-to-result traces."""
     if page < 1:
         raise ValueError("Result page must be at least 1.")
     if page_size < 1:
@@ -126,14 +128,12 @@ def read_result_trace_page(
                 direct_predictions.title AS direct_title,
                 direct_predictions.confidence AS direct_confidence,
                 direct_predictions.confidence_type AS direct_confidence_type,
-                direct_evaluations.exact_match AS direct_exact_match,
                 description_predictions.prediction_id
                     AS description_prediction_id,
                 description_predictions.title AS description_title,
                 description_predictions.confidence AS description_confidence,
                 description_predictions.confidence_type
-                    AS description_confidence_type,
-                description_evaluations.exact_match AS description_exact_match
+                    AS description_confidence_type
             FROM prompts
             JOIN dataset_items AS items
                 ON items.item_id = prompts.item_id
@@ -146,15 +146,9 @@ def read_result_trace_page(
             LEFT JOIN predictions AS direct_predictions
                 ON direct_predictions.image_id = images.image_id
                 AND direct_predictions.input_kind = 'image'
-            LEFT JOIN evaluations AS direct_evaluations
-                ON direct_evaluations.prediction_id
-                    = direct_predictions.prediction_id
             LEFT JOIN predictions AS description_predictions
                 ON description_predictions.image_id = images.image_id
                 AND description_predictions.input_kind = 'description'
-            LEFT JOIN evaluations AS description_evaluations
-                ON description_evaluations.prediction_id
-                    = description_predictions.prediction_id
             ORDER BY
                 items.item_index,
                 prompts.prompt_index,

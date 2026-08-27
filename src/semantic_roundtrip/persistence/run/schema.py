@@ -10,9 +10,8 @@ from semantic_roundtrip.persistence.sqlite import (
     utc_now,
 )
 
-
 DATABASE_FILENAME = "pipeline_state.sqlite"
-DATABASE_SCHEMA_VERSION = 8
+DATABASE_SCHEMA_VERSION = 9
 
 
 def database_path_for_run(run_directory: Path) -> Path:
@@ -97,6 +96,10 @@ def initialize_database(
                 item_key TEXT NOT NULL,
                 domain TEXT NOT NULL,
                 title TEXT NOT NULL,
+                execution_origin TEXT NOT NULL DEFAULT 'local'
+                    CHECK (execution_origin IN ('local', 'imported')),
+                origin_run_id TEXT,
+                origin_item_id INTEGER,
                 UNIQUE (run_id, item_index),
                 UNIQUE (run_id, item_key)
             );
@@ -111,6 +114,8 @@ def initialize_database(
                 backend_request_id TEXT,
                 raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
                 created_at TEXT NOT NULL,
+                origin_run_id TEXT,
+                origin_prompt_id INTEGER,
                 UNIQUE (item_id, prompt_index)
             );
 
@@ -122,6 +127,8 @@ def initialize_database(
                 path TEXT NOT NULL UNIQUE,
                 backend_job_id TEXT,
                 raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
+                origin_run_id TEXT,
+                origin_image_id INTEGER,
                 UNIQUE (prompt_id, seed)
             );
 
@@ -131,7 +138,9 @@ def initialize_database(
                     ON DELETE CASCADE,
                 passed INTEGER NOT NULL CHECK (passed IN (0, 1)),
                 reason TEXT,
-                raw_response TEXT NOT NULL CHECK (length(raw_response) > 0)
+                raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
+                origin_run_id TEXT,
+                origin_verification_id INTEGER
             );
 
             CREATE TABLE image_descriptions (
@@ -142,6 +151,8 @@ def initialize_database(
                 backend_request_id TEXT,
                 raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
                 created_at TEXT NOT NULL,
+                origin_run_id TEXT,
+                origin_description_id INTEGER,
                 UNIQUE (description_id, image_id)
             );
 
@@ -156,6 +167,8 @@ def initialize_database(
                 confidence REAL,
                 confidence_type TEXT,
                 raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
+                origin_run_id TEXT,
+                origin_prediction_id INTEGER,
                 CHECK (
                     (input_kind = 'image' AND description_id IS NULL)
                     OR
@@ -165,17 +178,6 @@ def initialize_database(
                     REFERENCES image_descriptions(description_id, image_id)
                     ON DELETE CASCADE,
                 UNIQUE (image_id, input_kind)
-            );
-
-            CREATE TABLE evaluations (
-                evaluation_id INTEGER PRIMARY KEY,
-                verification_id INTEGER NOT NULL
-                    REFERENCES verifications(verification_id) ON DELETE CASCADE,
-                prediction_id INTEGER NOT NULL UNIQUE
-                    REFERENCES predictions(prediction_id) ON DELETE CASCADE,
-                exact_match INTEGER NOT NULL
-                    CHECK (exact_match IN (0, 1)),
-                exact_method TEXT NOT NULL
             );
 
             CREATE TABLE runtime_events (
@@ -194,7 +196,11 @@ def initialize_database(
                 started_at TEXT NOT NULL,
                 finished_at TEXT,
                 error_type TEXT,
-                error_message TEXT
+                error_message TEXT,
+                execution_origin TEXT NOT NULL DEFAULT 'local'
+                    CHECK (execution_origin IN ('local', 'imported')),
+                origin_run_id TEXT,
+                origin_runtime_event_id INTEGER
             );
 
             CREATE TABLE stage_tasks (
@@ -222,6 +228,10 @@ def initialize_database(
                 started_at TEXT,
                 updated_at TEXT NOT NULL,
                 finished_at TEXT,
+                execution_origin TEXT NOT NULL DEFAULT 'local'
+                    CHECK (execution_origin IN ('local', 'imported')),
+                origin_run_id TEXT,
+                origin_task_id INTEGER,
                 UNIQUE (run_id, task_key)
             );
 
@@ -242,20 +252,37 @@ def initialize_database(
                 error_type TEXT NOT NULL,
                 message TEXT NOT NULL,
                 raw_response TEXT,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                execution_origin TEXT NOT NULL DEFAULT 'local'
+                    CHECK (execution_origin IN ('local', 'imported')),
+                origin_run_id TEXT,
+                origin_error_id INTEGER
+            );
+
+            CREATE TABLE run_lineage (
+                lineage_id INTEGER PRIMARY KEY,
+                run_id TEXT NOT NULL REFERENCES run_metadata(run_id)
+                    ON DELETE CASCADE,
+                depth INTEGER NOT NULL CHECK (depth >= 0),
+                source_run_id TEXT NOT NULL,
+                source_run_name TEXT NOT NULL,
+                source_run_directory TEXT NOT NULL,
+                inherited_stages TEXT NOT NULL,
+                materialized_at TEXT NOT NULL,
+                UNIQUE (run_id, depth, source_run_id)
             );
 
             CREATE INDEX prompts_item_id_idx ON prompts(item_id);
             CREATE INDEX images_prompt_id_idx ON images(prompt_id);
             CREATE INDEX predictions_image_id_idx ON predictions(image_id);
-            CREATE INDEX evaluations_verification_id_idx
-                ON evaluations(verification_id);
             CREATE INDEX stage_tasks_run_stage_status_idx
                 ON stage_tasks(run_id, stage, status);
             CREATE INDEX stage_errors_run_stage_idx
                 ON stage_errors(run_id, stage);
             CREATE INDEX runtime_events_run_stage_idx
                 ON runtime_events(run_id, stage, runtime_event_id);
+            CREATE INDEX run_lineage_run_depth_idx
+                ON run_lineage(run_id, depth);
             """
         )
         now = utc_now()

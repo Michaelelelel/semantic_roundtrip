@@ -4,7 +4,6 @@ from datetime import datetime
 
 from semantic_roundtrip.status.models import EtaState
 
-
 STAGE_LABELS = {
     "prompt_generation": "Prompt generation",
     "image_generation": "Image generation",
@@ -12,7 +11,6 @@ STAGE_LABELS = {
     "title_guessing_direct": "Direct title guessing",
     "image_description": "Image description",
     "title_guessing_from_description": "Description title guessing",
-    "evaluation": "Evaluation",
 }
 
 

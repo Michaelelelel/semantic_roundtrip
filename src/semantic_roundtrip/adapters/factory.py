@@ -36,9 +36,9 @@ from semantic_roundtrip.config_resolution import resolve_stage_adapter
 class AdapterBundle:
     """Adapters required by the configured title-reconstruction routes."""
 
-    prompt_generator: PromptGenerator
-    image_generator: ImageGenerator
-    image_verifier: ImageVerifier
+    prompt_generator: PromptGenerator | None
+    image_generator: ImageGenerator | None
+    image_verifier: ImageVerifier | None
     image_describer: ImageDescriber | None
     image_title_guesser: ImageTitleGuesser | None
     text_title_guesser: TextTitleGuesser | None
@@ -175,20 +175,26 @@ def create_text_title_guesser(
 
 def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
     """Create only the adapters required by the configured pipeline routes."""
-    prompt_generator = create_prompt_generator(
-        resolve_stage_adapter(config, "prompt_generation")
-    )
-    image_generator = create_image_generator(
-        resolve_stage_adapter(config, "image_generation")
-    )
-    image_verifier = create_image_verifier(
-        resolve_stage_adapter(config, "verification")
-    )
-
     return AdapterBundle(
-        prompt_generator=prompt_generator,
-        image_generator=image_generator,
-        image_verifier=image_verifier,
+        prompt_generator=(
+            None
+            if config.stages.prompt_generation is None
+            else create_prompt_generator(
+                resolve_stage_adapter(config, "prompt_generation")
+            )
+        ),
+        image_generator=(
+            None
+            if config.stages.image_generation is None
+            else create_image_generator(
+                resolve_stage_adapter(config, "image_generation")
+            )
+        ),
+        image_verifier=(
+            None
+            if config.stages.verification is None
+            else create_image_verifier(resolve_stage_adapter(config, "verification"))
+        ),
         image_describer=(
             None
             if config.stages.image_description is None
@@ -198,14 +204,20 @@ def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
         ),
         image_title_guesser=(
             None
-            if config.stages.title_guessing.direct is None
+            if (
+                config.stages.title_guessing is None
+                or config.stages.title_guessing.direct is None
+            )
             else create_image_title_guesser(
                 resolve_stage_adapter(config, "title_guessing_direct")
             )
         ),
         text_title_guesser=(
             None
-            if config.stages.title_guessing.from_description is None
+            if (
+                config.stages.title_guessing is None
+                or config.stages.title_guessing.from_description is None
+            )
             else create_text_title_guesser(
                 resolve_stage_adapter(config, "title_guessing_from_description")
             )

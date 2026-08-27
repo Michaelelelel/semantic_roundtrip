@@ -6,14 +6,14 @@ from pathlib import Path
 
 from semantic_roundtrip.adapters.factory import AdapterBundle
 from semantic_roundtrip.config import ResolvedAppConfig, StageName
-from semantic_roundtrip.config_resolution import expected_stage_outputs
+from semantic_roundtrip.config_resolution import get_stage_config
+from semantic_roundtrip.inheritance.materialize import materialize_inheritance
 from semantic_roundtrip.persistence.run.database import RunDatabase
 from semantic_roundtrip.persistence.run.manager import RunContext
 from semantic_roundtrip.pipeline.models import PipelineSummary
 from semantic_roundtrip.pipeline.stages import (
     execute_description_title_guessing_stage,
     execute_direct_title_guessing_stage,
-    execute_evaluation_stage,
     execute_image_description_stage,
     execute_image_generation_stage,
     execute_prompt_generation_stage,
@@ -24,15 +24,6 @@ from semantic_roundtrip.prompting import PromptProfile
 from semantic_roundtrip.runtime import RuntimeSession
 
 StageOperation = Callable[[], None]
-
-_STAGE_RESULT_FIELDS: dict[StageName, str] = {
-    "prompt_generation": "prompts",
-    "image_generation": "images",
-    "verification": "verifications",
-    "title_guessing_direct": "direct_predictions",
-    "image_description": "image_descriptions",
-    "title_guessing_from_description": "description_predictions",
-}
 
 
 def _summary(database: RunDatabase, status: str) -> PipelineSummary:
@@ -45,7 +36,6 @@ def _summary(database: RunDatabase, status: str) -> PipelineSummary:
         verifications=counts.verifications,
         image_descriptions=counts.image_descriptions,
         predictions=counts.predictions,
-        evaluations=counts.evaluations,
         failed_tasks=database.tasks.count_failed(),
     )
 
@@ -58,18 +48,24 @@ def _execute_runtime_stage(
     stage: StageName,
     operation: StageOperation,
 ) -> None:
-    """Activate a model only when its stage still has missing result rows."""
-    expected = expected_stage_outputs(config).get(stage)
-    if expected is None:
-        operation()
-        return
+    """Activate a model only while this run has actionable local work."""
+    counts = database.results.counts()
+    if stage == "prompt_generation":
+        work_items = len(config.dataset.items) * len(config.experiment.prompt_seeds)
+    elif stage == "image_generation":
+        work_items = counts.prompts * len(config.experiment.image_seeds)
+    elif stage == "title_guessing_from_description":
+        work_items = counts.image_descriptions
+    else:
+        work_items = counts.images
 
-    produced = getattr(database.results.counts(), _STAGE_RESULT_FIELDS[stage])
-    if produced > expected:
+    terminal = database.tasks.count_terminal_local(stage)
+    if terminal > work_items:
         raise RuntimeError(
-            f"Stage '{stage}' has {produced} outputs but only {expected} are expected."
+            f"Stage '{stage}' has {terminal} terminal local tasks but only "
+            f"{work_items} source artifacts."
         )
-    if produced < expected:
+    if terminal < work_items:
         raise_if_pause_requested(database)
         runtime_session.activate_stage(config, stage)
     operation()
@@ -81,78 +77,86 @@ def execute_stages(
     database: RunDatabase,
     images_directory: Path,
     adapters: AdapterBundle,
-    prompt_profile: PromptProfile,
+    prompt_profile: PromptProfile | None,
     runtime_session: RuntimeSession,
 ) -> None:
     """Execute all missing model-backed work in sequential pipeline stages."""
-    _execute_runtime_stage(
-        config=config,
-        database=database,
-        runtime_session=runtime_session,
-        stage="prompt_generation",
-        operation=lambda: execute_prompt_generation_stage(
+    if get_stage_config(config, "prompt_generation") is not None:
+        if prompt_profile is None:
+            raise RuntimeError("Prompt generation has no loaded prompt profile.")
+        _execute_runtime_stage(
             config=config,
             database=database,
-            adapters=adapters,
-            prompt_profile=prompt_profile,
-        ),
-    )
-    _execute_runtime_stage(
-        config=config,
-        database=database,
-        runtime_session=runtime_session,
-        stage="image_generation",
-        operation=lambda: execute_image_generation_stage(
+            runtime_session=runtime_session,
+            stage="prompt_generation",
+            operation=lambda: execute_prompt_generation_stage(
+                config=config,
+                database=database,
+                adapters=adapters,
+                prompt_profile=prompt_profile,
+            ),
+        )
+    if get_stage_config(config, "image_generation") is not None:
+        _execute_runtime_stage(
             config=config,
             database=database,
-            images_directory=images_directory,
-            adapters=adapters,
-        ),
-    )
-    _execute_runtime_stage(
-        config=config,
-        database=database,
-        runtime_session=runtime_session,
-        stage="verification",
-        operation=lambda: execute_verification_stage(
+            runtime_session=runtime_session,
+            stage="image_generation",
+            operation=lambda: execute_image_generation_stage(
+                config=config,
+                database=database,
+                images_directory=images_directory,
+                adapters=adapters,
+            ),
+        )
+    if get_stage_config(config, "verification") is not None:
+        _execute_runtime_stage(
             config=config,
             database=database,
-            adapters=adapters,
-        ),
-    )
-    _execute_runtime_stage(
-        config=config,
-        database=database,
-        runtime_session=runtime_session,
-        stage="title_guessing_direct",
-        operation=lambda: execute_direct_title_guessing_stage(
+            runtime_session=runtime_session,
+            stage="verification",
+            operation=lambda: execute_verification_stage(
+                config=config,
+                database=database,
+                adapters=adapters,
+            ),
+        )
+    if get_stage_config(config, "title_guessing_direct") is not None:
+        _execute_runtime_stage(
             config=config,
             database=database,
-            adapters=adapters,
-        ),
-    )
-    _execute_runtime_stage(
-        config=config,
-        database=database,
-        runtime_session=runtime_session,
-        stage="image_description",
-        operation=lambda: execute_image_description_stage(
+            runtime_session=runtime_session,
+            stage="title_guessing_direct",
+            operation=lambda: execute_direct_title_guessing_stage(
+                config=config,
+                database=database,
+                adapters=adapters,
+            ),
+        )
+    if get_stage_config(config, "image_description") is not None:
+        _execute_runtime_stage(
             config=config,
             database=database,
-            adapters=adapters,
-        ),
-    )
-    _execute_runtime_stage(
-        config=config,
-        database=database,
-        runtime_session=runtime_session,
-        stage="title_guessing_from_description",
-        operation=lambda: execute_description_title_guessing_stage(
+            runtime_session=runtime_session,
+            stage="image_description",
+            operation=lambda: execute_image_description_stage(
+                config=config,
+                database=database,
+                adapters=adapters,
+            ),
+        )
+    if get_stage_config(config, "title_guessing_from_description") is not None:
+        _execute_runtime_stage(
             config=config,
             database=database,
-            adapters=adapters,
-        ),
-    )
+            runtime_session=runtime_session,
+            stage="title_guessing_from_description",
+            operation=lambda: execute_description_title_guessing_stage(
+                config=config,
+                database=database,
+                adapters=adapters,
+            ),
+        )
 
 
 def run_pipeline(
@@ -162,7 +166,7 @@ def run_pipeline(
     database_path: Path,
     images_directory: Path,
     adapters: AdapterBundle,
-    prompt_profile: PromptProfile,
+    prompt_profile: PromptProfile | None,
     resume: bool = False,
 ) -> PipelineSummary:
     """Run a new experiment or continue a paused, interrupted, or failed run."""
@@ -172,6 +176,7 @@ def run_pipeline(
             if resume:
                 database.clear_pause_request()
             database.update_status("running")
+            materialize_inheritance(config, run_context.directory)
             try:
                 execute_stages(
                     config=config,
@@ -188,10 +193,6 @@ def run_pipeline(
                 raise
 
             runtime_session.release()
-            execute_evaluation_stage(
-                config=config,
-                database=database,
-            )
         except PauseRequested:
             database.update_status("paused")
             return _summary(database, "paused")

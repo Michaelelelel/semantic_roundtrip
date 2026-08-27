@@ -1,0 +1,62 @@
+schema_version: 3
+job:
+  name: final_direct_core
+  output_directory: runs
+  continue_on_error: true
+experiments:
+- name: direct_pg_q25_bi_q25
+  config: ../../experiments/final_study/direct/direct_pg_q25_bi_q25.yaml
+- name: direct_pg_q25_bi_q38
+  config: ../../experiments/final_study/direct/direct_pg_q25_bi_q38.yaml
+  inherit:
+    from_entry: direct_pg_q25_bi_q25
+    stages:
+    - verification
+- name: direct_pg_q25_bi_g3
+  config: ../../experiments/final_study/direct/direct_pg_q25_bi_g3.yaml
+  inherit:
+    from_entry: direct_pg_q25_bi_q25
+    stages:
+    - verification
+- name: direct_pg_q38_bi_q38
+  config: ../../experiments/final_study/direct/direct_pg_q38_bi_q38.yaml
+- name: direct_pg_q38_bi_q25
+  config: ../../experiments/final_study/direct/direct_pg_q38_bi_q25.yaml
+  inherit:
+    from_entry: direct_pg_q38_bi_q38
+    stages:
+    - verification
+- name: direct_pg_q38_bi_g4
+  config: ../../experiments/final_study/direct/direct_pg_q38_bi_g4.yaml
+  inherit:
+    from_entry: direct_pg_q38_bi_q38
+    stages:
+    - verification
+- name: direct_pg_g3_bi_g3
+  config: ../../experiments/final_study/direct/direct_pg_g3_bi_g3.yaml
+- name: direct_pg_g3_bi_g4
+  config: ../../experiments/final_study/direct/direct_pg_g3_bi_g4.yaml
+  inherit:
+    from_entry: direct_pg_g3_bi_g3
+    stages:
+    - verification
+- name: direct_pg_g3_bi_q25
+  config: ../../experiments/final_study/direct/direct_pg_g3_bi_q25.yaml
+  inherit:
+    from_entry: direct_pg_g3_bi_g3
+    stages:
+    - verification
+- name: direct_pg_g4_bi_g4
+  config: ../../experiments/final_study/direct/direct_pg_g4_bi_g4.yaml
+- name: direct_pg_g4_bi_g3
+  config: ../../experiments/final_study/direct/direct_pg_g4_bi_g3.yaml
+  inherit:
+    from_entry: direct_pg_g4_bi_g4
+    stages:
+    - verification
+- name: direct_pg_g4_bi_q38
+  config: ../../experiments/final_study/direct/direct_pg_g4_bi_q38.yaml
+  inherit:
+    from_entry: direct_pg_g4_bi_g4
+    stages:
+    - verification

@@ -1,0 +1,66 @@
+schema_version: 7
+run:
+  name: direct_pg_q38_bi_q38
+  output_directory: runs
+dataset:
+  profile: ../../../datasets/final_titles_v1.yaml
+experiment:
+  prompt_seeds:
+  - 1000
+  - 1001
+  image_seeds:
+  - 8566257
+  - 2875613
+  retry_limit: 1
+backends:
+  prompt_model:
+    profile: ../../../backends/text/qwen3.8-27b-bf16-llamacpp.yaml
+  image_model:
+    profile: ../../../backends/image/stable-diffusion-3.5-large-bf16-comfyui.yaml
+  verifier:
+    profile: ../../../backends/vision/qwen3-vl-8b-instruct-f16-llamacpp.yaml
+  reconstruction_model:
+    profile: ../../../backends/vision/qwen3.8-27b-bf16-llamacpp.yaml
+stages:
+  prompt_generation:
+    backend: prompt_model
+    prompt_profile: prompts/prompt_generation/visual_single_v4.yaml
+    parameters:
+      temperature: 0.7
+      top_p: 0.95
+      max_tokens: 1024
+  image_generation:
+    backend: image_model
+  verification:
+    backend: verifier
+    template_path: prompts/verification/json_v3.txt
+    parameters:
+      temperature: 0.0
+      top_p: 1.0
+      max_tokens: 128
+      seed: 3001
+  image_description:
+    backend: reconstruction_model
+    template_path: prompts/image_description/plain_v1.txt
+    parameters:
+      temperature: 0.0
+      top_p: 1.0
+      max_tokens: 512
+      seed: 3002
+  title_guessing:
+    direct:
+      backend: reconstruction_model
+      template_path: prompts/title_guessing/plain_v3.txt
+      parameters:
+        temperature: 0.0
+        top_p: 1.0
+        max_tokens: 128
+        seed: 3003
+    from_description:
+      backend: reconstruction_model
+      template_path: prompts/title_guessing/description_plain_v3.txt
+      parameters:
+        temperature: 0.0
+        top_p: 1.0
+        max_tokens: 128
+        seed: 3003

@@ -4,15 +4,10 @@ from pathlib import Path
 
 from semantic_roundtrip.adapters.errors import AdapterError
 from semantic_roundtrip.adapters.factory import AdapterBundle
-from semantic_roundtrip.config import PredictionInputKind, ResolvedAppConfig
-from semantic_roundtrip.config_resolution import configured_prediction_inputs
+from semantic_roundtrip.config import ResolvedAppConfig
 from semantic_roundtrip.domain import (
     BenchmarkItem,
     GeneratedPrompt,
-)
-from semantic_roundtrip.evaluation import (
-    EXACT_MATCH_METHOD,
-    title_exact_match,
 )
 from semantic_roundtrip.persistence.run.database import RunDatabase
 from semantic_roundtrip.persistence.run.results import ImageWorkItem
@@ -100,6 +95,8 @@ def execute_prompt_generation_stage(
     prompt_profile: PromptProfile,
 ) -> None:
     """Generate every missing visual prompt before the next stage starts."""
+    if adapters.prompt_generator is None:
+        raise RuntimeError("Prompt generation has no prompt-generator adapter.")
     for item_index, configured_item in enumerate(config.dataset.items):
         item = BenchmarkItem(
             item_key=configured_item.id,
@@ -128,6 +125,8 @@ def execute_image_generation_stage(
     adapters: AdapterBundle,
 ) -> None:
     """Generate every missing image from the persisted prompts."""
+    if adapters.image_generator is None:
+        raise RuntimeError("Image generation has no image-generator adapter.")
     for prompt in database.results.list_prompts():
         for seed in config.experiment.image_seeds:
             task_suffix = f"{prompt.item.item_key}:{prompt.prompt.index}:{seed}"
@@ -136,14 +135,20 @@ def execute_image_generation_stage(
                 stage="image_generation",
                 task_suffix=task_suffix,
                 existing=database.results.get_image(prompt.prompt_id, seed),
-                operation=lambda: adapters.image_generator.generate_image(
-                    prompt=prompt.prompt.text,
-                    seed=seed,
-                    output_directory=(images_directory / f"prompt_{prompt.prompt_id}"),
+                operation=lambda prompt=prompt, seed=seed: (
+                    adapters.image_generator.generate_image(
+                        prompt=prompt.prompt.text,
+                        seed=seed,
+                        output_directory=(
+                            images_directory / f"prompt_{prompt.prompt_id}"
+                        ),
+                    )
                 ),
-                save=lambda result: database.results.add_image(
-                    prompt.prompt_id,
-                    result,
+                save=lambda result, prompt_id=prompt.prompt_id: (
+                    database.results.add_image(
+                        prompt_id,
+                        result,
+                    )
                 ),
                 retry_limit=config.experiment.retry_limit,
                 item_id=prompt.item_id,
@@ -159,18 +164,22 @@ def execute_verification_stage(
     adapters: AdapterBundle,
 ) -> None:
     """Verify every persisted image before title guessing starts."""
+    if adapters.image_verifier is None:
+        raise RuntimeError("Verification has no image-verifier adapter.")
     for image in database.results.list_images():
         load_or_run_single(
             database=database,
             stage="verification",
             task_suffix=_image_task_suffix(image),
             existing=database.results.get_verification(image.image_id),
-            operation=lambda: adapters.image_verifier.verify_image(
+            operation=lambda image=image: adapters.image_verifier.verify_image(
                 image_path=image.image.path
             ),
-            save=lambda result: database.results.add_verification(
-                image.image_id,
-                result,
+            save=lambda result, image_id=image.image_id: (
+                database.results.add_verification(
+                    image_id,
+                    result,
+                )
             ),
             retry_limit=config.experiment.retry_limit,
             item_id=image.item_id,
@@ -200,13 +209,15 @@ def execute_image_description_stage(
             stage="image_description",
             task_suffix=_image_task_suffix(image),
             existing=database.results.get_image_description(image.image_id),
-            operation=lambda: adapters.image_describer.describe_image(
+            operation=lambda image=image: adapters.image_describer.describe_image(
                 image_path=image.image.path,
                 domain=image.item.domain,
             ),
-            save=lambda result: database.results.add_image_description(
-                image.image_id,
-                result,
+            save=lambda result, image_id=image.image_id: (
+                database.results.add_image_description(
+                    image_id,
+                    result,
+                )
             ),
             retry_limit=config.experiment.retry_limit,
             item_id=image.item_id,
@@ -223,7 +234,10 @@ def execute_direct_title_guessing_stage(
     adapters: AdapterBundle,
 ) -> None:
     """Guess every title directly from its persisted image."""
-    if config.stages.title_guessing.direct is None:
+    if (
+        config.stages.title_guessing is None
+        or config.stages.title_guessing.direct is None
+    ):
         return
 
     if adapters.image_title_guesser is None:
@@ -235,14 +249,16 @@ def execute_direct_title_guessing_stage(
             stage="title_guessing_direct",
             task_suffix=_image_task_suffix(image),
             existing=database.results.get_prediction(image.image_id, "image"),
-            operation=lambda: adapters.image_title_guesser.guess_title(
+            operation=lambda image=image: adapters.image_title_guesser.guess_title(
                 image_path=image.image.path,
                 domain=image.item.domain,
             ),
-            save=lambda result: database.results.add_prediction(
-                image.image_id,
-                result,
-                input_kind="image",
+            save=lambda result, image_id=image.image_id: (
+                database.results.add_prediction(
+                    image_id,
+                    result,
+                    input_kind="image",
+                )
             ),
             retry_limit=config.experiment.retry_limit,
             item_id=image.item_id,
@@ -259,7 +275,10 @@ def execute_description_title_guessing_stage(
     adapters: AdapterBundle,
 ) -> None:
     """Guess every title from its persisted image description."""
-    if config.stages.title_guessing.from_description is None:
+    if (
+        config.stages.title_guessing is None
+        or config.stages.title_guessing.from_description is None
+    ):
         return
 
     if adapters.text_title_guesser is None:
@@ -276,15 +295,19 @@ def execute_description_title_guessing_stage(
             stage="title_guessing_from_description",
             task_suffix=_image_task_suffix(image),
             existing=database.results.get_prediction(image.image_id, "description"),
-            operation=lambda: adapters.text_title_guesser.guess_title(
-                description=description.text,
-                domain=image.item.domain,
+            operation=lambda description=description, image=image: (
+                adapters.text_title_guesser.guess_title(
+                    description=description.text,
+                    domain=image.item.domain,
+                )
             ),
-            save=lambda result: database.results.add_prediction(
-                image.image_id,
-                result,
-                input_kind="description",
-                description_id=description_id,
+            save=lambda result, image_id=image.image_id, description_id=description_id: (
+                database.results.add_prediction(
+                    image_id,
+                    result,
+                    input_kind="description",
+                    description_id=description_id,
+                )
             ),
             retry_limit=config.experiment.retry_limit,
             item_id=image.item_id,
@@ -292,75 +315,3 @@ def execute_description_title_guessing_stage(
             seed=image.image.seed,
             image_id=image.image_id,
         )
-
-
-def execute_evaluation_stage(
-    *,
-    config: ResolvedAppConfig,
-    database: RunDatabase,
-) -> None:
-    """Evaluate every persisted prediction as an independently resumable task."""
-    for image in database.results.list_images():
-        verification_entry = database.results.get_verification(image.image_id)
-        if verification_entry is None:
-            continue
-
-        verification_id, _ = verification_entry
-        for input_kind in configured_prediction_inputs(config):
-            _evaluate_prediction(
-                database=database,
-                image=image,
-                verification_id=verification_id,
-                input_kind=input_kind,
-            )
-
-
-def _evaluate_prediction(
-    *,
-    database: RunDatabase,
-    image: ImageWorkItem,
-    verification_id: int,
-    input_kind: PredictionInputKind,
-) -> None:
-    """Evaluate one configured prediction route for one image."""
-    raise_if_pause_requested(database)
-    prediction_entry = database.results.get_prediction(image.image_id, input_kind)
-    if prediction_entry is None:
-        return
-
-    prediction_id, prediction = prediction_entry
-    task = database.tasks.get_or_create(
-        task_key=f"evaluation:{input_kind}:{_image_task_suffix(image)}",
-        stage="evaluation",
-        expected_outputs=1,
-        item_id=image.item_id,
-        prompt_id=image.prompt_id,
-        image_id=image.image_id,
-        seed=image.image.seed,
-    )
-    evaluation_id = database.results.get_evaluation_id(prediction_id)
-    if evaluation_id is not None:
-        if task.status != "completed":
-            database.tasks.mark_completed(task.task_id, 1)
-        return
-    if task.status == "completed":
-        raise RuntimeError(f"Task {task.task_key} is completed but has no evaluation.")
-
-    def evaluate() -> int:
-        exact_match = title_exact_match(image.item.title, prediction.title)
-        return database.results.add_evaluation_if_missing(
-            verification_id=verification_id,
-            prediction_id=prediction_id,
-            exact_match=exact_match,
-            exact_method=EXACT_MATCH_METHOD,
-        )
-
-    run_task(
-        evaluate,
-        database=database,
-        task=task,
-        retry_limit=0,
-        item_id=image.item_id,
-        prompt_id=image.prompt_id,
-        image_id=image.image_id,
-    )

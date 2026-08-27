@@ -16,6 +16,7 @@ class TaskRecord:
     attempt: int
     expected_outputs: int
     completed_outputs: int
+    execution_origin: str
 
 
 class RunTaskStore:
@@ -110,6 +111,21 @@ class RunTaskStore:
         ).fetchone()
         return int(row[0])
 
+    def count_terminal_local(self, stage: str) -> int:
+        """Count completed or failed work executed by this run for one stage."""
+        row = self._connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM stage_tasks
+            WHERE run_id = ?
+              AND stage = ?
+              AND execution_origin = 'local'
+              AND status IN ('completed', 'failed')
+            """,
+            (self._run_context.run_id, stage),
+        ).fetchone()
+        return int(row[0])
+
     @staticmethod
     def _task_from_row(row: sqlite3.Row) -> TaskRecord:
         return TaskRecord(
@@ -120,6 +136,7 @@ class RunTaskStore:
             attempt=int(row["attempt"]),
             expected_outputs=int(row["expected_outputs"]),
             completed_outputs=int(row["completed_outputs"]),
+            execution_origin=row["execution_origin"],
         )
 
     def mark_running(self, task_id: int) -> int:
@@ -193,7 +210,9 @@ class RunTaskStore:
                     started_at = NULL,
                     updated_at = ?,
                     finished_at = NULL
-                WHERE run_id = ? AND status = 'running'
+                WHERE run_id = ?
+                  AND status = 'running'
+                  AND execution_origin = 'local'
                 """,
                 (now, self._run_context.run_id),
             )

@@ -1,0 +1,94 @@
+schema_version: 3
+job:
+  name: final_indirect_local
+  output_directory: runs
+  continue_on_error: true
+experiments:
+- name: indirect_pg_d32_bb_q25_bi_d32
+  config: ../../experiments/final_study/indirect/indirect_pg_d32_bb_q25_bi_d32.yaml
+- name: indirect_pg_d32_bb_q25_bi_o120
+  config: ../../experiments/final_study/indirect/indirect_pg_d32_bb_q25_bi_o120.yaml
+  inherit:
+    from_entry: indirect_pg_d32_bb_q25_bi_d32
+    stages:
+    - image_description
+- name: indirect_pg_d32_bb_g3_bi_d32
+  config: ../../experiments/final_study/indirect/indirect_pg_d32_bb_g3_bi_d32.yaml
+  inherit:
+    from_entry: indirect_pg_d32_bb_q25_bi_d32
+    stages:
+    - verification
+- name: indirect_pg_d32_bb_g3_bi_o120
+  config: ../../experiments/final_study/indirect/indirect_pg_d32_bb_g3_bi_o120.yaml
+  inherit:
+    from_entry: indirect_pg_d32_bb_g3_bi_d32
+    stages:
+    - image_description
+- name: indirect_pg_d32_bb_q38_bi_d32
+  config: ../../experiments/final_study/indirect/indirect_pg_d32_bb_q38_bi_d32.yaml
+  inherit:
+    from_entry: indirect_pg_d32_bb_q25_bi_d32
+    stages:
+    - verification
+- name: indirect_pg_d32_bb_q38_bi_o120
+  config: ../../experiments/final_study/indirect/indirect_pg_d32_bb_q38_bi_o120.yaml
+  inherit:
+    from_entry: indirect_pg_d32_bb_q38_bi_d32
+    stages:
+    - image_description
+- name: indirect_pg_d32_bb_g4_bi_d32
+  config: ../../experiments/final_study/indirect/indirect_pg_d32_bb_g4_bi_d32.yaml
+  inherit:
+    from_entry: indirect_pg_d32_bb_q25_bi_d32
+    stages:
+    - verification
+- name: indirect_pg_d32_bb_g4_bi_o120
+  config: ../../experiments/final_study/indirect/indirect_pg_d32_bb_g4_bi_o120.yaml
+  inherit:
+    from_entry: indirect_pg_d32_bb_g4_bi_d32
+    stages:
+    - image_description
+- name: indirect_pg_o120_bb_q25_bi_d32
+  config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_q25_bi_d32.yaml
+- name: indirect_pg_o120_bb_q25_bi_o120
+  config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_q25_bi_o120.yaml
+  inherit:
+    from_entry: indirect_pg_o120_bb_q25_bi_d32
+    stages:
+    - image_description
+- name: indirect_pg_o120_bb_g3_bi_d32
+  config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_g3_bi_d32.yaml
+  inherit:
+    from_entry: indirect_pg_o120_bb_q25_bi_d32
+    stages:
+    - verification
+- name: indirect_pg_o120_bb_g3_bi_o120
+  config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_g3_bi_o120.yaml
+  inherit:
+    from_entry: indirect_pg_o120_bb_g3_bi_d32
+    stages:
+    - image_description
+- name: indirect_pg_o120_bb_q38_bi_d32
+  config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_q38_bi_d32.yaml
+  inherit:
+    from_entry: indirect_pg_o120_bb_q25_bi_d32
+    stages:
+    - verification
+- name: indirect_pg_o120_bb_q38_bi_o120
+  config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_q38_bi_o120.yaml
+  inherit:
+    from_entry: indirect_pg_o120_bb_q38_bi_d32
+    stages:
+    - image_description
+- name: indirect_pg_o120_bb_g4_bi_d32
+  config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_g4_bi_d32.yaml
+  inherit:
+    from_entry: indirect_pg_o120_bb_q25_bi_d32
+    stages:
+    - verification
+- name: indirect_pg_o120_bb_g4_bi_o120
+  config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_g4_bi_o120.yaml
+  inherit:
+    from_entry: indirect_pg_o120_bb_g4_bi_d32
+    stages:
+    - image_description

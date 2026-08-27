@@ -1,0 +1,41 @@
+schema_version: 7
+run:
+  name: aqueduct_v4_bi_smoke
+  output_directory: runs
+dataset:
+  dataset_id: final_study_smoke_v1
+  items:
+  - id: songs_imagine
+    domain: songs
+    title: Imagine
+experiment:
+  prompt_seeds:
+  - 1000
+  image_seeds:
+  - 8566257
+  retry_limit: 1
+backends:
+  mock:
+    profile: ../../../backends/mock.yaml
+  interpretation_model:
+    profile: ../../../backends/text/deepseek-v4-flash-284b-aqueduct.yaml
+stages:
+  prompt_generation:
+    backend: mock
+    prompt_profile: prompts/prompt_generation/visual_single_v4.yaml
+  image_generation:
+    backend: mock
+  verification:
+    backend: mock
+  image_description:
+    backend: mock
+    template_path: prompts/image_description/plain_v1.txt
+  title_guessing:
+    from_description:
+      backend: interpretation_model
+      template_path: prompts/title_guessing/description_plain_v3.txt
+      parameters:
+        temperature: 0.0
+        top_p: 1.0
+        max_tokens: 16384
+        seed: 3003

@@ -5,10 +5,12 @@ from statistics import median
 
 from semantic_roundtrip.config import PipelineStageName, ResolvedAppConfig
 from semantic_roundtrip.config_resolution import (
+    expected_output_count,
     expected_stage_outputs,
     get_stage_config,
     load_effective_config,
 )
+from semantic_roundtrip.inheritance.dependencies import dependency_closure
 from semantic_roundtrip.persistence.run.config_snapshot import (
     EFFECTIVE_CONFIG_FILENAME,
 )
@@ -18,11 +20,11 @@ from semantic_roundtrip.persistence.run.queries import (
     read_latest_stage_error,
     read_run_record,
     read_stage_progress,
+    read_stage_runtime_model,
 )
 from semantic_roundtrip.persistence.run.schema import database_path_for_run
 from semantic_roundtrip.status.common import elapsed_seconds
 from semantic_roundtrip.status.models import EtaState, RunStatus, StageStatus
-
 
 STAGE_ORDER = (
     "prompt_generation",
@@ -31,7 +33,6 @@ STAGE_ORDER = (
     "title_guessing_direct",
     "image_description",
     "title_guessing_from_description",
-    "evaluation",
 )
 MINIMUM_ETA_SAMPLES = 3
 
@@ -39,10 +40,13 @@ MINIMUM_ETA_SAMPLES = 3
 def _stage_model(
     config: ResolvedAppConfig,
     stage_name: PipelineStageName,
+    *,
+    database_path: Path,
+    imported: bool,
 ) -> str | None:
     """Return the configured model ID for one executable pipeline stage."""
-    if stage_name == "evaluation":
-        return None
+    if imported:
+        return read_stage_runtime_model(database_path, stage_name)
 
     stage = get_stage_config(config, stage_name)
     if stage is None:
@@ -60,16 +64,16 @@ def _active_stage(status: str, stages: tuple[StageStatus, ...]) -> str | None:
         return None
 
     for stage in stages:
-        if stage.running > 0:
+        if not stage.imported and stage.running > 0:
             return stage.name
 
     if status == "failed":
         for stage in reversed(stages):
-            if stage.failed > 0:
+            if not stage.imported and stage.failed > 0:
                 return stage.name
 
     for stage in stages:
-        if stage.produced < stage.expected:
+        if not stage.imported and stage.produced < stage.expected:
             return stage.name
     return None
 
@@ -102,12 +106,24 @@ def get_run_status(run_directory: Path) -> RunStatus:
     record = read_run_record(database_path)
     config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
     expected = expected_stage_outputs(config)
+    imported_stages = (
+        set()
+        if config.inherit is None
+        else set(dependency_closure(config.inherit.stages))
+    )
+    for stage_name in imported_stages:
+        expected.setdefault(stage_name, expected_output_count(config, stage_name))
     progress = {stage.stage: stage for stage in read_stage_progress(database_path)}
 
     stages = tuple(
         StageStatus(
             name=stage_name,
-            model=_stage_model(config, stage_name),
+            model=_stage_model(
+                config,
+                stage_name,
+                database_path=database_path,
+                imported=stage_name in imported_stages,
+            ),
             produced=(
                 progress[stage_name].produced_outputs if stage_name in progress else 0
             ),
@@ -115,6 +131,7 @@ def get_run_status(run_directory: Path) -> RunStatus:
             pending=(progress[stage_name].pending if stage_name in progress else 0),
             running=(progress[stage_name].running if stage_name in progress else 0),
             failed=(progress[stage_name].failed if stage_name in progress else 0),
+            imported=stage_name in imported_stages,
         )
         for stage_name in STAGE_ORDER
         if stage_name in expected

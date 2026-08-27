@@ -1,0 +1,438 @@
+# Use this selection only after the optional 20-condition Aqueduct extension has completed.
+schema_version: 2
+study:
+  name: final_semantic_roundtrip
+  revision: final_v1
+  output_directory: ../../../thesis/analysis/results
+run_roots:
+- ../../../bachelor_runs_from_spark_a
+- ../../../bachelor_runs_from_spark_b
+conditions:
+  direct_pg_q25_bi_q25:
+    run_name: direct_pg_q25_bi_q25
+    design: direct_core
+    pg: q25
+    bg: sd35
+    bi: q25
+    routes:
+    - direct
+    - description
+    bb: q25
+  direct_pg_q25_bi_q38:
+    run_name: direct_pg_q25_bi_q38
+    design: direct_core
+    pg: q25
+    bg: sd35
+    bi: q38
+    routes:
+    - direct
+  direct_pg_q25_bi_g3:
+    run_name: direct_pg_q25_bi_g3
+    design: direct_core
+    pg: q25
+    bg: sd35
+    bi: g3
+    routes:
+    - direct
+  direct_pg_q38_bi_q38:
+    run_name: direct_pg_q38_bi_q38
+    design: direct_core
+    pg: q38
+    bg: sd35
+    bi: q38
+    routes:
+    - direct
+    - description
+    bb: q38
+  direct_pg_q38_bi_q25:
+    run_name: direct_pg_q38_bi_q25
+    design: direct_core
+    pg: q38
+    bg: sd35
+    bi: q25
+    routes:
+    - direct
+  direct_pg_q38_bi_g4:
+    run_name: direct_pg_q38_bi_g4
+    design: direct_core
+    pg: q38
+    bg: sd35
+    bi: g4
+    routes:
+    - direct
+  direct_pg_g3_bi_g3:
+    run_name: direct_pg_g3_bi_g3
+    design: direct_core
+    pg: g3
+    bg: sd35
+    bi: g3
+    routes:
+    - direct
+    - description
+    bb: g3
+  direct_pg_g3_bi_g4:
+    run_name: direct_pg_g3_bi_g4
+    design: direct_core
+    pg: g3
+    bg: sd35
+    bi: g4
+    routes:
+    - direct
+  direct_pg_g3_bi_q25:
+    run_name: direct_pg_g3_bi_q25
+    design: direct_core
+    pg: g3
+    bg: sd35
+    bi: q25
+    routes:
+    - direct
+  direct_pg_g4_bi_g4:
+    run_name: direct_pg_g4_bi_g4
+    design: direct_core
+    pg: g4
+    bg: sd35
+    bi: g4
+    routes:
+    - direct
+    - description
+    bb: g4
+  direct_pg_g4_bi_g3:
+    run_name: direct_pg_g4_bi_g3
+    design: direct_core
+    pg: g4
+    bg: sd35
+    bi: g3
+    routes:
+    - direct
+  direct_pg_g4_bi_q38:
+    run_name: direct_pg_g4_bi_q38
+    design: direct_core
+    pg: g4
+    bg: sd35
+    bi: q38
+    routes:
+    - direct
+  indirect_pg_d32_bb_q25_bi_d32:
+    run_name: indirect_pg_d32_bb_q25_bi_d32
+    design: indirect_local
+    pg: d32
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: q25
+  indirect_pg_d32_bb_q25_bi_o120:
+    run_name: indirect_pg_d32_bb_q25_bi_o120
+    design: indirect_local
+    pg: d32
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: q25
+  indirect_pg_d32_bb_g3_bi_d32:
+    run_name: indirect_pg_d32_bb_g3_bi_d32
+    design: indirect_local
+    pg: d32
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: g3
+  indirect_pg_d32_bb_g3_bi_o120:
+    run_name: indirect_pg_d32_bb_g3_bi_o120
+    design: indirect_local
+    pg: d32
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: g3
+  indirect_pg_d32_bb_q38_bi_d32:
+    run_name: indirect_pg_d32_bb_q38_bi_d32
+    design: indirect_local
+    pg: d32
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: q38
+  indirect_pg_d32_bb_q38_bi_o120:
+    run_name: indirect_pg_d32_bb_q38_bi_o120
+    design: indirect_local
+    pg: d32
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: q38
+  indirect_pg_d32_bb_g4_bi_d32:
+    run_name: indirect_pg_d32_bb_g4_bi_d32
+    design: indirect_local
+    pg: d32
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: g4
+  indirect_pg_d32_bb_g4_bi_o120:
+    run_name: indirect_pg_d32_bb_g4_bi_o120
+    design: indirect_local
+    pg: d32
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: g4
+  indirect_pg_o120_bb_q25_bi_d32:
+    run_name: indirect_pg_o120_bb_q25_bi_d32
+    design: indirect_local
+    pg: o120
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: q25
+  indirect_pg_o120_bb_q25_bi_o120:
+    run_name: indirect_pg_o120_bb_q25_bi_o120
+    design: indirect_local
+    pg: o120
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: q25
+  indirect_pg_o120_bb_g3_bi_d32:
+    run_name: indirect_pg_o120_bb_g3_bi_d32
+    design: indirect_local
+    pg: o120
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: g3
+  indirect_pg_o120_bb_g3_bi_o120:
+    run_name: indirect_pg_o120_bb_g3_bi_o120
+    design: indirect_local
+    pg: o120
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: g3
+  indirect_pg_o120_bb_q38_bi_d32:
+    run_name: indirect_pg_o120_bb_q38_bi_d32
+    design: indirect_local
+    pg: o120
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: q38
+  indirect_pg_o120_bb_q38_bi_o120:
+    run_name: indirect_pg_o120_bb_q38_bi_o120
+    design: indirect_local
+    pg: o120
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: q38
+  indirect_pg_o120_bb_g4_bi_d32:
+    run_name: indirect_pg_o120_bb_g4_bi_d32
+    design: indirect_local
+    pg: o120
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: g4
+  indirect_pg_o120_bb_g4_bi_o120:
+    run_name: indirect_pg_o120_bb_g4_bi_o120
+    design: indirect_local
+    pg: o120
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: g4
+  indirect_pg_d32_bb_q25_bi_v4:
+    run_name: indirect_pg_d32_bb_q25_bi_v4
+    design: aqueduct_v4_extension
+    pg: d32
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: q25
+  indirect_pg_d32_bb_g3_bi_v4:
+    run_name: indirect_pg_d32_bb_g3_bi_v4
+    design: aqueduct_v4_extension
+    pg: d32
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: g3
+  indirect_pg_d32_bb_q38_bi_v4:
+    run_name: indirect_pg_d32_bb_q38_bi_v4
+    design: aqueduct_v4_extension
+    pg: d32
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: q38
+  indirect_pg_d32_bb_g4_bi_v4:
+    run_name: indirect_pg_d32_bb_g4_bi_v4
+    design: aqueduct_v4_extension
+    pg: d32
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: g4
+  indirect_pg_o120_bb_q25_bi_v4:
+    run_name: indirect_pg_o120_bb_q25_bi_v4
+    design: aqueduct_v4_extension
+    pg: o120
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: q25
+  indirect_pg_o120_bb_g3_bi_v4:
+    run_name: indirect_pg_o120_bb_g3_bi_v4
+    design: aqueduct_v4_extension
+    pg: o120
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: g3
+  indirect_pg_o120_bb_q38_bi_v4:
+    run_name: indirect_pg_o120_bb_q38_bi_v4
+    design: aqueduct_v4_extension
+    pg: o120
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: q38
+  indirect_pg_o120_bb_g4_bi_v4:
+    run_name: indirect_pg_o120_bb_g4_bi_v4
+    design: aqueduct_v4_extension
+    pg: o120
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: g4
+  indirect_pg_v4_bb_q25_bi_d32:
+    run_name: indirect_pg_v4_bb_q25_bi_d32
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: q25
+  indirect_pg_v4_bb_q25_bi_o120:
+    run_name: indirect_pg_v4_bb_q25_bi_o120
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: q25
+  indirect_pg_v4_bb_q25_bi_v4:
+    run_name: indirect_pg_v4_bb_q25_bi_v4
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: q25
+  indirect_pg_v4_bb_g3_bi_d32:
+    run_name: indirect_pg_v4_bb_g3_bi_d32
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: g3
+  indirect_pg_v4_bb_g3_bi_o120:
+    run_name: indirect_pg_v4_bb_g3_bi_o120
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: g3
+  indirect_pg_v4_bb_g3_bi_v4:
+    run_name: indirect_pg_v4_bb_g3_bi_v4
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: g3
+  indirect_pg_v4_bb_q38_bi_d32:
+    run_name: indirect_pg_v4_bb_q38_bi_d32
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: q38
+  indirect_pg_v4_bb_q38_bi_o120:
+    run_name: indirect_pg_v4_bb_q38_bi_o120
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: q38
+  indirect_pg_v4_bb_q38_bi_v4:
+    run_name: indirect_pg_v4_bb_q38_bi_v4
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: q38
+  indirect_pg_v4_bb_g4_bi_d32:
+    run_name: indirect_pg_v4_bb_g4_bi_d32
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: d32
+    routes:
+    - description
+    bb: g4
+  indirect_pg_v4_bb_g4_bi_o120:
+    run_name: indirect_pg_v4_bb_g4_bi_o120
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: o120
+    routes:
+    - description
+    bb: g4
+  indirect_pg_v4_bb_g4_bi_v4:
+    run_name: indirect_pg_v4_bb_g4_bi_v4
+    design: aqueduct_v4_extension
+    pg: v4
+    bg: sd35
+    bi: v4
+    routes:
+    - description
+    bb: g4

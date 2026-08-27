@@ -19,6 +19,8 @@ class OpenAICompatiblePromptSettings(ConfigModel):
 
     endpoint: str = Field(min_length=1)
     model_id: str = Field(min_length=1)
+    api_key_env: str | None = Field(default=None, min_length=1)
+    request_token_logprobs: bool = True
     temperature: float = Field(default=0.8, ge=0)
     top_p: float = Field(default=0.95, gt=0, le=1)
     max_tokens: int = Field(default=2048, gt=0)
@@ -39,6 +41,7 @@ class OpenAICompatiblePromptGenerator:
             endpoint=settings.endpoint,
             model_id=settings.model_id,
             timeout_seconds=settings.timeout_seconds,
+            api_key_env=settings.api_key_env,
             error_subject="Prompt",
         )
 

@@ -1,23 +1,34 @@
 """Configuration and planning for persisted multi-experiment jobs."""
 
+from __future__ import annotations
+
 import os
 import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
 import yaml
-from pydantic import Field
+from pydantic import Field, field_validator, model_validator
 
 from semantic_roundtrip.adapters.factory import create_adapters
-from semantic_roundtrip.config import ConfigModel, ResolvedAppConfig
+from semantic_roundtrip.config import (
+    ConfigModel,
+    ResolvedAppConfig,
+    ResolvedRunInheritance,
+    StageName,
+)
 from semantic_roundtrip.config_resolution import (
     expected_stage_outputs,
     load_input_config,
 )
+from semantic_roundtrip.inheritance.source import (
+    SourceRun,
+    load_source_run,
+    resolve_job_entry_run,
+)
 from semantic_roundtrip.prompting import load_prompt_profile
-
 
 JOB_INPUT_FILENAME = "job_input.yaml"
 JOB_SNAPSHOT_FILENAME = "job_snapshot.yaml"
@@ -38,13 +49,54 @@ class JobExperimentReference(ConfigModel):
 
     name: str = Field(min_length=1)
     config: Path
+    inherit: JobEntryInheritance | None = None
+
+
+class ExternalJobSource(ConfigModel):
+    """One completed job that may provide named source entries."""
+
+    directory: Path
+
+
+class JobEntrySource(ConfigModel):
+    """Select one entry from a source job alias."""
+
+    job: str = Field(min_length=1)
+    entry: str = Field(min_length=1)
+
+
+class JobEntryInheritance(ConfigModel):
+    """Select exactly one immediate source for one job child run."""
+
+    from_run: Path | None = None
+    from_entry: str | None = Field(default=None, min_length=1)
+    from_job_entry: JobEntrySource | None = None
+    stages: list[StageName] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_exactly_one_source(self) -> Self:
+        sources = (self.from_run, self.from_entry, self.from_job_entry)
+        if sum(source is not None for source in sources) != 1:
+            raise ValueError(
+                "Job inheritance requires exactly one of from_run, from_entry, "
+                "or from_job_entry."
+            )
+        return self
+
+    @field_validator("stages")
+    @classmethod
+    def require_unique_stages(cls, stages: list[StageName]) -> list[StageName]:
+        if len(stages) != len(set(stages)):
+            raise ValueError("Every inherited stage may be listed only once.")
+        return stages
 
 
 class InputJobConfig(ConfigModel):
     """Human-maintained job configuration."""
 
-    schema_version: Literal[2]
+    schema_version: Literal[3]
     job: JobDefinition
+    source_jobs: dict[str, ExternalJobSource] = Field(default_factory=dict)
     experiments: list[JobExperimentReference] = Field(min_length=1)
 
 
@@ -65,12 +117,13 @@ class ResolvedJobEntry(ConfigModel):
     name: str = Field(min_length=1)
     source_config: Path
     backends: tuple[BackendSummary, ...]
+    inherit: JobEntryInheritance | None = None
 
 
 class ResolvedJobConfig(ConfigModel):
     """Frozen job policy and immutable entry metadata used for resume."""
 
-    schema_version: Literal[2]
+    schema_version: Literal[3]
     configuration_kind: Literal["effective"] = "effective"
     job: JobDefinition
     entries: list[ResolvedJobEntry] = Field(min_length=1)
@@ -85,6 +138,7 @@ class LoadedJobExperiment:
     source_reference: Path
     source_path: Path
     config: ResolvedAppConfig
+    job_inherit: JobEntryInheritance | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +159,7 @@ class JobPlanEntry:
     config_path: Path
     expected_outputs: dict[str, int]
     backends: tuple[BackendSummary, ...]
+    imported_stages: tuple[StageName, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,6 +206,77 @@ def backend_summaries(config: ResolvedAppConfig) -> tuple[BackendSummary, ...]:
     return tuple(summaries)
 
 
+def _resolve_job_inheritance(
+    *,
+    job_config: InputJobConfig,
+    entry: JobExperimentReference,
+    prior_experiments: list[LoadedJobExperiment],
+    base_directory: Path,
+) -> tuple[ResolvedRunInheritance, ResolvedAppConfig]:
+    inheritance = entry.inherit
+    if inheritance is None:
+        raise ValueError("This job entry has no inheritance reference.")
+
+    source: SourceRun | None = None
+    source_config: ResolvedAppConfig
+    source_kind: Literal["from_run", "from_entry", "from_job_entry"]
+    source_entry: str | None = None
+    source_job: str | None = None
+
+    if inheritance.from_run is not None:
+        source_path = inheritance.from_run
+        if not source_path.is_absolute():
+            source_path = (base_directory / source_path).resolve()
+        source = load_source_run(source_path)
+        source_config = source.config
+        source_kind = "from_run"
+    elif inheritance.from_entry is not None:
+        matches = [
+            candidate
+            for candidate in prior_experiments
+            if candidate.name == inheritance.from_entry
+        ]
+        if len(matches) != 1:
+            raise ValueError(
+                f"from_entry must reference one earlier job entry: "
+                f"{inheritance.from_entry}"
+            )
+        prior = matches[0]
+        source_config = prior.config
+        source_kind = "from_entry"
+        source_entry = prior.name
+    else:
+        assert inheritance.from_job_entry is not None
+        reference = inheritance.from_job_entry
+        configured_job = job_config.source_jobs.get(reference.job)
+        if configured_job is None:
+            raise ValueError(f"Unknown source_jobs alias: {reference.job}")
+        job_directory = configured_job.directory
+        if not job_directory.is_absolute():
+            job_directory = (base_directory / job_directory).resolve()
+        source = resolve_job_entry_run(job_directory, reference.entry)
+        source_config = source.config
+        source_kind = "from_job_entry"
+        source_entry = reference.entry
+        source_job = reference.job
+
+    resolved = ResolvedRunInheritance(
+        source_kind=source_kind,
+        source_run=(
+            source.directory
+            if source is not None
+            else Path(f"__unresolved_job_entry__/{source_entry}")
+        ),
+        source_run_id=(
+            source.run_id if source is not None else f"unresolved:{source_entry}"
+        ),
+        source_entry=source_entry,
+        source_job=source_job,
+        stages=inheritance.stages,
+    )
+    return resolved, source_config
+
+
 def load_job_config(path: Path) -> LoadedJobConfig:
     """Load a job and fully validate every referenced experiment."""
     path = path.resolve()
@@ -170,8 +296,23 @@ def load_job_config(path: Path) -> LoadedJobConfig:
                 f"Job experiment config does not exist: {source_path}"
             )
 
-        config = load_input_config(source_path)
-        load_prompt_profile(config.stages.prompt_generation.prompt_profile)
+        if entry.inherit is None:
+            config = load_input_config(source_path)
+        else:
+            resolved_inheritance, source_config = _resolve_job_inheritance(
+                job_config=input_config,
+                entry=entry,
+                prior_experiments=experiments,
+                base_directory=base_directory,
+            )
+            config = load_input_config(
+                source_path,
+                inherited_dataset=source_config.dataset,
+                resolved_inheritance=resolved_inheritance,
+                source_config=source_config,
+            )
+        if config.stages.prompt_generation is not None:
+            load_prompt_profile(config.stages.prompt_generation.prompt_profile)
         create_adapters(config)
         experiments.append(
             LoadedJobExperiment(
@@ -180,6 +321,7 @@ def load_job_config(path: Path) -> LoadedJobConfig:
                 source_reference=entry.config,
                 source_path=source_path,
                 config=config,
+                job_inherit=entry.inherit,
             )
         )
 
@@ -209,6 +351,7 @@ def create_resolved_job_config(
             name=entry.name,
             source_config=entry.source_reference,
             backends=backend_summaries(entry.config),
+            inherit=entry.job_inherit,
         )
         for entry in loaded.experiments
     ]
@@ -254,7 +397,6 @@ def plan_job(
         "title_guessing_direct": 0,
         "image_description": 0,
         "title_guessing_from_description": 0,
-        "evaluation": 0,
     }
     entries: list[JobPlanEntry] = []
     model_stacks: list[str] = []
@@ -289,6 +431,11 @@ def plan_job(
                 config_path=entry.source_path,
                 expected_outputs=expected,
                 backends=summaries,
+                imported_stages=(
+                    ()
+                    if entry.config.inherit is None
+                    else tuple(entry.config.inherit.stages)
+                ),
             )
         )
 

@@ -6,14 +6,16 @@ from typing import Any
 
 from semantic_roundtrip.config import ResolvedAppConfig, ResolvedBackend
 
-
 IMAGE_GENERATION_WORKFLOW_FILENAME = "image_generation_workflow.json"
 
 
 def _image_generation_backend(
     config: ResolvedAppConfig,
-) -> tuple[str, ResolvedBackend]:
-    backend_alias = config.stages.image_generation.backend
+) -> tuple[str, ResolvedBackend] | None:
+    stage = config.stages.image_generation
+    if stage is None:
+        return None
+    backend_alias = stage.backend
     return backend_alias, config.backends[backend_alias]
 
 
@@ -22,13 +24,16 @@ def create_workflow_snapshots(
     run_directory: Path,
 ) -> dict[str, Path]:
     """Copy every external workflow required by the configured run."""
-    _, backend = _image_generation_backend(config)
+    selected = _image_generation_backend(config)
+    if selected is None:
+        return {}
+    _, backend = selected
     if backend.adapter != "comfyui":
         return {}
 
     workflow_path = backend.settings.get("workflow_path")
     if not isinstance(workflow_path, (str, Path)):
-        raise ValueError("ComfyUI settings require workflow_path.")
+        raise TypeError("ComfyUI settings require workflow_path.")
 
     snapshot_path = run_directory / IMAGE_GENERATION_WORKFLOW_FILENAME
     copy2(Path(workflow_path), snapshot_path)
@@ -44,7 +49,10 @@ def use_workflow_snapshots(
     if not snapshot_path.is_file():
         return config
 
-    backend_alias, backend = _image_generation_backend(config)
+    selected = _image_generation_backend(config)
+    if selected is None:
+        return config
+    backend_alias, backend = selected
     if backend.adapter != "comfyui":
         return config
 

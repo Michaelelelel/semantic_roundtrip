@@ -5,7 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
-
 EtaState = Literal[
     "none",
     "calculating",
@@ -26,6 +25,7 @@ class StageStatus:
     pending: int
     running: int
     failed: int
+    imported: bool
 
 
 @dataclass(frozen=True, slots=True)

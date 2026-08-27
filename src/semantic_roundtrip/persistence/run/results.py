@@ -28,7 +28,6 @@ class ResultCounts:
     direct_predictions: int
     description_predictions: int
     predictions: int
-    evaluations: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -467,55 +466,6 @@ class RunResultStore:
             ),
         )
 
-    def add_evaluation_if_missing(
-        self,
-        *,
-        verification_id: int,
-        prediction_id: int,
-        exact_match: bool,
-        exact_method: str,
-    ) -> int:
-        row = self._connection.execute(
-            """
-            SELECT evaluation_id
-            FROM evaluations
-            WHERE prediction_id = ?
-            """,
-            (prediction_id,),
-        ).fetchone()
-        if row is not None:
-            return int(row["evaluation_id"])
-
-        return self._insert(
-            """
-            INSERT INTO evaluations (
-                verification_id,
-                prediction_id,
-                exact_match,
-                exact_method
-            )
-            VALUES (?, ?, ?, ?)
-            """,
-            (
-                verification_id,
-                prediction_id,
-                int(exact_match),
-                exact_method,
-            ),
-        )
-
-    def get_evaluation_id(self, prediction_id: int) -> int | None:
-        """Return the stored evaluation for one prediction, when present."""
-        row = self._connection.execute(
-            """
-            SELECT evaluation_id
-            FROM evaluations
-            WHERE prediction_id = ?
-            """,
-            (prediction_id,),
-        ).fetchone()
-        return None if row is None else int(row["evaluation_id"])
-
     def counts(self) -> ResultCounts:
         """Count all successfully stored result rows."""
         row = self._connection.execute(
@@ -533,8 +483,7 @@ class RunResultStore:
                     SELECT COUNT(*) FROM predictions
                     WHERE input_kind = 'description'
                 ) AS description_predictions,
-                (SELECT COUNT(*) FROM predictions) AS predictions,
-                (SELECT COUNT(*) FROM evaluations) AS evaluations
+                (SELECT COUNT(*) FROM predictions) AS predictions
             """
         ).fetchone()
         return ResultCounts(
@@ -546,5 +495,4 @@ class RunResultStore:
             direct_predictions=int(row["direct_predictions"]),
             description_predictions=int(row["description_predictions"]),
             predictions=int(row["predictions"]),
-            evaluations=int(row["evaluations"]),
         )

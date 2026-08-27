@@ -1,0 +1,13 @@
+schema_version: 1
+
+adapter: openai_compatible
+
+settings:
+  endpoint: http://vision_runtime:8080/v1/chat/completions
+  model_id: gemma-3-27b-it-f16
+  timeout_seconds: 1800
+
+runtime:
+  controller: llama_cpp_router
+  control_url: http://vision_runtime:8080
+  resource_group: dgx-main

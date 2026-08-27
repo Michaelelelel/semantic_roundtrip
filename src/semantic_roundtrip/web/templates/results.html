@@ -11,14 +11,10 @@
     {% endif %}
     <br>
     <small>
-      {% if result.exact_match is none %}
-        {{ "Evaluation not produced" if is_terminal else "Evaluation pending" }}
-      {% else %}
-        Exact:
-        <span class="value--{{ 'yes' if result.exact_match else 'no' }}">
-          {{ "yes" if result.exact_match else "no" }}
-        </span>
-      {% endif %}
+      Exact:
+      <span class="value--{{ 'yes' if result.exact_match else 'no' }}">
+        {{ "yes" if result.exact_match else "no" }}
+      </span>
     </small>
   {% endif %}
 {% endmacro %}

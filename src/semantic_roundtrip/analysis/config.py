@@ -1,5 +1,6 @@
-"""Validated configuration for analyzing selected persisted runs."""
+"""Validated study selection with unambiguous persisted-run resolution."""
 
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Literal, Self
@@ -8,147 +9,155 @@ import yaml
 from pydantic import Field, model_validator
 
 from semantic_roundtrip.config import ConfigModel
+from semantic_roundtrip.persistence.run.schema import DATABASE_FILENAME
 
-
-STUDY_CONFIG_FILENAME = "study.yaml"
 ConditionId = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]*$")]
-GroupId = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]*$")]
+Route = Literal["direct", "description"]
 
 
 class StudyDefinition(ConfigModel):
-    """Identity and output location of one analysis."""
+    """Identity and output location for one frozen study revision."""
 
     name: str = Field(min_length=1)
+    revision: str = Field(min_length=1)
     output_directory: Path = Path("results")
 
 
 class StudyCondition(ConfigModel):
-    """One named persisted run selected for the study."""
+    """One scientific condition and exactly one persisted-run selector."""
 
-    run: Path
+    run_name: str | None = Field(default=None, min_length=1)
+    run: Path | None = None
+    design: str = Field(min_length=1)
+    pg: str = Field(min_length=1)
+    bg: str = Field(min_length=1)
+    bb: str | None = Field(default=None, min_length=1)
+    bi: str = Field(min_length=1)
+    routes: list[Route] = Field(min_length=1)
     label: str | None = Field(default=None, min_length=1)
 
-
-class StudyGroup(ConfigModel):
-    """Runs that jointly answer one research question."""
-
-    kind: Literal["accuracy", "paired", "routes"]
-    conditions: list[ConditionId] = Field(min_length=1)
-    reference: ConditionId | None = None
-    route: Literal["direct", "description"] = "direct"
-
     @model_validator(mode="after")
-    def validate_group_shape(self) -> Self:
-        if len(self.conditions) != len(set(self.conditions)):
-            raise ValueError("Study-group conditions must be unique.")
-
-        if self.kind == "paired":
-            if len(self.conditions) < 2:
-                raise ValueError("A paired group requires at least two conditions.")
-            if self.reference is None:
-                raise ValueError("A paired group requires a reference condition.")
-            if self.reference not in self.conditions:
-                raise ValueError(
-                    "The paired-group reference must be one of its conditions."
-                )
-        elif self.reference is not None:
-            raise ValueError("Only a paired group can define a reference condition.")
-
+    def require_one_selector_and_unique_routes(self) -> Self:
+        if (self.run_name is None) == (self.run is None):
+            raise ValueError("A condition requires exactly one of run_name or run.")
+        if len(self.routes) != len(set(self.routes)):
+            raise ValueError("Condition routes must be unique.")
+        if "description" in self.routes and self.bb is None:
+            raise ValueError("A description route requires a BB model label.")
         return self
 
 
 class StudyConfig(ConfigModel):
-    """Complete reproducible selection and grouping of study runs."""
+    """Complete, declarative selection used by the thesis notebook."""
 
-    schema_version: Literal[1]
+    schema_version: Literal[2]
     study: StudyDefinition
+    run_roots: list[Path] = Field(min_length=1)
     conditions: dict[ConditionId, StudyCondition] = Field(min_length=1)
-    groups: dict[GroupId, StudyGroup] = Field(min_length=1)
-
-    @model_validator(mode="after")
-    def validate_references(self) -> Self:
-        known_conditions = set(self.conditions)
-        used_conditions: set[str] = set()
-        for group_id, group in self.groups.items():
-            used_conditions.update(group.conditions)
-            unknown = set(group.conditions) - known_conditions
-            if unknown:
-                names = ", ".join(sorted(unknown))
-                raise ValueError(
-                    f"Study group '{group_id}' references unknown conditions: {names}"
-                )
-
-        unused = known_conditions - used_conditions
-        if unused:
-            names = ", ".join(sorted(unused))
-            raise ValueError(f"Study conditions are not used by any group: {names}")
-        return self
 
 
 @dataclass(frozen=True, slots=True)
 class LoadedStudy:
-    """Resolved study paths plus the exact input bytes used for the analysis."""
+    """Resolved study paths and the exact configuration bytes used."""
 
-    directory: Path
     source_path: Path
     source_bytes: bytes
     config: StudyConfig
+    run_roots: tuple[Path, ...]
     run_directories: dict[str, Path]
     output_directory: Path
 
 
-def load_study(directory: Path) -> LoadedStudy:
-    """Load one study directory and resolve every selected run path."""
-    directory = directory.resolve()
-    if not directory.is_dir():
-        raise NotADirectoryError(f"Study directory does not exist: {directory}")
+def _read_run_name(database_path: Path) -> str | None:
+    """Read only the name while scanning, ignoring unrelated old run schemas."""
+    try:
+        uri = f"file:{database_path.resolve().as_posix()}?mode=ro"
+        connection = sqlite3.connect(uri, uri=True)
+        try:
+            row = connection.execute("SELECT name FROM run_metadata").fetchone()
+        finally:
+            connection.close()
+    except sqlite3.Error:
+        return None
+    return None if row is None else str(row[0])
 
-    source_path = directory / STUDY_CONFIG_FILENAME
+
+def _resolve_relative(path: Path, base_directory: Path) -> Path:
+    return (path if path.is_absolute() else base_directory / path).resolve()
+
+
+def _find_named_run(run_name: str, roots: tuple[Path, ...]) -> Path:
+    matches: set[Path] = set()
+    for root in roots:
+        for database_path in root.rglob(DATABASE_FILENAME):
+            if _read_run_name(database_path) == run_name:
+                matches.add(database_path.parent.resolve())
+    if not matches:
+        raise FileNotFoundError(
+            f"No run named '{run_name}' was found below the configured run_roots."
+        )
+    if len(matches) > 1:
+        locations = "\n".join(f"- {path}" for path in sorted(matches))
+        raise ValueError(
+            f"Run name '{run_name}' is ambiguous. Select one explicit run path:\n"
+            f"{locations}"
+        )
+    return matches.pop()
+
+
+def load_study(path: Path) -> LoadedStudy:
+    """Load a schema-v2 study file and resolve each condition exactly once."""
+    source_path = path.resolve()
+    if source_path.is_dir():
+        source_path = source_path / "study.yaml"
     source_bytes = source_path.read_bytes()
-    raw_config = yaml.safe_load(source_bytes.decode("utf-8"))
-    config = StudyConfig.model_validate(raw_config)
+    config = StudyConfig.model_validate(yaml.safe_load(source_bytes.decode("utf-8")))
+    base_directory = source_path.parent
+
+    run_roots = tuple(
+        _resolve_relative(root, base_directory) for root in config.run_roots
+    )
+    for root in run_roots:
+        if not root.is_dir():
+            raise NotADirectoryError(f"Study run_root does not exist: {root}")
 
     run_directories: dict[str, Path] = {}
-    seen_paths: set[Path] = set()
+    selected_paths: dict[Path, str] = {}
     for condition_id, condition in config.conditions.items():
-        run_directory = condition.run
-        if not run_directory.is_absolute():
-            run_directory = directory / run_directory
-        run_directory = run_directory.resolve()
-        if not run_directory.is_dir():
-            raise NotADirectoryError(
-                f"Run directory for condition '{condition_id}' does not exist: "
-                f"{run_directory}"
+        if condition.run_name is not None:
+            run_directory = _find_named_run(condition.run_name, run_roots)
+        else:
+            assert condition.run is not None
+            run_directory = _resolve_relative(condition.run, base_directory)
+        if not (run_directory / DATABASE_FILENAME).is_file():
+            raise FileNotFoundError(
+                f"Condition '{condition_id}' is not a persisted run: {run_directory}"
             )
-        if run_directory in seen_paths:
+        previous = selected_paths.get(run_directory)
+        if previous is not None:
             raise ValueError(
-                f"Run directory is selected by more than one condition: "
-                f"{run_directory}"
+                f"Conditions '{previous}' and '{condition_id}' select the same run."
             )
-        seen_paths.add(run_directory)
+        selected_paths[run_directory] = condition_id
         run_directories[condition_id] = run_directory
 
-    output_directory = config.study.output_directory
-    if not output_directory.is_absolute():
-        output_directory = directory / output_directory
-    output_directory = output_directory.resolve()
-
-    if directory == output_directory or directory.is_relative_to(output_directory):
-        raise ValueError("The results directory must not replace the study directory.")
+    output_directory = _resolve_relative(
+        config.study.output_directory,
+        base_directory,
+    )
     for condition_id, run_directory in run_directories.items():
-        if output_directory.is_relative_to(run_directory) or run_directory.is_relative_to(
-            output_directory
+        if output_directory == run_directory or output_directory.is_relative_to(
+            run_directory
         ):
             raise ValueError(
-                f"The results directory must not overlap the run directory for "
-                f"condition '{condition_id}'."
+                f"Study output overlaps condition '{condition_id}': {run_directory}"
             )
 
     return LoadedStudy(
-        directory=directory,
         source_path=source_path,
         source_bytes=source_bytes,
         config=config,
+        run_roots=run_roots,
         run_directories=run_directories,
         output_directory=output_directory,
     )

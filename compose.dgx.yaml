@@ -5,7 +5,6 @@ services:
     volumes:
       - "${MODEL_ROOT:?MODEL_ROOT must be set}/text:/models:ro"
       - "${MODEL_ROOT:?MODEL_ROOT must be set}/multimodal:/multimodal:ro"
-      - ./chat_templates:/chat_templates:ro
       - ./configs/deployments/text-models.ini:/config/models.ini:ro
     command:
       - --models-preset
@@ -35,7 +34,6 @@ services:
     volumes:
       - "${MODEL_ROOT:?MODEL_ROOT must be set}/vision:/models:ro"
       - "${MODEL_ROOT:?MODEL_ROOT must be set}/multimodal:/multimodal:ro"
-      - ./chat_templates:/chat_templates:ro
       - ./configs/deployments/vision-models.ini:/config/models.ini:ro
     command:
       - --models-preset

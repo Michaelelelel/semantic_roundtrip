@@ -10,8 +10,7 @@ from semantic_roundtrip.persistence.sqlite import (
     utc_now,
 )
 
-
-JOB_DATABASE_SCHEMA_VERSION = 3
+JOB_DATABASE_SCHEMA_VERSION = 4
 
 
 def job_database_path(job_directory: Path) -> Path:

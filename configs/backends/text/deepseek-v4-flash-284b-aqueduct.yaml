@@ -1,0 +1,15 @@
+schema_version: 1
+
+adapter: openai_compatible
+
+settings:
+  endpoint: https://aqueduct.ai.datalab.tuwien.ac.at/v1/chat/completions
+  model_id: deepseek-v4-flash-284b
+  api_key_env: AQUEDUCT_API_KEY
+  request_token_logprobs: false
+  timeout_seconds: 3600
+  reasoning_effort: high
+
+runtime:
+  controller: none
+  resource_group: aqueduct

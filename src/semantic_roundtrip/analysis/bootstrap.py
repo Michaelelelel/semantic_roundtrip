@@ -1,68 +1,63 @@
-"""Deterministic clustered-bootstrap helpers for title-level estimates."""
+"""Deterministic paired title resampling for predeclared study effects."""
 
-import random
+from hashlib import sha256
 
+import numpy as np
+import pandas as pd
 
 BOOTSTRAP_REPETITIONS = 10_000
-BOOTSTRAP_SEED = 20260806
+BOOTSTRAP_SEED = 20260827
 
 
-def _percentile(sorted_values: list[float], proportion: float) -> float:
-    position = (len(sorted_values) - 1) * proportion
-    lower = int(position)
-    upper = min(lower + 1, len(sorted_values) - 1)
-    fraction = position - lower
-    return sorted_values[lower] + fraction * (
-        sorted_values[upper] - sorted_values[lower]
-    )
+def _context_seed(context: str) -> int:
+    digest = sha256(f"{BOOTSTRAP_SEED}:{context}".encode()).digest()
+    return int.from_bytes(digest[:8], "big")
 
 
-def bootstrap_mean_interval(
-    values: list[float],
+def paired_title_interval(
+    differences: pd.DataFrame,
     *,
-    seed_context: str,
-) -> tuple[float | None, float | None]:
-    """Return a deterministic 95% percentile interval for a mean."""
-    if not values:
-        return None, None
+    value_column: str = "difference",
+    context: str,
+    repetitions: int = BOOTSTRAP_REPETITIONS,
+) -> tuple[float, float, float]:
+    """Return mean effect and a paired, stratified 95% percentile interval.
+
+    Each input row represents one complete title. Sampling happens independently
+    inside domain/title-length strata while preserving each stratum's size.
+    """
+    required = {value_column, "domain", "title_length_group"}
+    missing = required - set(differences.columns)
+    if missing:
+        raise ValueError(f"Paired interval is missing columns: {sorted(missing)}")
+    if differences.empty:
+        raise ValueError("Paired interval requires at least one title.")
+    if repetitions < 1:
+        raise ValueError("Bootstrap repetitions must be positive.")
+
+    values = differences[value_column].astype(float)
+    estimate = float(values.mean())
     if len(values) == 1:
-        return values[0], values[0]
+        return estimate, estimate, estimate
 
-    random_generator = random.Random(f"{BOOTSTRAP_SEED}:{seed_context}")
-    sample_size = len(values)
-    means = [
-        sum(random_generator.choices(values, k=sample_size)) / sample_size
-        for _ in range(BOOTSTRAP_REPETITIONS)
-    ]
-    means.sort()
-    return _percentile(means, 0.025), _percentile(means, 0.975)
+    rng = np.random.default_rng(_context_seed(context))
+    sampled_sums = np.zeros(repetitions, dtype=float)
+    total = 0
+    grouped = differences.groupby(
+        ["domain", "title_length_group"],
+        sort=True,
+        dropna=False,
+    )
+    for _, stratum in grouped:
+        stratum_values = stratum[value_column].to_numpy(dtype=float)
+        size = len(stratum_values)
+        sampled_sums += rng.choice(
+            stratum_values,
+            size=(repetitions, size),
+            replace=True,
+        ).sum(axis=1)
+        total += size
 
-
-def bootstrap_stratified_mean_interval(
-    values_by_stratum: dict[str, list[float]],
-    *,
-    seed_context: str,
-) -> tuple[float | None, float | None]:
-    """Return a 95% interval while preserving each domain's title count."""
-    strata = [
-        values_by_stratum[name]
-        for name in sorted(values_by_stratum)
-        if values_by_stratum[name]
-    ]
-    total_size = sum(len(values) for values in strata)
-    if total_size == 0:
-        return None, None
-    if total_size == 1:
-        value = strata[0][0]
-        return value, value
-
-    random_generator = random.Random(f"{BOOTSTRAP_SEED}:{seed_context}")
-    means: list[float] = []
-    for _ in range(BOOTSTRAP_REPETITIONS):
-        sampled_sum = 0.0
-        for values in strata:
-            sampled_sum += sum(random_generator.choices(values, k=len(values)))
-        means.append(sampled_sum / total_size)
-
-    means.sort()
-    return _percentile(means, 0.025), _percentile(means, 0.975)
+    sampled_means = sampled_sums / total
+    low, high = np.quantile(sampled_means, [0.025, 0.975])
+    return estimate, float(low), float(high)

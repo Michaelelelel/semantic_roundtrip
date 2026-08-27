@@ -1,7 +1,7 @@
-# Proposed final title dataset V1
+# Final title dataset V1
 
-This dataset is the proposed input for the final thesis experiments. Review and
-freeze it before inspecting final model results.
+This dataset is frozen for the final thesis experiments. Any later change creates
+a new dataset version and a new study revision.
 
 ## Selection
 
@@ -63,8 +63,8 @@ From the repository root:
 The first command creates `data/title_sources/v1/`, which is ignored by Git. The
 second command writes:
 
-- `configs/datasets/proposed_final_titles_v1.yaml` for the pipeline;
-- `configs/datasets/proposed_final_titles_v1_sources.csv` for review and thesis provenance.
+- `configs/datasets/final_titles_v1.yaml` for the pipeline;
+- `configs/datasets/final_titles_v1_sources.csv` for review and thesis provenance.
 
 To extend the dataset to 60 titles per domain without changing the method:
 

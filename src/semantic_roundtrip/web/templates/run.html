@@ -42,6 +42,7 @@
           <tr>
             <th>Stage</th>
             <th>Model</th>
+            <th>Origin</th>
             <th>Outputs</th>
             <th>Pending tasks</th>
             <th>Running tasks</th>
@@ -53,6 +54,7 @@
             <tr>
               <td><strong>{{ stage.name|stage }}</strong></td>
               <td class="mono">{{ stage.model or "-" }}</td>
+              <td>{{ "imported" if stage.imported else "local" }}</td>
               <td>{{ stage.produced }} / {{ stage.expected }}</td>
               <td>{{ stage.pending }}</td>
               <td>{{ stage.running }}</td>

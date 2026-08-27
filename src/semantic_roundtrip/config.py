@@ -112,8 +112,9 @@ StageName = Literal[
     "image_description",
     "title_guessing_from_description",
 ]
-PipelineStageName = StageName | Literal["evaluation"]
+PipelineStageName = StageName
 PredictionInputKind = Literal["image", "description"]
+ExecutionOrigin = Literal["local", "imported"]
 
 
 class BackendReference(ConfigModel):
@@ -201,48 +202,93 @@ class TitleGuessingRoutes(ConfigModel):
 
 
 class StagesConfig(ConfigModel):
-    prompt_generation: PromptGenerationStage
-    image_generation: ImageGenerationStage
-    verification: VerificationStage
+    prompt_generation: PromptGenerationStage | None = None
+    image_generation: ImageGenerationStage | None = None
+    verification: VerificationStage | None = None
     image_description: ImageDescriptionStage | None = None
-    title_guessing: TitleGuessingRoutes
+    title_guessing: TitleGuessingRoutes | None = None
 
     @model_validator(mode="after")
-    def require_consistent_title_routes(self) -> Self:
-        uses_description = self.title_guessing.from_description is not None
-        has_description_stage = self.image_description is not None
-
-        if uses_description and not has_description_stage:
-            raise ValueError(
-                "title_guessing.from_description requires image_description."
-            )
-        if not uses_description and has_description_stage:
-            raise ValueError(
-                "image_description requires title_guessing.from_description."
-            )
+    def require_at_least_one_local_stage(self) -> Self:
+        configured = (
+            self.prompt_generation,
+            self.image_generation,
+            self.verification,
+            self.image_description,
+            None if self.title_guessing is None else self.title_guessing.direct,
+            (
+                None
+                if self.title_guessing is None
+                else self.title_guessing.from_description
+            ),
+        )
+        if not any(stage is not None for stage in configured):
+            raise ValueError("Configure at least one locally executed stage.")
         return self
+
+
+class InputRunInheritance(ConfigModel):
+    """Select completed work from one existing standalone run."""
+
+    from_run: Path
+    stages: list[StageName] = Field(min_length=1)
+
+    @field_validator("stages")
+    @classmethod
+    def require_unique_stages(cls, stages: list[StageName]) -> list[StageName]:
+        if len(stages) != len(set(stages)):
+            raise ValueError("Every inherited stage may be listed only once.")
+        return stages
+
+
+class ResolvedRunInheritance(ConfigModel):
+    """Concrete source identity frozen into an effective run snapshot."""
+
+    source_kind: Literal["from_run", "from_entry", "from_job_entry"]
+    source_run: Path
+    source_run_id: str = Field(min_length=1)
+    source_entry: str | None = None
+    source_job: str | None = None
+    stages: list[StageName] = Field(min_length=1)
+
+    @field_validator("stages")
+    @classmethod
+    def require_unique_stages(cls, stages: list[StageName]) -> list[StageName]:
+        if len(stages) != len(set(stages)):
+            raise ValueError("Every inherited stage may be listed only once.")
+        return stages
 
 
 class InputAppConfig(ConfigModel):
     """Human-maintained experiment configuration with backend references."""
 
-    schema_version: Literal[6]
+    schema_version: Literal[7]
     run: RunConfig
-    dataset: InputDatasetConfig
+    dataset: InputDatasetConfig | None = None
+    inherit: InputRunInheritance | None = None
     experiment: ExperimentConfig
-    backends: dict[BackendAlias, BackendReference] = Field(min_length=1)
+    backends: dict[BackendAlias, BackendReference] = Field(default_factory=dict)
     stages: StagesConfig
+
+    @model_validator(mode="after")
+    def reject_two_dataset_sources(self) -> Self:
+        if self.dataset is not None and self.inherit is not None:
+            raise ValueError(
+                "A configured dataset cannot be combined with run inheritance."
+            )
+        return self
 
 
 class ResolvedAppConfig(ConfigModel):
     """Self-contained effective configuration stored with a run."""
 
-    schema_version: Literal[6]
+    schema_version: Literal[7]
     configuration_kind: Literal["effective"] = "effective"
     run: RunConfig
     dataset: ResolvedDatasetConfig
+    inherit: ResolvedRunInheritance | None = None
     experiment: ExperimentConfig
-    backends: dict[BackendAlias, ResolvedBackend] = Field(min_length=1)
+    backends: dict[BackendAlias, ResolvedBackend] = Field(default_factory=dict)
     stages: StagesConfig
 
 

@@ -1,9 +1,8 @@
 """Small formatting helpers used only by the HTML status views."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from semantic_roundtrip.status.models import EtaState
-
 
 STAGE_LABELS = {
     "prompt_generation": "Prompt generation",
@@ -12,7 +11,6 @@ STAGE_LABELS = {
     "title_guessing_direct": "Direct title guessing",
     "image_description": "Image description",
     "title_guessing_from_description": "Description title guessing",
-    "evaluation": "Evaluation",
 }
 
 
@@ -20,7 +18,7 @@ def format_datetime(value: datetime | None) -> str:
     """Format persisted timestamps consistently in UTC."""
     if value is None:
         return "-"
-    return value.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    return value.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
 def format_duration(seconds: float | None) -> str:

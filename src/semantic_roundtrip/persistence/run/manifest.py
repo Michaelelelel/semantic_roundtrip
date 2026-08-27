@@ -5,9 +5,8 @@ from pathlib import Path
 
 from semantic_roundtrip.persistence.run.manager import RunContext
 
-
 MANIFEST_FILENAME = "manifest.json"
-MANIFEST_SCHEMA_VERSION = 4
+MANIFEST_SCHEMA_VERSION = 5
 
 
 def _relative_path(path: Path, run_directory: Path) -> str:
@@ -59,6 +58,7 @@ def create_manifest(
             ),
             "prompts": prompt_artifacts,
             "workflows": workflow_artifacts,
+            "provenance": "provenance",
         },
     }
 

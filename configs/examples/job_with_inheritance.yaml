@@ -1,0 +1,20 @@
+schema_version: 3
+
+job:
+  name: example_job_with_inheritance
+  output_directory: runs
+  continue_on_error: false
+
+experiments:
+  # This root entry executes the complete mock pipeline.
+  - name: source_full_pipeline
+    config: ../experiments/mock.yaml
+
+  # This entry copies the source work through verification, then executes only
+  # direct title guessing with the backend configured in its experiment file.
+  - name: derived_direct_prediction
+    config: direct_from_verification.yaml
+    inherit:
+      from_entry: source_full_pipeline
+      stages:
+        - verification

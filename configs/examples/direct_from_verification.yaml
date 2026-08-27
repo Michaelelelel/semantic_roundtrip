@@ -1,0 +1,26 @@
+schema_version: 7
+
+run:
+  name: example_direct_from_verification
+  output_directory: runs
+
+# This derived experiment receives its dataset, prompts, images, and
+# verification results from the job entry that references it.
+experiment:
+  prompt_seeds:
+    - 1000
+    - 1001
+  image_seeds:
+    - 41
+    - 42
+  retry_limit: 0
+
+backends:
+  reconstruction_model:
+    profile: ../backends/mock.yaml
+
+# Only this stage is executed locally in the derived run.
+stages:
+  title_guessing:
+    direct:
+      backend: reconstruction_model

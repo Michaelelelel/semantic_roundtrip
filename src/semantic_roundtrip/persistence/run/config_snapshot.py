@@ -8,7 +8,6 @@ import yaml
 from semantic_roundtrip.config import ResolvedAppConfig
 from semantic_roundtrip.prompting import LoadedPromptProfile
 
-
 INPUT_CONFIG_FILENAME = "config_input.yaml"
 EFFECTIVE_CONFIG_FILENAME = "config_snapshot.yaml"
 PROMPT_PROFILE_FILENAME = "prompt_profile.yaml"
@@ -69,19 +68,24 @@ def create_prompt_profile_snapshot(
 
 def create_prompt_snapshots(
     config: ResolvedAppConfig,
-    loaded_profile: LoadedPromptProfile,
+    loaded_profile: LoadedPromptProfile | None,
     run_directory: Path,
 ) -> dict[str, Path]:
     """Copy every prompt file referenced by this experiment."""
-    snapshots = {
-        "prompt_generation": create_prompt_profile_snapshot(
+    snapshots: dict[str, Path] = {}
+    if loaded_profile is not None:
+        snapshots["prompt_generation"] = create_prompt_profile_snapshot(
             loaded_profile,
             run_directory,
         )
-    }
+    title_guessing = config.stages.title_guessing
     configured_prompts = {
         "verification": (
-            config.stages.verification.template_path,
+            (
+                None
+                if config.stages.verification is None
+                else config.stages.verification.template_path
+            ),
             VERIFICATION_PROMPT_FILENAME,
         ),
         "image_description": (
@@ -95,16 +99,16 @@ def create_prompt_snapshots(
         "title_guessing_direct": (
             (
                 None
-                if config.stages.title_guessing.direct is None
-                else config.stages.title_guessing.direct.template_path
+                if title_guessing is None or title_guessing.direct is None
+                else title_guessing.direct.template_path
             ),
             DIRECT_TITLE_GUESSING_PROMPT_FILENAME,
         ),
         "title_guessing_from_description": (
             (
                 None
-                if config.stages.title_guessing.from_description is None
-                else config.stages.title_guessing.from_description.template_path
+                if title_guessing is None or title_guessing.from_description is None
+                else title_guessing.from_description.template_path
             ),
             DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME,
         ),
@@ -126,14 +130,14 @@ def use_prompt_snapshots(
     """Use copied prompt files when resuming a new-format run."""
     prompt_generation = config.stages.prompt_generation
     prompt_generation_path = run_directory / PROMPT_PROFILE_FILENAME
-    if prompt_generation_path.is_file():
+    if prompt_generation is not None and prompt_generation_path.is_file():
         prompt_generation = prompt_generation.model_copy(
             update={"prompt_profile": prompt_generation_path}
         )
 
     verification = config.stages.verification
     verification_path = run_directory / VERIFICATION_PROMPT_FILENAME
-    if verification_path.is_file():
+    if verification is not None and verification_path.is_file():
         verification = verification.model_copy(
             update={"template_path": verification_path}
         )
@@ -145,14 +149,17 @@ def use_prompt_snapshots(
             update={"template_path": image_description_path}
         )
 
-    direct_title_guessing = config.stages.title_guessing.direct
+    title_guessing = config.stages.title_guessing
+    direct_title_guessing = None if title_guessing is None else title_guessing.direct
     direct_title_guessing_path = run_directory / DIRECT_TITLE_GUESSING_PROMPT_FILENAME
     if direct_title_guessing is not None and direct_title_guessing_path.is_file():
         direct_title_guessing = direct_title_guessing.model_copy(
             update={"template_path": direct_title_guessing_path}
         )
 
-    description_title_guessing = config.stages.title_guessing.from_description
+    description_title_guessing = (
+        None if title_guessing is None else title_guessing.from_description
+    )
     description_title_guessing_path = (
         run_directory / DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME
     )
@@ -164,12 +171,13 @@ def use_prompt_snapshots(
             update={"template_path": description_title_guessing_path}
         )
 
-    title_guessing = config.stages.title_guessing.model_copy(
-        update={
-            "direct": direct_title_guessing,
-            "from_description": description_title_guessing,
-        }
-    )
+    if title_guessing is not None:
+        title_guessing = title_guessing.model_copy(
+            update={
+                "direct": direct_title_guessing,
+                "from_description": description_title_guessing,
+            }
+        )
 
     stages = config.stages.model_copy(
         update={

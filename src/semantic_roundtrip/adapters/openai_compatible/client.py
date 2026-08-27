@@ -3,6 +3,7 @@
 import base64
 import json
 import mimetypes
+import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -69,12 +70,14 @@ class OpenAICompatibleChatClient:
         endpoint: str,
         model_id: str,
         timeout_seconds: float,
+        api_key_env: str | None = None,
         error_subject: str = "OpenAI-compatible chat",
         session: requests.Session | None = None,
     ) -> None:
         self._endpoint = endpoint
         self._model_id = model_id
         self._timeout_seconds = timeout_seconds
+        self._api_key_env = api_key_env
         self._error_subject = error_subject
         self._session = session if session is not None else requests.Session()
 
@@ -134,10 +137,21 @@ class OpenAICompatibleChatClient:
             if top_logprobs is not None:
                 payload["top_logprobs"] = top_logprobs
 
+        headers: dict[str, str] | None = None
+        if self._api_key_env is not None:
+            api_key = os.environ.get(self._api_key_env)
+            if not api_key:
+                raise AdapterError(
+                    f"{self._error_subject} requires environment variable "
+                    f"'{self._api_key_env}'."
+                )
+            headers = {"Authorization": f"Bearer {api_key}"}
+
         try:
             response = self._session.post(
                 self._endpoint,
                 json=payload,
+                headers=headers,
                 timeout=self._timeout_seconds,
             )
         except requests.RequestException as error:

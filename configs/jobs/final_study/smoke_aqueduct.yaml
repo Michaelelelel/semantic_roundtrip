@@ -1,0 +1,10 @@
+schema_version: 3
+job:
+  name: final_smoke_aqueduct
+  output_directory: runs
+  continue_on_error: true
+experiments:
+- name: aqueduct_v4_prompt_smoke
+  config: ../../experiments/final_study/smoke/aqueduct_v4_prompt_smoke.yaml
+- name: aqueduct_v4_bi_smoke
+  config: ../../experiments/final_study/smoke/aqueduct_v4_bi_smoke.yaml

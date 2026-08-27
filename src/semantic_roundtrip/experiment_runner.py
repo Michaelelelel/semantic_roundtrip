@@ -20,8 +20,8 @@ from semantic_roundtrip.persistence.run.database import (
     load_run_context,
     request_run_pause,
 )
-from semantic_roundtrip.persistence.run.manifest import create_manifest
 from semantic_roundtrip.persistence.run.manager import RunContext, create_run
+from semantic_roundtrip.persistence.run.manifest import create_manifest
 from semantic_roundtrip.persistence.run.queries import read_run_record
 from semantic_roundtrip.persistence.run.schema import (
     database_path_for_run,
@@ -33,7 +33,6 @@ from semantic_roundtrip.persistence.run.workflow_snapshot import (
 )
 from semantic_roundtrip.pipeline import PipelineSummary, run_pipeline
 from semantic_roundtrip.prompting import PromptProfile, load_prompt_profile
-
 
 RESUMABLE_RUN_STATUSES = frozenset({"created", "paused", "failed", "interrupted"})
 
@@ -48,7 +47,7 @@ class PreparedExperiment:
     manifest_path: Path
     images_directory: Path
     adapters: AdapterBundle
-    prompt_profile: PromptProfile
+    prompt_profile: PromptProfile | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,8 +70,10 @@ def prepare_experiment(
         )
         config = config.model_copy(update={"run": run_config})
 
-    loaded_prompt_profile = load_prompt_profile(
-        config.stages.prompt_generation.prompt_profile
+    loaded_prompt_profile = (
+        None
+        if config.stages.prompt_generation is None
+        else load_prompt_profile(config.stages.prompt_generation.prompt_profile)
     )
     adapters = create_adapters(config)
     run_context = create_run(
@@ -99,6 +100,7 @@ def prepare_experiment(
     )
     images_directory = run_context.directory / "images"
     images_directory.mkdir()
+    (run_context.directory / "provenance").mkdir()
     database_path = initialize_database(
         run_context,
         config.run.name,
@@ -123,7 +125,9 @@ def prepare_experiment(
         manifest_path=manifest_path,
         images_directory=images_directory,
         adapters=adapters,
-        prompt_profile=loaded_prompt_profile.profile,
+        prompt_profile=(
+            None if loaded_prompt_profile is None else loaded_prompt_profile.profile
+        ),
     )
 
 
@@ -178,8 +182,10 @@ def resume_experiment(
         ),
         run_directory,
     )
-    loaded_prompt_profile = load_prompt_profile(
-        config.stages.prompt_generation.prompt_profile
+    loaded_prompt_profile = (
+        None
+        if config.stages.prompt_generation is None
+        else load_prompt_profile(config.stages.prompt_generation.prompt_profile)
     )
     adapters = create_adapters(config)
     run_context = load_run_context(run_directory)
@@ -189,6 +195,8 @@ def resume_experiment(
         database_path=database_path,
         images_directory=run_directory / "images",
         adapters=adapters,
-        prompt_profile=loaded_prompt_profile.profile,
+        prompt_profile=(
+            None if loaded_prompt_profile is None else loaded_prompt_profile.profile
+        ),
         resume=True,
     )
