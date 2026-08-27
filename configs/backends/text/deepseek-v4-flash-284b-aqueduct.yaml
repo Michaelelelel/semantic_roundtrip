@@ -8,7 +8,9 @@ settings:
   api_key_env: AQUEDUCT_API_KEY
   request_token_logprobs: false
   timeout_seconds: 3600
-  reasoning_effort: high
+  chat_template_kwargs:
+    thinking: true
+    reasoning_effort: high
 
 runtime:
   controller: none
