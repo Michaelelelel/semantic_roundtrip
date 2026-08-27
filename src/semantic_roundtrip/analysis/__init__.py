@@ -3,6 +3,9 @@
 from semantic_roundtrip.analysis.config import LoadedStudy, StudyConfig, load_study
 from semantic_roundtrip.analysis.design import (
     DIRECT_COMPARISONS,
+    DIRECT_MODELS,
+    DIRECT_RELATION_ORDER,
+    direct_model_relation,
     validate_final_design,
 )
 from semantic_roundtrip.analysis.loader import load_study_frames
@@ -17,11 +20,14 @@ from semantic_roundtrip.analysis.models import StudyFrames
 
 __all__ = [
     "DIRECT_COMPARISONS",
+    "DIRECT_MODELS",
+    "DIRECT_RELATION_ORDER",
     "LoadedStudy",
     "StudyConfig",
     "StudyFrames",
     "aggregate_titles",
     "condition_summary",
+    "direct_model_relation",
     "load_study",
     "load_study_frames",
     "paired_effect",

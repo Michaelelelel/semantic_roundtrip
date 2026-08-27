@@ -34,6 +34,14 @@ conditions:
     bi: g3
     routes:
     - direct
+  direct_pg_q25_bi_g4:
+    run_name: direct_pg_q25_bi_g4
+    design: direct_core
+    pg: q25
+    bg: sd35
+    bi: g4
+    routes:
+    - direct
   direct_pg_q38_bi_q38:
     run_name: direct_pg_q38_bi_q38
     design: direct_core
@@ -58,6 +66,14 @@ conditions:
     pg: q38
     bg: sd35
     bi: g4
+    routes:
+    - direct
+  direct_pg_q38_bi_g3:
+    run_name: direct_pg_q38_bi_g3
+    design: direct_core
+    pg: q38
+    bg: sd35
+    bi: g3
     routes:
     - direct
   direct_pg_g3_bi_g3:
@@ -86,6 +102,14 @@ conditions:
     bi: q25
     routes:
     - direct
+  direct_pg_g3_bi_q38:
+    run_name: direct_pg_g3_bi_q38
+    design: direct_core
+    pg: g3
+    bg: sd35
+    bi: q38
+    routes:
+    - direct
   direct_pg_g4_bi_g4:
     run_name: direct_pg_g4_bi_g4
     design: direct_core
@@ -110,6 +134,14 @@ conditions:
     pg: g4
     bg: sd35
     bi: q38
+    routes:
+    - direct
+  direct_pg_g4_bi_q25:
+    run_name: direct_pg_g4_bi_q25
+    design: direct_core
+    pg: g4
+    bg: sd35
+    bi: q25
     routes:
     - direct
   indirect_pg_d32_bb_q25_bi_d32:

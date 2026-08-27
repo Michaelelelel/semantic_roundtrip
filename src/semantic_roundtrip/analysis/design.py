@@ -4,21 +4,27 @@ from collections.abc import Iterable
 
 import pandas as pd
 
+DIRECT_MODELS: tuple[str, ...] = ("q25", "g3", "q38", "g4")
 DIRECT_CONDITIONS: frozenset[tuple[str, str]] = frozenset(
-    {
-        ("q25", "q25"),
-        ("q25", "q38"),
-        ("q25", "g3"),
-        ("q38", "q38"),
-        ("q38", "q25"),
-        ("q38", "g4"),
-        ("g3", "g3"),
-        ("g3", "g4"),
-        ("g3", "q25"),
-        ("g4", "g4"),
-        ("g4", "g3"),
-        ("g4", "q38"),
-    }
+    (pg, bi) for pg in DIRECT_MODELS for bi in DIRECT_MODELS
+)
+DIRECT_MODEL_FAMILY: dict[str, str] = {
+    "q25": "qwen",
+    "q38": "qwen",
+    "g3": "gemma",
+    "g4": "gemma",
+}
+DIRECT_MODEL_COHORT: dict[str, str] = {
+    "q25": "2025",
+    "g3": "2025",
+    "q38": "2026",
+    "g4": "2026",
+}
+DIRECT_RELATION_ORDER: tuple[str, ...] = (
+    "same_model",
+    "same_family_other_cohort",
+    "same_cohort_other_family",
+    "different_family_and_cohort",
 )
 LOCAL_TEXT_MODELS: tuple[str, ...] = ("d32", "o120")
 DESCRIPTION_MODELS: tuple[str, ...] = ("q25", "g3", "q38", "g4")
@@ -43,6 +49,20 @@ DIRECT_COMPARISONS: dict[str, tuple[str, str]] = {
     "family_2025": ("q25", "g3"),
     "family_2026": ("q38", "g4"),
 }
+
+
+def direct_model_relation(pg: str, bi: str) -> str:
+    """Classify one cell in the complete Qwen/Gemma PG-by-BI matrix."""
+    if pg not in DIRECT_MODEL_FAMILY or bi not in DIRECT_MODEL_FAMILY:
+        raise ValueError(f"Unknown direct model pair: PG={pg!r}, BI={bi!r}.")
+    if pg == bi:
+        return "same_model"
+    if DIRECT_MODEL_FAMILY[pg] == DIRECT_MODEL_FAMILY[bi]:
+        return "same_family_other_cohort"
+    if DIRECT_MODEL_COHORT[pg] == DIRECT_MODEL_COHORT[bi]:
+        return "same_cohort_other_family"
+    return "different_family_and_cohort"
+
 
 EXPECTED_DATASET_ID = "final_titles_v1"
 EXPECTED_PROMPT_SEEDS = (1000, 1001)
