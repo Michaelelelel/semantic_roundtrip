@@ -7,7 +7,7 @@ settings:
   model_id: gemma-4-31b-it-bf16
   timeout_seconds: 1800
   reasoning_effort: none
-  reasoning_format: none
+  reasoning_format: auto
   thinking_budget_tokens: 0
   chat_template_kwargs:
     enable_thinking: false

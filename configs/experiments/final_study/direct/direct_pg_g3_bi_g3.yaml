@@ -24,7 +24,7 @@ backends:
 stages:
   prompt_generation:
     backend: prompt_model
-    prompt_profile: prompts/prompt_generation/visual_single_v4.yaml
+    prompt_profile: prompts/prompt_generation/visual_single_v5.yaml
     parameters:
       temperature: 0.7
       top_p: 0.95

@@ -238,7 +238,15 @@ def _reject_reasoning_markup(
     if finish_reason == "length":
         return
     normalized = content.casefold()
-    if "<think>" in normalized or "</think>" in normalized:
+    reasoning_markers = (
+        "<think>",
+        "</think>",
+        "<|channel>",
+        "<channel|>",
+        "<|analysis|>",
+        "<|thought|>",
+    )
+    if any(marker in normalized for marker in reasoning_markers):
         raise AdapterError(
             f"{error_subject} endpoint returned reasoning markup in final content.",
             raw_response,
