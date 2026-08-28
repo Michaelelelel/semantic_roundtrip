@@ -10,19 +10,21 @@ from semantic_roundtrip.adapters.openai_compatible.client import (
     OpenAICompatibleChatClient,
     ReasoningFormat,
 )
-from semantic_roundtrip.config import ConfigModel
+from semantic_roundtrip.adapters.openai_compatible.settings import (
+    OpenAICompatibleGenerationSettings,
+)
 from semantic_roundtrip.domain import PromptMessage, PromptResponse
 
 
-class OpenAICompatiblePromptSettings(ConfigModel):
+class OpenAICompatiblePromptSettings(OpenAICompatibleGenerationSettings):
     """Settings for an OpenAI-compatible prompt-generation endpoint."""
 
     endpoint: str = Field(min_length=1)
     model_id: str = Field(min_length=1)
     api_key_env: str | None = Field(default=None, min_length=1)
     request_token_logprobs: bool = True
-    temperature: float = Field(default=0.8, ge=0)
-    top_p: float = Field(default=0.95, gt=0, le=1)
+    temperature: float | None = Field(default=0.8, ge=0)
+    top_p: float | None = Field(default=0.95, gt=0, le=1)
     max_tokens: int = Field(default=2048, gt=0)
     timeout_seconds: float = Field(default=300, gt=0)
     stream: bool = False
@@ -56,10 +58,7 @@ class OpenAICompatiblePromptGenerator:
                 ChatMessage(role=message.role, content=message.content)
                 for message in messages
             ),
-            temperature=self._config.temperature,
-            top_p=self._config.top_p,
-            max_tokens=self._config.max_tokens,
-            seed=seed,
+            generation_parameters=self._config.generation_parameters(seed=seed),
             stream=self._config.stream,
             reasoning_effort=self._config.reasoning_effort,
             reasoning_format=self._config.reasoning_format,

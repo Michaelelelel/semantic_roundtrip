@@ -7,6 +7,7 @@ settings:
   model_id: deepseek-v4-flash-284b
   api_key_env: AQUEDUCT_API_KEY
   request_token_logprobs: false
+  include_sampler_parameters: true
   timeout_seconds: 3600
   chat_template_kwargs:
     thinking: true

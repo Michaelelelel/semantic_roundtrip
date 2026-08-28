@@ -85,10 +85,7 @@ class OpenAICompatibleChatClient:
         self,
         *,
         messages: tuple[ChatMessage, ...],
-        temperature: float | None = None,
-        top_p: float | None = None,
-        max_tokens: int | None = None,
-        seed: int | None = None,
+        generation_parameters: Mapping[str, Any] | None = None,
         response_format: Mapping[str, Any] | None = None,
         include_token_logprobs: bool = False,
         top_logprobs: int | None = None,
@@ -112,11 +109,9 @@ class OpenAICompatibleChatClient:
             "model": self._model_id,
             "messages": [_serialize_message(message) for message in messages],
         }
+        if generation_parameters:
+            payload.update(generation_parameters)
         optional_values = {
-            "temperature": temperature,
-            "top_p": top_p,
-            "max_tokens": max_tokens,
-            "seed": seed,
             "reasoning_format": reasoning_format,
             "thinking_budget_tokens": thinking_budget_tokens,
         }

@@ -167,7 +167,7 @@ def fetch_listenbrainz_metadata(source_directory: Path) -> None:
     )
     write_json(
         source_directory / "listenbrainz_artist_metadata.json",
-        artist_metadata,
+        artist_metadata,normalized_title
     )
 
 
@@ -327,7 +327,7 @@ def eligible_candidate_pool(
     seen_titles: set[str] = set()
 
     for candidate in candidates:
-        normalized = normalized_title(candidate.title)
+        normalized = (candidate.title)
         if (
             not normalized
             or candidate.year > cutoff_year

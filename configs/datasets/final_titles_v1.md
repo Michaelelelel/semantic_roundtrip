@@ -16,8 +16,34 @@ a new dataset version and a new study revision.
 - Sampling uses the fixed seed `20260811`.
 - At most one selected song comes from each primary artist.
 
+The source rankings are traversed from most to least popular. Release/formation
+year, script, duplicate-title, development-title, entity-type, adult-content,
+and song-version filters are applied before traversal stops at 300 retained
+titles per domain. The one-song-per-primary-artist rule is applied later, during
+the fixed-seed selection of the final 30 songs.
+
 Popularity defines the candidate pool only. ListenBrainz listen counts are not
 compared numerically with IMDb vote counts.
+
+### Rationale for the selection rules
+
+- A popularity-bounded pool reduces extremely obscure cultural references while
+  fixed-seed sampling prevents manual selection according to expected visual or
+  reconstruction success.
+- Equal short, medium, and long groups prevent title length from being
+  distributed differently across domains, which matters especially for Exact
+  Match.
+- The 2018 cutoff reduces the risk that very recent entries systematically favor
+  newer checkpoints; it does not claim that any title occurred in a particular
+  training set.
+- Latin-script restriction keeps script handling and string comparison more
+  comparable across the selected models and domains.
+- Song-version filters remove near-duplicate or qualified variants whose suffixes
+  would create a distinct Exact-Match problem unrelated to visual semantics.
+- Excluding development titles prevents technical prompt and adapter work from
+  using final observations.
+- The one-song-per-primary-artist rule limits dependence on one artist's cultural
+  associations and prevents a popular artist from dominating the song sample.
 
 ## Sources
 
