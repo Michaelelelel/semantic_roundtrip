@@ -400,6 +400,9 @@ def _visible_content_token_logprobs(
         if isinstance(value, bool) or not isinstance(value, int | float):
             return None
 
+        if _is_nonvisible_control_token(item):
+            continue
+
         token_bytes = _logprob_token_bytes(item)
         if token_bytes is None:
             return None
@@ -419,6 +422,26 @@ def _visible_content_token_logprobs(
 
     suffix_logprobs.reverse()
     return tuple(suffix_logprobs)
+
+
+def _is_nonvisible_control_token(item: dict[str, Any]) -> bool:
+    """Recognize provider control markers omitted from message content."""
+    token = item.get("token")
+    if not isinstance(token, str):
+        return False
+
+    paired_markers = (("<|", "|>"), ("<｜", "｜>"))
+    if any(token.startswith(start) and token.endswith(end) for start, end in paired_markers):
+        return True
+
+    return token.casefold() in {
+        "<s>",
+        "</s>",
+        "<bos>",
+        "<eos>",
+        "[bos]",
+        "[eos]",
+    }
 
 
 def _logprob_token_bytes(item: dict[str, Any]) -> bytes | None:
