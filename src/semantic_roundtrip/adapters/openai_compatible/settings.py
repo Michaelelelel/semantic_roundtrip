@@ -40,6 +40,7 @@ class OpenAICompatibleGenerationSettings(ConfigModel):
     frequency_penalty: float | None = Field(default=None, ge=-2, le=2)
     dry_multiplier: float | None = Field(default=None, ge=0)
     mirostat: int | None = Field(default=None, ge=0, le=2)
+    top_logprobs: int | None = Field(default=None, ge=0, le=20)
     max_tokens: int = Field(gt=0)
     seed: int | None = Field(default=None, ge=0)
 

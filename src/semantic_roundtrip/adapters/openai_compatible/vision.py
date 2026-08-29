@@ -205,7 +205,11 @@ class OpenAICompatibleImageTitleGuesser:
             ),
             generation_parameters=self._config.generation_parameters(),
             include_token_logprobs=self._config.request_token_logprobs,
-            top_logprobs=(0 if self._config.request_token_logprobs else None),
+            top_logprobs=(
+                self._config.top_logprobs
+                if self._config.request_token_logprobs
+                else None
+            ),
             reasoning_effort=self._config.reasoning_effort,
             reasoning_format=self._config.reasoning_format,
             thinking_budget_tokens=self._config.thinking_budget_tokens,

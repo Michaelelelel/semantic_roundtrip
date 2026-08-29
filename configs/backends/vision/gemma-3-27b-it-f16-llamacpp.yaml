@@ -6,6 +6,7 @@ settings:
   endpoint: http://vision_runtime:8080/v1/chat/completions
   model_id: gemma-3-27b-it-f16
   request_token_logprobs: true
+  top_logprobs: 1
   timeout_seconds: 1800
 
 runtime:

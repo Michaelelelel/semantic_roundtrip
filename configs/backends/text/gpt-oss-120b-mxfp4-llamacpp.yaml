@@ -6,6 +6,7 @@ settings:
   endpoint: http://text_runtime:8080/v1/chat/completions
   model_id: gpt-oss-120b-mxfp4
   request_token_logprobs: true
+  top_logprobs: 1
   timeout_seconds: 7200
   chat_template_kwargs:
     reasoning_effort: medium
