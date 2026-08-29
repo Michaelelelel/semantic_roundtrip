@@ -78,7 +78,7 @@ class ImageDescription:
 
 @dataclass(frozen=True, slots=True)
 class TitlePrediction:
-    """A title guess and its optional model-reported confidence."""
+    """A title guess and optional diagnostic answer-likelihood metadata."""
 
     title: str
     raw_response: str

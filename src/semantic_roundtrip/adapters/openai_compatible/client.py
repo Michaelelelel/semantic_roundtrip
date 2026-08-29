@@ -48,7 +48,7 @@ class ChatCompletion:
     raw_response: str
     request_id: str | None
     finish_reason: str | None
-    token_logprobs: tuple[float, ...] | None
+    visible_content_token_logprobs: tuple[float, ...] | None
 
 
 def image_file_data_url(path: Path) -> str:
@@ -195,8 +195,10 @@ class OpenAICompatibleChatClient:
             finish_reason = choice.get("finish_reason")
             if finish_reason is not None and not isinstance(finish_reason, str):
                 raise TypeError("finish reason is not text")
-            token_logprobs = (
-                _parse_token_logprobs(choice) if include_token_logprobs else None
+            visible_content_token_logprobs = (
+                _visible_content_token_logprobs(choice, content)
+                if include_token_logprobs
+                else None
             )
         except (KeyError, IndexError, TypeError, ValueError) as error:
             raise AdapterError(
@@ -218,7 +220,7 @@ class OpenAICompatibleChatClient:
             raw_response=raw_response,
             request_id=(str(request_id) if request_id is not None else None),
             finish_reason=finish_reason,
-            token_logprobs=token_logprobs,
+            visible_content_token_logprobs=visible_content_token_logprobs,
         )
 
 
@@ -361,27 +363,80 @@ def _parse_streaming_response(
         raw_response=raw_response,
         request_id=request_id,
         finish_reason=finish_reason,
-        token_logprobs=None,
+        visible_content_token_logprobs=None,
     )
 
 
-def _parse_token_logprobs(choice: dict[str, Any]) -> tuple[float, ...]:
+def _visible_content_token_logprobs(
+    choice: dict[str, Any],
+    visible_content: str,
+) -> tuple[float, ...] | None:
+    """Return probabilities only when token bytes exactly end in visible content.
+
+    Some reasoning endpoints expose hidden reasoning and the final answer in one
+    ``logprobs.content`` sequence even though only the final answer appears in
+    ``message.content``. Treat log-probabilities as optional metadata: retain an
+    exact visible suffix and otherwise return ``None`` without invalidating the
+    completion.
+    """
     raw_logprobs = choice.get("logprobs")
     if not isinstance(raw_logprobs, dict):
-        raise TypeError("requested token logprobs are missing")
+        return None
 
     raw_content = raw_logprobs.get("content")
     if not isinstance(raw_content, list) or not raw_content:
-        raise TypeError("logprobs content is not a non-empty list")
+        return None
 
-    token_logprobs: list[float] = []
+    target = visible_content.encode("utf-8")
+    if not target:
+        return None
+
+    parsed: list[tuple[bytes, float]] = []
     for item in raw_content:
         if not isinstance(item, dict):
-            raise TypeError("token logprob is not an object")
+            return None
 
         value = item.get("logprob")
         if isinstance(value, bool) or not isinstance(value, int | float):
-            raise TypeError("token logprob is not numeric")
-        token_logprobs.append(float(value))
+            return None
 
-    return tuple(token_logprobs)
+        token_bytes = _logprob_token_bytes(item)
+        if token_bytes is None:
+            return None
+        if token_bytes:
+            parsed.append((token_bytes, float(value)))
+
+    suffix = b""
+    suffix_logprobs: list[float] = []
+    for token_bytes, logprob in reversed(parsed):
+        suffix = token_bytes + suffix
+        suffix_logprobs.append(logprob)
+        if len(suffix) >= len(target):
+            break
+
+    if suffix != target:
+        return None
+
+    suffix_logprobs.reverse()
+    return tuple(suffix_logprobs)
+
+
+def _logprob_token_bytes(item: dict[str, Any]) -> bytes | None:
+    """Return the provider token bytes, with a conservative text fallback."""
+    raw_bytes = item.get("bytes")
+    if isinstance(raw_bytes, list):
+        if any(
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or value < 0
+            or value > 255
+            for value in raw_bytes
+        ):
+            return None
+        return bytes(raw_bytes)
+
+    token = item.get("token")
+    if isinstance(token, str):
+        return token.encode("utf-8")
+
+    return None

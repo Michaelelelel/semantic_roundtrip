@@ -5,6 +5,7 @@ adapter: openai_compatible
 settings:
   endpoint: http://vision_runtime:8080/v1/chat/completions
   model_id: qwen2.5-vl-32b-instruct-f16
+  request_token_logprobs: true
   timeout_seconds: 1800
 
 runtime:

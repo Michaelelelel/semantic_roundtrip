@@ -5,6 +5,7 @@ adapter: openai_compatible
 settings:
   endpoint: http://vision_runtime:8080/v1/chat/completions
   model_id: qwen3.8-27b-bf16
+  request_token_logprobs: true
   timeout_seconds: 1800
   reasoning_effort: none
   reasoning_format: deepseek

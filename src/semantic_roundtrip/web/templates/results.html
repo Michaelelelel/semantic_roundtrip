@@ -6,7 +6,7 @@
   {% else %}
     <strong>{{ result.title }}</strong>
     {% if result.confidence is not none %}
-      · confidence {{ result.confidence }}
+      · answer likelihood {{ result.confidence }}
       {% if result.confidence_type %}({{ result.confidence_type }}){% endif %}
     {% endif %}
     <br>

@@ -34,17 +34,20 @@ def title_prediction_from_completion(
             completion.raw_response,
         )
 
-    confidence = None
-    if completion.token_logprobs:
-        confidence = math.exp(
-            sum(completion.token_logprobs) / len(completion.token_logprobs)
+    answer_likelihood = None
+    if completion.visible_content_token_logprobs:
+        answer_likelihood = math.exp(
+            sum(completion.visible_content_token_logprobs)
+            / len(completion.visible_content_token_logprobs)
         )
 
     return TitlePrediction(
         title=guessed_title,
-        confidence=confidence,
+        confidence=answer_likelihood,
         confidence_type=(
-            "geometric_mean_token_probability" if confidence is not None else None
+            "visible_answer_geometric_mean_token_probability"
+            if answer_likelihood is not None
+            else None
         ),
         raw_response=completion.raw_response,
     )
@@ -84,6 +87,7 @@ class OpenAICompatibleTextTitleGuesser:
             ),
             generation_parameters=self._config.generation_parameters(),
             include_token_logprobs=self._config.request_token_logprobs,
+            top_logprobs=(0 if self._config.request_token_logprobs else None),
             reasoning_effort=self._config.reasoning_effort,
             reasoning_format=self._config.reasoning_format,
             thinking_budget_tokens=self._config.thinking_budget_tokens,
