@@ -24,7 +24,7 @@ backends:
 stages:
   illustratability_rating:
     backend: prompt_model
-    prompt_profile: prompts/illustratability/rating_v1.yaml
+    prompt_profile: prompts/illustratability/rating_v2.yaml
     parameters:
       temperature: 1.0
       top_k: 0

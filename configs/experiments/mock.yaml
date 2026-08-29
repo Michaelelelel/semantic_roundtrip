@@ -23,7 +23,7 @@ backends:
 stages:
   illustratability_rating:
     backend: mock
-    prompt_profile: prompts/illustratability/rating_v1.yaml
+    prompt_profile: prompts/illustratability/rating_v2.yaml
     parameters:
       seed: 4001
       max_tokens: 32

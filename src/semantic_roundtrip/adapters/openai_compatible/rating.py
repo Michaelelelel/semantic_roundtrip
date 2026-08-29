@@ -1,6 +1,6 @@
 """Strict illustratability ratings through an OpenAI-compatible endpoint."""
 
-import json
+import re
 from typing import Any
 
 from semantic_roundtrip.adapters.errors import AdapterError
@@ -16,21 +16,7 @@ from semantic_roundtrip.domain import (
     PromptMessage,
 )
 
-RATING_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "properties": {"score": {"type": "integer", "minimum": 0, "maximum": 100}},
-    "required": ["score"],
-    "additionalProperties": False,
-}
-
-RATING_RESPONSE_FORMAT: dict[str, Any] = {
-    "type": "json_schema",
-    "json_schema": {
-        "name": "illustratability_rating",
-        "strict": True,
-        "schema": RATING_SCHEMA,
-    },
-}
+RATING_PATTERN = re.compile(r"(?:0|[1-9][0-9]?|100)")
 
 
 class OpenAICompatibleIllustratabilityRater:
@@ -58,7 +44,6 @@ class OpenAICompatibleIllustratabilityRater:
                 for message in messages
             ),
             generation_parameters=self._config.generation_parameters(seed=seed),
-            response_format=RATING_RESPONSE_FORMAT,
             stream=self._config.stream,
             reasoning_effort=self._config.reasoning_effort,
             reasoning_format=self._config.reasoning_format,
@@ -72,22 +57,13 @@ class OpenAICompatibleIllustratabilityRater:
                 completion.raw_response,
             )
 
-        try:
-            parsed = json.loads(completion.content)
-            if not isinstance(parsed, dict):
-                raise TypeError("response is not an object")
-            if set(parsed) != {"score"}:
-                raise ValueError("response contains fields other than 'score'")
-            score = parsed["score"]
-            if isinstance(score, bool) or not isinstance(score, int):
-                raise TypeError("'score' is not an integer")
-            if not 0 <= score <= 100:
-                raise ValueError("'score' is outside 0 through 100")
-        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        response_text = completion.content.strip()
+        if RATING_PATTERN.fullmatch(response_text) is None:
             raise AdapterError(
-                "Illustratability response is not valid rating JSON.",
+                "Illustratability response is not one integer from 0 through 100.",
                 completion.raw_response,
-            ) from error
+            )
+        score = int(response_text)
 
         return IllustratabilityRating(
             score=score,

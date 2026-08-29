@@ -1,6 +1,6 @@
 profile_id: illustratability_rating
-version: 1
-output_format: json
+version: 2
+output_format: plain_text
 
 messages:
   - role: system
@@ -15,6 +15,6 @@ messages:
       Domain: ${domain}
       Title: ${title}
 
-      Return only JSON in exactly this form: {"score": 73}
-      The score must be an integer from 0 (not visually illustratable) to 100
-      (very clearly and distinctively illustratable). Do not add an explanation.
+      Return exactly one integer and nothing else. Use 0 for not visually
+      illustratable and 100 for very clearly and distinctively illustratable.
+      Do not add JSON, a label, an explanation, or any other text.
