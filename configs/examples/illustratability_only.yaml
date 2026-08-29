@@ -1,0 +1,24 @@
+schema_version: 8
+
+run:
+  name: example_illustratability_only
+  output_directory: runs
+
+dataset:
+  profile: ../datasets/mock_titles_v1.yaml
+
+experiment:
+  retry_limit: 0
+
+backends:
+  prompt_model:
+    profile: ../backends/mock.yaml
+
+# A rating-only run is valid. It needs the dataset, but no prompt or image stage.
+stages:
+  illustratability_rating:
+    backend: prompt_model
+    prompt_profile: prompts/illustratability/rating_v1.yaml
+    parameters:
+      seed: 4001
+      max_tokens: 32

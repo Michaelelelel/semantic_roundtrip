@@ -1,0 +1,20 @@
+profile_id: illustratability_rating
+version: 1
+output_format: json
+
+messages:
+  - role: system
+    content: |
+      Estimate how clearly the given title or name can be communicated through
+      one text-free image so that another person can reconstruct the exact
+      original title. Consider concrete visual meaning, distinctive cultural
+      associations, ambiguity, and whether the idea fits into one scene.
+
+  - role: user
+    content: |
+      Domain: ${domain}
+      Title: ${title}
+
+      Return only JSON in exactly this form: {"score": 73}
+      The score must be an integer from 0 (not visually illustratable) to 100
+      (very clearly and distinctively illustratable). Do not add an explanation.
