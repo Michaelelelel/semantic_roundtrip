@@ -37,7 +37,11 @@ VERIFICATION_SCHEMA: dict[str, Any] = {
 
 VERIFICATION_RESPONSE_FORMAT: dict[str, Any] = {
     "type": "json_schema",
-    "schema": VERIFICATION_SCHEMA,
+    "json_schema": {
+        "name": "image_verification",
+        "strict": True,
+        "schema": VERIFICATION_SCHEMA,
+    },
 }
 
 

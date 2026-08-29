@@ -16,13 +16,19 @@ from semantic_roundtrip.domain import (
     PromptMessage,
 )
 
+RATING_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {"score": {"type": "integer", "minimum": 0, "maximum": 100}},
+    "required": ["score"],
+    "additionalProperties": False,
+}
+
 RATING_RESPONSE_FORMAT: dict[str, Any] = {
     "type": "json_schema",
-    "schema": {
-        "type": "object",
-        "properties": {"score": {"type": "integer", "minimum": 0, "maximum": 100}},
-        "required": ["score"],
-        "additionalProperties": False,
+    "json_schema": {
+        "name": "illustratability_rating",
+        "strict": True,
+        "schema": RATING_SCHEMA,
     },
 }
 
