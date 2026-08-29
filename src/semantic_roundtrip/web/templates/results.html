@@ -41,24 +41,12 @@
   {% endif %}
 
   {% set missing_label = "Not produced" if is_terminal else "Pending" %}
-
-  {% if ratings %}
-    <h2>Illustratability ratings</h2>
-    <table>
-      <thead>
-        <tr><th>Domain</th><th>Title</th><th>Score</th></tr>
-      </thead>
-      <tbody>
-        {% for rating in ratings %}
-          <tr>
-            <td>{{ rating.domain }}</td>
-            <td>{{ rating.title }}</td>
-            <td>{{ rating.score }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
+  {% set rating_missing_label =
+    "Pending" if has_illustratability_rating and not is_terminal else "Not produced"
+  %}
+  {% set verification_missing_label =
+    "Pending" if has_verification and not is_terminal else "Not produced"
+  %}
 
   {% if result_page.traces %}
     <p>
@@ -93,6 +81,16 @@
               </td>
             </tr>
             <tr>
+              <th>Illustratability</th>
+              <td>
+                {% if trace.illustratability_score is none %}
+                  {{ rating_missing_label }}
+                {% else %}
+                  <strong>{{ trace.illustratability_score }}</strong> / 100
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
               <th>Generated prompt</th>
               <td>
                 {{ trace.prompt_text }}
@@ -107,7 +105,7 @@
               <th>Verification</th>
               <td>
                 {% if trace.verification_passed is none %}
-                  {{ missing_label }}
+                  {{ verification_missing_label }}
                 {% elif trace.verification_passed %}
                   <span class="value--yes">Passed</span>
                 {% else %}
@@ -151,12 +149,31 @@
       {% endif %}
     </p>
   {% else %}
-    {% if is_terminal %}
+    {% if has_illustratability_rating %}
       {% if ratings %}
+        <h2>Illustratability ratings</h2>
+        <table>
+          <thead>
+            <tr><th>Domain</th><th>Title</th><th>Score</th></tr>
+          </thead>
+          <tbody>
+            {% for rating in ratings %}
+              <tr>
+                <td>{{ rating.domain }}</td>
+                <td>{{ rating.title }}</td>
+                <td><strong>{{ rating.score }}</strong> / 100</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
         <p>No image result traces were produced by this rating-only run.</p>
+      {% elif is_terminal %}
+        <p>No illustratability ratings were produced.</p>
       {% else %}
-        <p>No generated prompts were produced.</p>
+        <p>No illustratability ratings are available yet.</p>
       {% endif %}
+    {% elif is_terminal %}
+      <p>No generated prompts were produced.</p>
     {% else %}
       <p>No generated prompts are available yet.</p>
     {% endif %}

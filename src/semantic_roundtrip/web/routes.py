@@ -237,6 +237,10 @@ def run_results(
         run_path=run_directory.relative_to(runs_root).as_posix(),
         result_page=result_page,
         ratings=ratings,
+        has_illustratability_rating=any(
+            stage.name == "illustratability_rating" for stage in run.stages
+        ),
+        has_verification=any(stage.name == "verification" for stage in run.stages),
         has_direct_route=any(
             stage.name == "title_guessing_direct" for stage in run.stages
         ),

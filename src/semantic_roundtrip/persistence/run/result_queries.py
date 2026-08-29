@@ -40,6 +40,7 @@ class ResultTrace:
     item_key: str
     domain: str
     expected_title: str
+    illustratability_score: int | None
     prompt_id: int
     prompt_index: int
     prompt_sampling_seed: int
@@ -126,6 +127,7 @@ def read_result_trace_page(
                 items.item_key,
                 items.domain,
                 items.title AS expected_title,
+                illustratability_ratings.score AS illustratability_score,
                 prompts.prompt_id,
                 prompts.prompt_index,
                 prompts.sampling_seed AS prompt_sampling_seed,
@@ -148,6 +150,8 @@ def read_result_trace_page(
             FROM prompts
             JOIN dataset_items AS items
                 ON items.item_id = prompts.item_id
+            LEFT JOIN illustratability_ratings
+                ON illustratability_ratings.item_id = items.item_id
             LEFT JOIN images
                 ON images.prompt_id = prompts.prompt_id
             LEFT JOIN verifications
@@ -178,6 +182,11 @@ def read_result_trace_page(
             item_key=row["item_key"],
             domain=row["domain"],
             expected_title=row["expected_title"],
+            illustratability_score=(
+                None
+                if row["illustratability_score"] is None
+                else int(row["illustratability_score"])
+            ),
             prompt_id=int(row["prompt_id"]),
             prompt_index=int(row["prompt_index"]),
             prompt_sampling_seed=int(row["prompt_sampling_seed"]),
