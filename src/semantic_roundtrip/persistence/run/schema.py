@@ -11,7 +11,7 @@ from semantic_roundtrip.persistence.sqlite import (
 )
 
 DATABASE_FILENAME = "pipeline_state.sqlite"
-DATABASE_SCHEMA_VERSION = 9
+DATABASE_SCHEMA_VERSION = 10
 
 
 def database_path_for_run(run_directory: Path) -> Path:
@@ -102,6 +102,18 @@ def initialize_database(
                 origin_item_id INTEGER,
                 UNIQUE (run_id, item_index),
                 UNIQUE (run_id, item_key)
+            );
+
+            CREATE TABLE illustratability_ratings (
+                rating_id INTEGER PRIMARY KEY,
+                item_id INTEGER NOT NULL UNIQUE REFERENCES dataset_items(item_id)
+                    ON DELETE CASCADE,
+                score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+                backend_request_id TEXT,
+                raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
+                created_at TEXT NOT NULL,
+                origin_run_id TEXT,
+                origin_rating_id INTEGER
             );
 
             CREATE TABLE prompts (
@@ -273,6 +285,8 @@ def initialize_database(
             );
 
             CREATE INDEX prompts_item_id_idx ON prompts(item_id);
+            CREATE INDEX illustratability_ratings_item_id_idx
+                ON illustratability_ratings(item_id);
             CREATE INDEX images_prompt_id_idx ON images(prompt_id);
             CREATE INDEX predictions_image_id_idx ON predictions(image_id);
             CREATE INDEX stage_tasks_run_stage_status_idx

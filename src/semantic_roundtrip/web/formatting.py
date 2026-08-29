@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from semantic_roundtrip.status.models import EtaState
 
 STAGE_LABELS = {
+    "illustratability_rating": "Illustratability rating",
     "prompt_generation": "Prompt generation",
     "image_generation": "Image generation",
     "verification": "Verification",

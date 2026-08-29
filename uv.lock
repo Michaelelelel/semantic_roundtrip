@@ -1632,6 +1632,7 @@ analysis = [
     { name = "jupyter" },
     { name = "matplotlib" },
     { name = "nbconvert" },
+    { name = "numpy" },
     { name = "pandas" },
 ]
 dev = [
@@ -1650,6 +1651,7 @@ requires-dist = [
     { name = "jupyter", marker = "extra == 'analysis'", specifier = ">=1.1.1,<2" },
     { name = "matplotlib", marker = "extra == 'analysis'", specifier = ">=3.11.1,<4" },
     { name = "nbconvert", marker = "extra == 'analysis'", specifier = ">=7.17.0,<8" },
+    { name = "numpy", marker = "extra == 'analysis'", specifier = ">=2.4.3,<3" },
     { name = "pandas", marker = "extra == 'analysis'", specifier = ">=2.3.3,<3" },
     { name = "pillow", specifier = ">=12.3.0,<13" },
     { name = "pydantic", specifier = ">=2.13.4,<3" },

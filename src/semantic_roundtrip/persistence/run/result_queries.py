@@ -22,6 +22,17 @@ class PredictionTrace:
 
 
 @dataclass(frozen=True, slots=True)
+class IllustratabilityTrace:
+    """One title and its persisted model-estimated illustratability."""
+
+    item_index: int
+    item_key: str
+    domain: str
+    title: str
+    score: int
+
+
+@dataclass(frozen=True, slots=True)
 class ResultTrace:
     """One prompt and its available downstream pipeline products."""
 
@@ -186,6 +197,40 @@ def read_result_trace_page(
         page=page,
         page_size=page_size,
         total_traces=total_traces,
+    )
+
+
+def read_illustratability_ratings(
+    database_path: Path,
+) -> tuple[IllustratabilityTrace, ...]:
+    """Read all successful title ratings in deterministic dataset order."""
+    connection = connect_run_database(database_path, read_only=True)
+    try:
+        require_run_schema(connection)
+        rows = connection.execute(
+            """
+            SELECT
+                items.item_index,
+                items.item_key,
+                items.domain,
+                items.title,
+                ratings.score
+            FROM illustratability_ratings AS ratings
+            JOIN dataset_items AS items ON items.item_id = ratings.item_id
+            ORDER BY items.item_index
+            """
+        ).fetchall()
+    finally:
+        connection.close()
+    return tuple(
+        IllustratabilityTrace(
+            item_index=int(row["item_index"]),
+            item_key=row["item_key"],
+            domain=row["domain"],
+            title=row["title"],
+            score=int(row["score"]),
+        )
+        for row in rows
     )
 
 

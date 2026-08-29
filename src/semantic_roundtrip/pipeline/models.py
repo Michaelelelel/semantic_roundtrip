@@ -9,6 +9,7 @@ class PipelineSummary:
 
     status: str
     dataset_items: int
+    illustratability_ratings: int
     prompts: int
     images: int
     verifications: int

@@ -42,6 +42,24 @@
 
   {% set missing_label = "Not produced" if is_terminal else "Pending" %}
 
+  {% if ratings %}
+    <h2>Illustratability ratings</h2>
+    <table>
+      <thead>
+        <tr><th>Domain</th><th>Title</th><th>Score</th></tr>
+      </thead>
+      <tbody>
+        {% for rating in ratings %}
+          <tr>
+            <td>{{ rating.domain }}</td>
+            <td>{{ rating.title }}</td>
+            <td>{{ rating.score }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
   {% if result_page.traces %}
     <p>
       {{ result_page.total_traces }} result traces ·
@@ -134,7 +152,11 @@
     </p>
   {% else %}
     {% if is_terminal %}
-      <p>No generated prompts were produced.</p>
+      {% if ratings %}
+        <p>No image result traces were produced by this rating-only run.</p>
+      {% else %}
+        <p>No generated prompts were produced.</p>
+      {% endif %}
     {% else %}
       <p>No generated prompts are available yet.</p>
     {% endif %}

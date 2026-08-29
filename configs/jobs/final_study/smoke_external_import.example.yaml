@@ -1,5 +1,5 @@
 # Replace source_jobs.local_smoke.directory before running.
-schema_version: 3
+schema_version: 4
 job:
   name: final_smoke_external_import
   output_directory: runs

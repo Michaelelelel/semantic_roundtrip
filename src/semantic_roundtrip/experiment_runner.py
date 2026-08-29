@@ -47,6 +47,7 @@ class PreparedExperiment:
     manifest_path: Path
     images_directory: Path
     adapters: AdapterBundle
+    illustratability_profile: PromptProfile | None
     prompt_profile: PromptProfile | None
 
 
@@ -75,6 +76,11 @@ def prepare_experiment(
         if config.stages.prompt_generation is None
         else load_prompt_profile(config.stages.prompt_generation.prompt_profile)
     )
+    loaded_illustratability_profile = (
+        None
+        if config.stages.illustratability_rating is None
+        else load_prompt_profile(config.stages.illustratability_rating.prompt_profile)
+    )
     adapters = create_adapters(config)
     run_context = create_run(
         config.run.output_directory,
@@ -93,6 +99,7 @@ def prepare_experiment(
         config,
         loaded_prompt_profile,
         run_context.directory,
+        loaded_illustratability_profile=loaded_illustratability_profile,
     )
     workflow_paths = create_workflow_snapshots(
         config,
@@ -125,6 +132,11 @@ def prepare_experiment(
         manifest_path=manifest_path,
         images_directory=images_directory,
         adapters=adapters,
+        illustratability_profile=(
+            None
+            if loaded_illustratability_profile is None
+            else loaded_illustratability_profile.profile
+        ),
         prompt_profile=(
             None if loaded_prompt_profile is None else loaded_prompt_profile.profile
         ),
@@ -154,6 +166,7 @@ def execute_prepared_experiment(
         database_path=prepared.database_path,
         images_directory=prepared.images_directory,
         adapters=prepared.adapters,
+        illustratability_profile=prepared.illustratability_profile,
         prompt_profile=prepared.prompt_profile,
     )
 
@@ -187,6 +200,11 @@ def resume_experiment(
         if config.stages.prompt_generation is None
         else load_prompt_profile(config.stages.prompt_generation.prompt_profile)
     )
+    loaded_illustratability_profile = (
+        None
+        if config.stages.illustratability_rating is None
+        else load_prompt_profile(config.stages.illustratability_rating.prompt_profile)
+    )
     adapters = create_adapters(config)
     run_context = load_run_context(run_directory)
     return run_pipeline(
@@ -195,6 +213,11 @@ def resume_experiment(
         database_path=database_path,
         images_directory=run_directory / "images",
         adapters=adapters,
+        illustratability_profile=(
+            None
+            if loaded_illustratability_profile is None
+            else loaded_illustratability_profile.profile
+        ),
         prompt_profile=(
             None if loaded_prompt_profile is None else loaded_prompt_profile.profile
         ),

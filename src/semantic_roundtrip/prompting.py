@@ -11,7 +11,6 @@ from pydantic import Field
 from semantic_roundtrip.config import ConfigModel
 from semantic_roundtrip.domain import PromptMessage
 
-
 ALLOWED_TEMPLATE_VARIABLES = {"title", "domain", "prompt_number"}
 
 
@@ -27,7 +26,7 @@ class PromptProfile(ConfigModel):
 
     profile_id: str = Field(min_length=1)
     version: int = Field(ge=1)
-    output_format: Literal["plain_text"]
+    output_format: Literal["plain_text", "json"]
     messages: list[PromptMessageConfig] = Field(min_length=1)
 
 

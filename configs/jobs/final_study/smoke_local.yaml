@@ -1,4 +1,4 @@
-schema_version: 3
+schema_version: 4
 job:
   name: final_smoke_local
   output_directory: runs

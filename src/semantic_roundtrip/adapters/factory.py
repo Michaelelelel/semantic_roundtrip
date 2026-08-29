@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from semantic_roundtrip.adapters.base import (
+    IllustratabilityRater,
     ImageDescriber,
     ImageGenerator,
     ImageTitleGuesser,
@@ -14,6 +15,7 @@ from semantic_roundtrip.adapters.base import (
 )
 from semantic_roundtrip.adapters.comfyui import build_comfyui_image_generator
 from semantic_roundtrip.adapters.mock import (
+    build_mock_illustratability_rater,
     build_mock_image_describer,
     build_mock_image_generator,
     build_mock_image_title_guesser,
@@ -22,6 +24,7 @@ from semantic_roundtrip.adapters.mock import (
     build_mock_text_title_guesser,
 )
 from semantic_roundtrip.adapters.openai_compatible import (
+    build_openai_compatible_illustratability_rater,
     build_openai_compatible_image_describer,
     build_openai_compatible_image_title_guesser,
     build_openai_compatible_image_verifier,
@@ -36,6 +39,7 @@ from semantic_roundtrip.config_resolution import resolve_stage_adapter
 class AdapterBundle:
     """Adapters required by the configured title-reconstruction routes."""
 
+    illustratability_rater: IllustratabilityRater | None
     prompt_generator: PromptGenerator | None
     image_generator: ImageGenerator | None
     image_verifier: ImageVerifier | None
@@ -44,12 +48,19 @@ class AdapterBundle:
     text_title_guesser: TextTitleGuesser | None
 
 
+IllustratabilityRaterBuilder = Callable[[dict[str, Any]], IllustratabilityRater]
 PromptGeneratorBuilder = Callable[[dict[str, Any]], PromptGenerator]
 ImageGeneratorBuilder = Callable[[dict[str, Any]], ImageGenerator]
 ImageVerifierBuilder = Callable[[dict[str, Any]], ImageVerifier]
 ImageDescriberBuilder = Callable[[dict[str, Any]], ImageDescriber]
 ImageTitleGuesserBuilder = Callable[[dict[str, Any]], ImageTitleGuesser]
 TextTitleGuesserBuilder = Callable[[dict[str, Any]], TextTitleGuesser]
+
+
+ILLUSTRATABILITY_RATERS: dict[str, IllustratabilityRaterBuilder] = {
+    "mock": build_mock_illustratability_rater,
+    "openai_compatible": build_openai_compatible_illustratability_rater,
+}
 
 
 PROMPT_GENERATORS: dict[str, PromptGeneratorBuilder] = {
@@ -93,6 +104,19 @@ def _unsupported_adapter(
     return ValueError(
         f"Unknown {stage} adapter '{adapter}'. Available adapters: {available}"
     )
+
+
+def create_illustratability_rater(
+    selection: StageAdapterConfig,
+) -> IllustratabilityRater:
+    builder = ILLUSTRATABILITY_RATERS.get(selection.adapter)
+    if builder is None:
+        raise _unsupported_adapter(
+            stage="illustratability-rating",
+            adapter=selection.adapter,
+            registry=ILLUSTRATABILITY_RATERS,
+        )
+    return builder(selection.settings)
 
 
 def create_prompt_generator(
@@ -176,6 +200,13 @@ def create_text_title_guesser(
 def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
     """Create only the adapters required by the configured pipeline routes."""
     return AdapterBundle(
+        illustratability_rater=(
+            None
+            if config.stages.illustratability_rating is None
+            else create_illustratability_rater(
+                resolve_stage_adapter(config, "illustratability_rating")
+            )
+        ),
         prompt_generator=(
             None
             if config.stages.prompt_generation is None

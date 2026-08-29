@@ -6,7 +6,7 @@ from pathlib import Path
 from semantic_roundtrip.persistence.run.manager import RunContext
 
 MANIFEST_FILENAME = "manifest.json"
-MANIFEST_SCHEMA_VERSION = 5
+MANIFEST_SCHEMA_VERSION = 6
 
 
 def _relative_path(path: Path, run_directory: Path) -> str:

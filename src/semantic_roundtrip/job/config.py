@@ -94,7 +94,7 @@ class JobEntryInheritance(ConfigModel):
 class InputJobConfig(ConfigModel):
     """Human-maintained job configuration."""
 
-    schema_version: Literal[3]
+    schema_version: Literal[4]
     job: JobDefinition
     source_jobs: dict[str, ExternalJobSource] = Field(default_factory=dict)
     experiments: list[JobExperimentReference] = Field(min_length=1)
@@ -123,7 +123,7 @@ class ResolvedJobEntry(ConfigModel):
 class ResolvedJobConfig(ConfigModel):
     """Frozen job policy and immutable entry metadata used for resume."""
 
-    schema_version: Literal[3]
+    schema_version: Literal[4]
     configuration_kind: Literal["effective"] = "effective"
     job: JobDefinition
     entries: list[ResolvedJobEntry] = Field(min_length=1)
@@ -313,6 +313,8 @@ def load_job_config(path: Path) -> LoadedJobConfig:
             )
         if config.stages.prompt_generation is not None:
             load_prompt_profile(config.stages.prompt_generation.prompt_profile)
+        if config.stages.illustratability_rating is not None:
+            load_prompt_profile(config.stages.illustratability_rating.prompt_profile)
         create_adapters(config)
         experiments.append(
             LoadedJobExperiment(
@@ -391,6 +393,7 @@ def plan_job(
 ) -> JobPlan:
     """Calculate expected work and preflight warnings without creating a job."""
     totals = {
+        "illustratability_rating": 0,
         "prompt_generation": 0,
         "image_generation": 0,
         "verification": 0,

@@ -22,6 +22,7 @@ from semantic_roundtrip.config import (
 from semantic_roundtrip.inheritance.dependencies import dependency_closure
 
 STAGE_NAMES: tuple[StageName, ...] = (
+    "illustratability_rating",
     "prompt_generation",
     "image_generation",
     "verification",
@@ -150,6 +151,22 @@ def _validate_resolved_config(config: ResolvedAppConfig) -> None:
             raise ValueError(
                 f"Local stage '{stage_name}' is missing dependencies: {names}."
             )
+
+    if "prompt_generation" in available and not config.experiment.prompt_seeds:
+        raise ValueError(
+            "Prompt generation requires at least one configured prompt seed."
+        )
+    image_dependent = available & {
+        "image_generation",
+        "verification",
+        "title_guessing_direct",
+        "image_description",
+        "title_guessing_from_description",
+    }
+    if image_dependent and not config.experiment.image_seeds:
+        raise ValueError(
+            "Image-dependent stages require at least one configured image seed."
+        )
 
 
 def _resolve_dataset(
@@ -299,6 +316,7 @@ def expected_stage_outputs(config: ResolvedAppConfig) -> dict[PipelineStageName,
     expected: dict[PipelineStageName, int] = {}
 
     counts: dict[StageName, int] = {
+        "illustratability_rating": len(config.dataset.items),
         "prompt_generation": prompt_count,
         "image_generation": image_count,
         "verification": image_count,
@@ -315,4 +333,6 @@ def expected_output_count(config: ResolvedAppConfig, stage_name: StageName) -> i
     """Return the theoretical output count for any one pipeline stage."""
     prompt_count = len(config.dataset.items) * len(config.experiment.prompt_seeds)
     image_count = prompt_count * len(config.experiment.image_seeds)
+    if stage_name == "illustratability_rating":
+        return len(config.dataset.items)
     return prompt_count if stage_name == "prompt_generation" else image_count

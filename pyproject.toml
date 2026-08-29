@@ -27,6 +27,7 @@ analysis = [
     "jupyter>=1.1.1,<2",
     "matplotlib>=3.11.1,<4",
     "nbconvert>=7.17.0,<8",
+    "numpy>=2.4.3,<3",
     "pandas>=2.3.3,<3"
 ]
 dev = [

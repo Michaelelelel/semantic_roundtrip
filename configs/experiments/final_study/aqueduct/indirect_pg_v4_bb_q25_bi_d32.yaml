@@ -1,4 +1,4 @@
-schema_version: 7
+schema_version: 8
 run:
   name: indirect_pg_v4_bb_q25_bi_d32
   output_directory: runs
@@ -24,6 +24,14 @@ backends:
   interpretation_model:
     profile: ../../../backends/text/deepseek-r1-distill-qwen-32b-f16-llamacpp.yaml
 stages:
+  illustratability_rating:
+    backend: prompt_model
+    prompt_profile: prompts/illustratability/rating_v1.yaml
+    parameters:
+      temperature: 1.0
+      top_p: 1.0
+      max_tokens: 16384
+      seed: 4001
   prompt_generation:
     backend: prompt_model
     prompt_profile: prompts/prompt_generation/visual_single_v5.yaml

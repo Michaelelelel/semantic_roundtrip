@@ -1,4 +1,4 @@
-schema_version: 7
+schema_version: 8
 run:
   name: aqueduct_v4_bi_smoke
   output_directory: runs

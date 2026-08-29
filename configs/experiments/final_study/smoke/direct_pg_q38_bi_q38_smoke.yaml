@@ -1,4 +1,4 @@
-schema_version: 7
+schema_version: 8
 run:
   name: direct_pg_q38_bi_q38_smoke
   output_directory: runs
@@ -24,6 +24,19 @@ backends:
   reconstruction_model:
     profile: ../../../backends/vision/qwen3.8-27b-bf16-llamacpp.yaml
 stages:
+  illustratability_rating:
+    backend: prompt_model
+    prompt_profile: prompts/illustratability/rating_v1.yaml
+    parameters:
+      temperature: 1.0
+      top_k: 0
+      top_p: 1.0
+      min_p: 0.0
+      repeat_penalty: 1.0
+      presence_penalty: 0.0
+      frequency_penalty: 0.0
+      max_tokens: 512
+      seed: 4001
   prompt_generation:
     backend: prompt_model
     prompt_profile: prompts/prompt_generation/visual_single_v5.yaml

@@ -12,6 +12,7 @@ from semantic_roundtrip.persistence.run.config_snapshot import (
     DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME,
     DIRECT_TITLE_GUESSING_PROMPT_FILENAME,
     EFFECTIVE_CONFIG_FILENAME,
+    ILLUSTRATABILITY_PROMPT_PROFILE_FILENAME,
     IMAGE_DESCRIPTION_PROMPT_FILENAME,
     INPUT_CONFIG_FILENAME,
     PROMPT_PROFILE_FILENAME,
@@ -109,6 +110,7 @@ def _validate_source(
         )
 
     items = _rows(connection, "dataset_items")
+    ratings = _rows(connection, "illustratability_ratings")
     prompts = _rows(connection, "prompts")
     images = _rows(connection, "images")
     verifications = _rows(connection, "verifications")
@@ -131,6 +133,20 @@ def _validate_source(
             raise MaterializationError(
                 f"Source dataset item {index} differs from its snapshot."
             )
+
+    rating_item_ids = {int(row["item_id"]) for row in ratings}
+    if "illustratability_rating" in stages:
+        for item in items:
+            item_id = int(item["item_id"])
+            if item_id not in rating_item_ids and not _failed_task(
+                tasks,
+                "illustratability_rating",
+                item_id=item_id,
+            ):
+                raise MaterializationError(
+                    "Source illustratability rating is missing without a terminal "
+                    "task error."
+                )
 
     prompt_lookup = {
         (int(row["item_id"]), int(row["prompt_index"])): row for row in prompts
@@ -259,6 +275,7 @@ def _copy_provenance(
         source_directory / INPUT_CONFIG_FILENAME,
         source_directory / EFFECTIVE_CONFIG_FILENAME,
         source_directory / MANIFEST_FILENAME,
+        source_directory / ILLUSTRATABILITY_PROMPT_PROFILE_FILENAME,
         source_directory / PROMPT_PROFILE_FILENAME,
         source_directory / VERIFICATION_PROMPT_FILENAME,
         source_directory / IMAGE_DESCRIPTION_PROMPT_FILENAME,
@@ -332,6 +349,29 @@ def _insert_materialized_rows(
             ),
         )
         item_map[int(row["item_id"])] = int(cursor.lastrowid)
+
+    if "illustratability_rating" in stages:
+        for row in _rows(source, "illustratability_ratings"):
+            origin_run_id, origin_rating_id = _original(
+                row, "origin_run_id", "origin_rating_id", source_run_id
+            )
+            target.execute(
+                """
+                INSERT INTO illustratability_ratings (
+                    item_id, score, backend_request_id, raw_response, created_at,
+                    origin_run_id, origin_rating_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    item_map[int(row["item_id"])],
+                    row["score"],
+                    row["backend_request_id"],
+                    row["raw_response"],
+                    row["created_at"],
+                    origin_run_id,
+                    origin_rating_id,
+                ),
+            )
 
     if "prompt_generation" in stages:
         for row in _rows(source, "prompts"):

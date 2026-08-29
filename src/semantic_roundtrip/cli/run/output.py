@@ -34,6 +34,7 @@ def print_run_summary(summary: PipelineSummary) -> None:
     """Print final result counts for one run invocation."""
     typer.echo(f"Run status: {summary.status}")
     typer.echo(f"Dataset items: {summary.dataset_items}")
+    typer.echo(f"Illustratability ratings: {summary.illustratability_ratings}")
     typer.echo(f"Prompts: {summary.prompts}")
     typer.echo(f"Images: {summary.images}")
     typer.echo(f"Verifications: {summary.verifications}")

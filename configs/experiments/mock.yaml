@@ -1,4 +1,4 @@
-schema_version: 7
+schema_version: 8
 
 run:
   name: mock_smoke
@@ -21,6 +21,13 @@ backends:
     profile: ../backends/mock.yaml
 
 stages:
+  illustratability_rating:
+    backend: mock
+    prompt_profile: prompts/illustratability/rating_v1.yaml
+    parameters:
+      seed: 4001
+      max_tokens: 32
+
   prompt_generation:
     backend: mock
     prompt_profile: prompts/prompt_generation/visual_single_v1.yaml

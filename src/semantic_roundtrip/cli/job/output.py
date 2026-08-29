@@ -31,6 +31,7 @@ def print_job_plan(plan: JobPlan) -> bool:
     typer.echo(f"Experiment entries: {len(plan.entries)}")
     typer.echo(
         "Expected outputs: "
+        f"ratings={plan.expected_outputs['illustratability_rating']}, "
         f"prompts={plan.expected_outputs['prompt_generation']}, "
         f"images={plan.expected_outputs['image_generation']}, "
         f"verifications={plan.expected_outputs['verification']}, "
@@ -43,6 +44,7 @@ def print_job_plan(plan: JobPlan) -> bool:
     table = Table()
     table.add_column("#", justify="right")
     table.add_column("Entry")
+    table.add_column("Ratings", justify="right")
     table.add_column("Prompts", justify="right")
     table.add_column("Images", justify="right")
     table.add_column("Imported stages")
@@ -55,6 +57,7 @@ def print_job_plan(plan: JobPlan) -> bool:
         table.add_row(
             str(entry.index + 1),
             entry.name,
+            str(entry.expected_outputs.get("illustratability_rating", 0)),
             str(entry.expected_outputs.get("prompt_generation", 0)),
             str(entry.expected_outputs.get("image_generation", 0)),
             ", ".join(entry.imported_stages) or "-",

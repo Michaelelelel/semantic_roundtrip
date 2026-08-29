@@ -91,8 +91,8 @@ class ResolvedDatasetConfig(ConfigModel):
 
 
 class ExperimentConfig(ConfigModel):
-    prompt_seeds: list[Annotated[int, Field(ge=0)]] = Field(min_length=1)
-    image_seeds: list[Annotated[int, Field(ge=0)]] = Field(min_length=1)
+    prompt_seeds: list[Annotated[int, Field(ge=0)]] = Field(default_factory=list)
+    image_seeds: list[Annotated[int, Field(ge=0)]] = Field(default_factory=list)
     retry_limit: int = Field(ge=0)
 
     @field_validator("prompt_seeds", "image_seeds")
@@ -105,6 +105,7 @@ class ExperimentConfig(ConfigModel):
 
 BackendAlias = Annotated[str, Field(min_length=1)]
 StageName = Literal[
+    "illustratability_rating",
     "prompt_generation",
     "image_generation",
     "verification",
@@ -172,6 +173,10 @@ class PromptGenerationStage(StageConfig):
     prompt_profile: Path
 
 
+class IllustratabilityRatingStage(StageConfig):
+    prompt_profile: Path
+
+
 class ImageGenerationStage(StageConfig):
     pass
 
@@ -202,6 +207,7 @@ class TitleGuessingRoutes(ConfigModel):
 
 
 class StagesConfig(ConfigModel):
+    illustratability_rating: IllustratabilityRatingStage | None = None
     prompt_generation: PromptGenerationStage | None = None
     image_generation: ImageGenerationStage | None = None
     verification: VerificationStage | None = None
@@ -211,6 +217,7 @@ class StagesConfig(ConfigModel):
     @model_validator(mode="after")
     def require_at_least_one_local_stage(self) -> Self:
         configured = (
+            self.illustratability_rating,
             self.prompt_generation,
             self.image_generation,
             self.verification,
@@ -262,7 +269,7 @@ class ResolvedRunInheritance(ConfigModel):
 class InputAppConfig(ConfigModel):
     """Human-maintained experiment configuration with backend references."""
 
-    schema_version: Literal[7]
+    schema_version: Literal[8]
     run: RunConfig
     dataset: InputDatasetConfig | None = None
     inherit: InputRunInheritance | None = None
@@ -282,7 +289,7 @@ class InputAppConfig(ConfigModel):
 class ResolvedAppConfig(ConfigModel):
     """Self-contained effective configuration stored with a run."""
 
-    schema_version: Literal[7]
+    schema_version: Literal[8]
     configuration_kind: Literal["effective"] = "effective"
     run: RunConfig
     dataset: ResolvedDatasetConfig

@@ -11,6 +11,7 @@ from pydantic import Field
 
 from semantic_roundtrip.config import ConfigModel
 from semantic_roundtrip.domain import (
+    IllustratabilityRating,
     ImageArtifact,
     ImageDescription,
     PromptMessage,
@@ -25,6 +26,42 @@ class MockAdapterSettings(ConfigModel):
 
     delay_seconds: float = Field(default=0.0, ge=0)
     template_path: Path | None = None
+    seed: int | None = Field(default=None, ge=0)
+    temperature: float | None = Field(default=None, ge=0)
+    top_p: float | None = Field(default=None, gt=0, le=1)
+    top_k: int | None = Field(default=None, ge=0)
+    min_p: float | None = Field(default=None, ge=0, le=1)
+    repeat_penalty: float | None = Field(default=None, gt=0)
+    presence_penalty: float | None = Field(default=None, ge=-2, le=2)
+    frequency_penalty: float | None = Field(default=None, ge=-2, le=2)
+    max_tokens: int | None = Field(default=None, gt=0)
+
+
+class MockIllustratabilityRater:
+    """Return one deterministic valid rating for pipeline smoke tests."""
+
+    def __init__(self, delay_seconds: float = 0.0) -> None:
+        self._delay_seconds = delay_seconds
+
+    def rate(
+        self,
+        *,
+        messages: tuple[PromptMessage, ...],
+        seed: int,
+    ) -> IllustratabilityRating:
+        time.sleep(self._delay_seconds)
+        score = 50
+        return IllustratabilityRating(
+            score=score,
+            raw_response=json.dumps(
+                {
+                    "score": score,
+                    "seed": seed,
+                    "messages": [message.content for message in messages],
+                }
+            ),
+            backend_request_id="mock-illustratability",
+        )
 
 
 class MockPromptGenerator:
@@ -213,6 +250,13 @@ def build_mock_prompt_generator(
 ) -> MockPromptGenerator:
     settings = _load_mock_settings(raw_settings)
     return MockPromptGenerator(settings.delay_seconds)
+
+
+def build_mock_illustratability_rater(
+    raw_settings: dict[str, Any],
+) -> MockIllustratabilityRater:
+    settings = _load_mock_settings(raw_settings)
+    return MockIllustratabilityRater(settings.delay_seconds)
 
 
 def build_mock_image_generator(

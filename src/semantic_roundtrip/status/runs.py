@@ -27,6 +27,7 @@ from semantic_roundtrip.status.common import elapsed_seconds
 from semantic_roundtrip.status.models import EtaState, RunStatus, StageStatus
 
 STAGE_ORDER = (
+    "illustratability_rating",
     "prompt_generation",
     "image_generation",
     "verification",

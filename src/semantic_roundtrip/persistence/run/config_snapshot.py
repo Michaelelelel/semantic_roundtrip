@@ -11,6 +11,7 @@ from semantic_roundtrip.prompting import LoadedPromptProfile
 INPUT_CONFIG_FILENAME = "config_input.yaml"
 EFFECTIVE_CONFIG_FILENAME = "config_snapshot.yaml"
 PROMPT_PROFILE_FILENAME = "prompt_profile.yaml"
+ILLUSTRATABILITY_PROMPT_PROFILE_FILENAME = "illustratability_prompt_profile.yaml"
 VERIFICATION_PROMPT_FILENAME = "verification_prompt.txt"
 IMAGE_DESCRIPTION_PROMPT_FILENAME = "image_description_prompt.txt"
 DIRECT_TITLE_GUESSING_PROMPT_FILENAME = "title_guessing_direct_prompt.txt"
@@ -70,9 +71,16 @@ def create_prompt_snapshots(
     config: ResolvedAppConfig,
     loaded_profile: LoadedPromptProfile | None,
     run_directory: Path,
+    *,
+    loaded_illustratability_profile: LoadedPromptProfile | None = None,
 ) -> dict[str, Path]:
     """Copy every prompt file referenced by this experiment."""
     snapshots: dict[str, Path] = {}
+    if loaded_illustratability_profile is not None:
+        snapshot_path = run_directory / ILLUSTRATABILITY_PROMPT_PROFILE_FILENAME
+        with snapshot_path.open("xb") as file:
+            file.write(loaded_illustratability_profile.source_bytes)
+        snapshots["illustratability_rating"] = snapshot_path
     if loaded_profile is not None:
         snapshots["prompt_generation"] = create_prompt_profile_snapshot(
             loaded_profile,
@@ -128,6 +136,13 @@ def use_prompt_snapshots(
     run_directory: Path,
 ) -> ResolvedAppConfig:
     """Use copied prompt files when resuming a new-format run."""
+    illustratability_rating = config.stages.illustratability_rating
+    illustratability_path = run_directory / ILLUSTRATABILITY_PROMPT_PROFILE_FILENAME
+    if illustratability_rating is not None and illustratability_path.is_file():
+        illustratability_rating = illustratability_rating.model_copy(
+            update={"prompt_profile": illustratability_path}
+        )
+
     prompt_generation = config.stages.prompt_generation
     prompt_generation_path = run_directory / PROMPT_PROFILE_FILENAME
     if prompt_generation is not None and prompt_generation_path.is_file():
@@ -181,6 +196,7 @@ def use_prompt_snapshots(
 
     stages = config.stages.model_copy(
         update={
+            "illustratability_rating": illustratability_rating,
             "prompt_generation": prompt_generation,
             "verification": verification,
             "image_description": image_description,

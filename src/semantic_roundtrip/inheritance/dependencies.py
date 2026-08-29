@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from semantic_roundtrip.config import StageName
 
 STAGE_DEPENDENCIES: dict[StageName, tuple[StageName, ...]] = {
+    "illustratability_rating": (),
     "prompt_generation": (),
     "image_generation": ("prompt_generation",),
     "verification": ("image_generation",),
@@ -14,6 +15,7 @@ STAGE_DEPENDENCIES: dict[StageName, tuple[StageName, ...]] = {
 }
 
 STAGE_ORDER: tuple[StageName, ...] = (
+    "illustratability_rating",
     "prompt_generation",
     "image_generation",
     "verification",

@@ -4,13 +4,27 @@ from pathlib import Path
 from typing import Protocol
 
 from semantic_roundtrip.domain import (
-    ImageDescription,
+    IllustratabilityRating,
     ImageArtifact,
+    ImageDescription,
     PromptMessage,
     PromptResponse,
     TitlePrediction,
     VerificationResult,
 )
+
+
+class IllustratabilityRater(Protocol):
+    """Estimate how readily a title can be represented as one image."""
+
+    def rate(
+        self,
+        *,
+        messages: tuple[PromptMessage, ...],
+        seed: int,
+    ) -> IllustratabilityRating:
+        """Return one integer score from zero through one hundred."""
+        ...
 
 
 class PromptGenerator(Protocol):

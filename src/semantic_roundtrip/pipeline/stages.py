@@ -19,6 +19,85 @@ from semantic_roundtrip.pipeline.tasks import (
 from semantic_roundtrip.prompting import PromptProfile, render_prompt_profile
 
 
+def _illustratability_seed(config: ResolvedAppConfig) -> int:
+    stage = config.stages.illustratability_rating
+    if stage is None:
+        raise RuntimeError("Illustratability rating is not configured.")
+    value = stage.parameters.get("seed", 4001)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(
+            "illustratability_rating.parameters.seed must be a non-negative integer."
+        )
+    return value
+
+
+def execute_illustratability_rating_stage(
+    *,
+    config: ResolvedAppConfig,
+    database: RunDatabase,
+    adapters: AdapterBundle,
+    prompt_profile: PromptProfile,
+) -> None:
+    """Rate every title independently of prompts and generated images."""
+    if adapters.illustratability_rater is None:
+        raise RuntimeError(
+            "Illustratability rating has no illustratability-rater adapter."
+        )
+    seed = _illustratability_seed(config)
+    for item_index, configured_item in enumerate(config.dataset.items):
+        raise_if_pause_requested(database)
+        item = BenchmarkItem(
+            item_key=configured_item.id,
+            domain=configured_item.domain,
+            title=configured_item.title,
+        )
+        item_id = database.results.get_or_add_dataset_item(item_index, item)
+        task = database.tasks.get_or_create(
+            task_key=f"illustratability_rating:{item.item_key}",
+            stage="illustratability_rating",
+            expected_outputs=1,
+            item_id=item_id,
+            seed=seed,
+        )
+        existing = database.results.get_illustratability_rating(item_id)
+        if existing is not None:
+            if task.status != "completed":
+                database.tasks.mark_completed(task.task_id, 1)
+            continue
+        if task.status == "completed":
+            raise RuntimeError(f"Task {task.task_key} is completed but has no rating.")
+        if task.status == "failed":
+            continue
+
+        messages = render_prompt_profile(
+            prompt_profile,
+            title=item.title,
+            domain=item.domain,
+            prompt_index=0,
+        )
+
+        def rate(
+            messages: tuple = messages,
+            item_id: int = item_id,
+        ) -> int:
+            result = adapters.illustratability_rater.rate(
+                messages=messages,
+                seed=seed,
+            )
+            return database.results.add_illustratability_rating(item_id, result)
+
+        try:
+            run_task(
+                rate,
+                database=database,
+                task=task,
+                retry_limit=config.experiment.retry_limit,
+                item_id=item_id,
+            )
+        except AdapterError:
+            continue
+
+
 def _load_or_generate_prompt(
     *,
     database: RunDatabase,

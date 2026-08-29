@@ -32,6 +32,15 @@ class PromptResponse:
 
 
 @dataclass(frozen=True, slots=True)
+class IllustratabilityRating:
+    """One model's estimated visual illustratability for a title."""
+
+    score: int
+    raw_response: str
+    backend_request_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class GeneratedPrompt:
     """One parsed visual prompt generated for a benchmark item."""
 

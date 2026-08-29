@@ -14,6 +14,7 @@ from semantic_roundtrip.pipeline.models import PipelineSummary
 from semantic_roundtrip.pipeline.stages import (
     execute_description_title_guessing_stage,
     execute_direct_title_guessing_stage,
+    execute_illustratability_rating_stage,
     execute_image_description_stage,
     execute_image_generation_stage,
     execute_prompt_generation_stage,
@@ -31,6 +32,7 @@ def _summary(database: RunDatabase, status: str) -> PipelineSummary:
     return PipelineSummary(
         status=status,
         dataset_items=counts.dataset_items,
+        illustratability_ratings=counts.illustratability_ratings,
         prompts=counts.prompts,
         images=counts.images,
         verifications=counts.verifications,
@@ -50,7 +52,9 @@ def _execute_runtime_stage(
 ) -> None:
     """Activate a model only while this run has actionable local work."""
     counts = database.results.counts()
-    if stage == "prompt_generation":
+    if stage == "illustratability_rating":
+        work_items = len(config.dataset.items)
+    elif stage == "prompt_generation":
         work_items = len(config.dataset.items) * len(config.experiment.prompt_seeds)
     elif stage == "image_generation":
         work_items = counts.prompts * len(config.experiment.image_seeds)
@@ -77,10 +81,26 @@ def execute_stages(
     database: RunDatabase,
     images_directory: Path,
     adapters: AdapterBundle,
+    illustratability_profile: PromptProfile | None,
     prompt_profile: PromptProfile | None,
     runtime_session: RuntimeSession,
 ) -> None:
     """Execute all missing model-backed work in sequential pipeline stages."""
+    if get_stage_config(config, "illustratability_rating") is not None:
+        if illustratability_profile is None:
+            raise RuntimeError("Illustratability rating has no loaded prompt profile.")
+        _execute_runtime_stage(
+            config=config,
+            database=database,
+            runtime_session=runtime_session,
+            stage="illustratability_rating",
+            operation=lambda: execute_illustratability_rating_stage(
+                config=config,
+                database=database,
+                adapters=adapters,
+                prompt_profile=illustratability_profile,
+            ),
+        )
     if get_stage_config(config, "prompt_generation") is not None:
         if prompt_profile is None:
             raise RuntimeError("Prompt generation has no loaded prompt profile.")
@@ -166,6 +186,7 @@ def run_pipeline(
     database_path: Path,
     images_directory: Path,
     adapters: AdapterBundle,
+    illustratability_profile: PromptProfile | None,
     prompt_profile: PromptProfile | None,
     resume: bool = False,
 ) -> PipelineSummary:
@@ -183,6 +204,7 @@ def run_pipeline(
                     database=database,
                     images_directory=images_directory,
                     adapters=adapters,
+                    illustratability_profile=illustratability_profile,
                     prompt_profile=prompt_profile,
                     runtime_session=runtime_session,
                 )

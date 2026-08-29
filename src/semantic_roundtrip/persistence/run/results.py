@@ -8,6 +8,7 @@ from semantic_roundtrip.config import PredictionInputKind
 from semantic_roundtrip.domain import (
     BenchmarkItem,
     GeneratedPrompt,
+    IllustratabilityRating,
     ImageArtifact,
     ImageDescription,
     PromptResponse,
@@ -21,6 +22,7 @@ from semantic_roundtrip.persistence.sqlite import utc_now
 @dataclass(frozen=True, slots=True)
 class ResultCounts:
     dataset_items: int
+    illustratability_ratings: int
     prompts: int
     images: int
     verifications: int
@@ -136,6 +138,54 @@ class RunResultStore:
         return (
             int(row["prompt_id"]),
             GeneratedPrompt(index=int(row["prompt_index"]), text=row["text"]),
+        )
+
+    def get_illustratability_rating(
+        self,
+        item_id: int,
+    ) -> tuple[int, IllustratabilityRating] | None:
+        row = self._connection.execute(
+            """
+            SELECT rating_id, score, backend_request_id, raw_response
+            FROM illustratability_ratings
+            WHERE item_id = ?
+            """,
+            (item_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return (
+            int(row["rating_id"]),
+            IllustratabilityRating(
+                score=int(row["score"]),
+                backend_request_id=row["backend_request_id"],
+                raw_response=row["raw_response"],
+            ),
+        )
+
+    def add_illustratability_rating(
+        self,
+        item_id: int,
+        rating: IllustratabilityRating,
+    ) -> int:
+        return self._insert(
+            """
+            INSERT INTO illustratability_ratings (
+                item_id,
+                score,
+                backend_request_id,
+                raw_response,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                item_id,
+                rating.score,
+                rating.backend_request_id,
+                rating.raw_response,
+                utc_now(),
+            ),
         )
 
     def add_prompt(
@@ -472,6 +522,9 @@ class RunResultStore:
             """
             SELECT
                 (SELECT COUNT(*) FROM dataset_items) AS dataset_items,
+                (
+                    SELECT COUNT(*) FROM illustratability_ratings
+                ) AS illustratability_ratings,
                 (SELECT COUNT(*) FROM prompts) AS prompts,
                 (SELECT COUNT(*) FROM images) AS images,
                 (SELECT COUNT(*) FROM verifications) AS verifications,
@@ -488,6 +541,7 @@ class RunResultStore:
         ).fetchone()
         return ResultCounts(
             dataset_items=int(row["dataset_items"]),
+            illustratability_ratings=int(row["illustratability_ratings"]),
             prompts=int(row["prompts"]),
             images=int(row["images"]),
             verifications=int(row["verifications"]),

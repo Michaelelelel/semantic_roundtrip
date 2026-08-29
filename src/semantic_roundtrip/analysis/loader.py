@@ -1,28 +1,30 @@
-"""Read selected schema-v9 SQLite runs into analysis-ready DataFrames."""
+"""Read current SQLite runs and jobs into four analysis tables."""
 
 from __future__ import annotations
 
 import json
 import sqlite3
 from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-from semantic_roundtrip.analysis.config import LoadedStudy, StudyCondition, load_study
-from semantic_roundtrip.analysis.models import StudyFrames
+from semantic_roundtrip.analysis.statistics import score_observations
 from semantic_roundtrip.config import ResolvedAppConfig, StageName
 from semantic_roundtrip.config_resolution import (
     configured_stage_names,
     get_stage_config,
     load_effective_config,
 )
-from semantic_roundtrip.evaluation import (
-    title_exact_match,
-    title_normalized_exact_match,
-)
 from semantic_roundtrip.inheritance.dependencies import dependency_closure
+from semantic_roundtrip.job import JOB_SNAPSHOT_FILENAME, load_job_snapshot
+from semantic_roundtrip.persistence.job.database import (
+    read_job_entries,
+    read_job_record,
+)
+from semantic_roundtrip.persistence.job.schema import job_database_path
 from semantic_roundtrip.persistence.run.config_snapshot import EFFECTIVE_CONFIG_FILENAME
 from semantic_roundtrip.persistence.run.schema import (
     connect_run_database,
@@ -31,17 +33,21 @@ from semantic_roundtrip.persistence.run.schema import (
 )
 
 
-def _dict_rows(
-    connection: sqlite3.Connection,
-    query: str,
-    parameters: Iterable[object] = (),
-) -> list[dict[str, Any]]:
-    return [
-        dict(row) for row in connection.execute(query, tuple(parameters)).fetchall()
-    ]
+@dataclass(frozen=True, slots=True)
+class AnalysisTables:
+    """The four small tables used by the thesis notebook."""
+
+    observations: pd.DataFrame
+    ratings: pd.DataFrame
+    errors: pd.DataFrame
+    timings: pd.DataFrame
 
 
-def _unique_map(
+def _rows(connection: sqlite3.Connection, table: str) -> list[dict[str, Any]]:
+    return [dict(row) for row in connection.execute(f"SELECT * FROM {table}")]
+
+
+def _map(
     rows: list[dict[str, Any]],
     columns: tuple[str, ...],
     label: str,
@@ -50,18 +56,14 @@ def _unique_map(
     for row in rows:
         key = tuple(row[column] for column in columns)
         if key in result:
-            raise ValueError(f"Duplicate {label} key in persisted run: {key}")
+            raise ValueError(f"Duplicate {label} key in run database: {key}")
         result[key] = row
     return result
 
 
 def _title_length_group(title: str) -> str:
     words = len(title.split())
-    if words <= 1:
-        return "short"
-    if words <= 3:
-        return "medium"
-    return "long"
+    return "short" if words == 1 else "medium" if words <= 3 else "long"
 
 
 def _local_model(config: ResolvedAppConfig, stage: StageName) -> str | None:
@@ -80,9 +82,9 @@ def _local_model(config: ResolvedAppConfig, stage: StageName) -> str | None:
 def _stage_models(
     config: ResolvedAppConfig,
     runtime_rows: list[dict[str, Any]],
-) -> dict[StageName, str | None]:
-    result: dict[StageName, str | None] = {}
-    stage_names: tuple[StageName, ...] = (
+) -> dict[str, str | None]:
+    stages = (
+        "illustratability_rating",
         "prompt_generation",
         "image_generation",
         "verification",
@@ -90,44 +92,81 @@ def _stage_models(
         "image_description",
         "title_guessing_from_description",
     )
-    for stage in stage_names:
-        values = {
+    result: dict[str, str | None] = {}
+    for stage in stages:
+        model_ids = {
             str(row["model_id"])
             for row in runtime_rows
             if row["stage"] == stage and row["model_id"] is not None
         }
-        if len(values) > 1:
-            raise ValueError(
-                f"Run contains multiple model IDs for stage '{stage}': {sorted(values)}"
-            )
-        result[stage] = next(iter(values), None) or _local_model(config, stage)
+        if len(model_ids) > 1:
+            raise ValueError(f"Stage '{stage}' contains several model IDs.")
+        result[stage] = next(iter(model_ids), None) or _local_model(config, stage)
     return result
 
 
 def _available_stages(
     config: ResolvedAppConfig,
-    task_rows: list[dict[str, Any]],
-    lineage_rows: list[dict[str, Any]],
+    tasks: list[dict[str, Any]],
+    lineage: list[dict[str, Any]],
 ) -> set[str]:
     available = set(configured_stage_names(config))
-    available.update(str(row["stage"]) for row in task_rows)
-    for row in lineage_rows:
-        inherited = json.loads(str(row["inherited_stages"]))
-        available.update(dependency_closure(inherited))
+    available.update(str(row["stage"]) for row in tasks)
+    for row in lineage:
+        available.update(dependency_closure(json.loads(row["inherited_stages"])))
     return available
 
 
-def _resolve_image_path(run_directory: Path, stored_path: str) -> Path:
+def _image_path(run_directory: Path, stored_path: str) -> str:
     path = Path(stored_path)
-    return (path if path.is_absolute() else run_directory / path).resolve()
+    resolved = (path if path.is_absolute() else run_directory / path).resolve()
+    if not resolved.is_file():
+        raise FileNotFoundError(f"Run references a missing image: {resolved}")
+    return str(resolved)
+
+
+def _error_rows(
+    connection: sqlite3.Connection,
+    run_id: str,
+) -> list[dict[str, Any]]:
+    rows = connection.execute(
+        """
+        SELECT
+            errors.*,
+            COALESCE(errors.item_id, tasks.item_id) AS matched_item_id,
+            COALESCE(errors.prompt_id, tasks.prompt_id) AS matched_prompt_id,
+            COALESCE(errors.image_id, tasks.image_id) AS matched_image_id,
+            tasks.seed,
+            tasks.task_key,
+            tasks.status AS task_status,
+            tasks.execution_origin AS task_execution_origin
+        FROM stage_errors AS errors
+        LEFT JOIN stage_tasks AS tasks ON tasks.task_id = errors.task_id
+        ORDER BY errors.error_id
+        """
+    ).fetchall()
+    normalized: list[dict[str, Any]] = []
+    for raw in rows:
+        row = dict(raw)
+        row["item_id"] = row.pop("matched_item_id")
+        row["prompt_id"] = row.pop("matched_prompt_id")
+        row["image_id"] = row.pop("matched_image_id")
+        row["terminal_error"] = row["task_status"] == "failed"
+        row["recovered"] = row["task_status"] == "completed"
+        origin_run = row["origin_run_id"] or run_id
+        origin_error = row["origin_error_id"] or row["error_id"]
+        row["provenance_error_key"] = f"{origin_run}:{origin_error}"
+        normalized.append(row)
+    return normalized
 
 
 def _latest_error(
-    error_rows: list[dict[str, Any]],
+    errors: list[dict[str, Any]],
     *,
     item_id: int,
     prompt_id: int | None,
     image_id: int | None,
+    prompt_seed: int,
     image_seed: int,
     route_stage: str,
 ) -> dict[str, Any] | None:
@@ -139,286 +178,245 @@ def _latest_error(
     }
     if route_stage == "title_guessing_from_description":
         relevant.add("image_description")
-    for row in reversed(error_rows):
+    for row in reversed(errors):
         if row["stage"] not in relevant:
             continue
         if image_id is not None and row["image_id"] == image_id:
             return row
         if (
-            image_id is None
-            and prompt_id is not None
+            prompt_id is not None
             and row["prompt_id"] == prompt_id
-            and row["stage"] == "image_generation"
-            and row["seed"] == image_seed
+            and (row["stage"] != "image_generation" or row["seed"] == image_seed)
         ):
             return row
-        if prompt_id is None and row["item_id"] == item_id:
+        if (
+            row["item_id"] == item_id
+            and row["stage"] == "prompt_generation"
+            and row["seed"] == prompt_seed
+        ):
             return row
     return None
 
 
-def _load_condition(
-    condition_id: str,
-    condition: StudyCondition,
-    run_directory: Path,
-) -> tuple[
-    list[dict[str, Any]],
-    dict[str, Any],
-    list[dict[str, Any]],
-    list[dict[str, Any]],
-    list[dict[str, Any]],
-]:
+def _timing_rows(
+    tasks: list[dict[str, Any]],
+    runtime: list[dict[str, Any]],
+    run_id: str,
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for row in tasks:
+        origin_run = row["origin_run_id"] or run_id
+        origin_id = row["origin_task_id"] or row["task_id"]
+        result.append(
+            {
+                "kind": "task",
+                "stage": row["stage"],
+                "action": "execute",
+                "status": row["status"],
+                "started_at": row["started_at"],
+                "finished_at": row["finished_at"],
+                "execution_origin": row["execution_origin"],
+                "model_id": None,
+                "provenance_timing_key": f"task:{origin_run}:{origin_id}",
+            }
+        )
+    for row in runtime:
+        origin_run = row["origin_run_id"] or run_id
+        origin_id = row["origin_runtime_event_id"] or row["runtime_event_id"]
+        result.append(
+            {
+                "kind": "runtime",
+                "stage": row["stage"],
+                "action": row["action"],
+                "status": row["status"],
+                "started_at": row["started_at"],
+                "finished_at": row["finished_at"],
+                "execution_origin": row["execution_origin"],
+                "model_id": row["model_id"],
+                "provenance_timing_key": f"runtime:{origin_run}:{origin_id}",
+            }
+        )
+    return result
+
+
+def load_run(path: str | Path) -> AnalysisTables:
+    """Load one completed current-schema run without modifying it."""
+    run_directory = Path(path).expanduser().resolve()
     config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
     connection = connect_run_database(
-        database_path_for_run(run_directory),
-        read_only=True,
+        database_path_for_run(run_directory), read_only=True
     )
     try:
         require_run_schema(connection)
-        metadata = dict(connection.execute("SELECT * FROM run_metadata").fetchone())
+        metadata_row = connection.execute("SELECT * FROM run_metadata").fetchone()
+        if metadata_row is None:
+            raise ValueError("Run metadata is missing.")
+        metadata = dict(metadata_row)
         if metadata["status"] != "completed":
             raise ValueError(
-                f"Condition '{condition_id}' uses run status "
-                f"'{metadata['status']}'; final analysis requires completed runs."
+                f"Analysis requires a completed run, got '{metadata['status']}'."
             )
         if metadata["name"] != config.run.name:
-            raise ValueError(
-                f"Condition '{condition_id}' has different DB and snapshot names."
-            )
+            raise ValueError("Run database and effective configuration names differ.")
 
-        items = _dict_rows(
-            connection,
-            "SELECT * FROM dataset_items ORDER BY item_index",
-        )
-        prompts = _dict_rows(connection, "SELECT * FROM prompts ORDER BY prompt_id")
-        images = _dict_rows(connection, "SELECT * FROM images ORDER BY image_id")
-        verifications = _dict_rows(
-            connection,
-            "SELECT * FROM verifications ORDER BY verification_id",
-        )
-        descriptions = _dict_rows(
-            connection,
-            "SELECT * FROM image_descriptions ORDER BY description_id",
-        )
-        predictions = _dict_rows(
-            connection,
-            "SELECT * FROM predictions ORDER BY prediction_id",
-        )
-        tasks = _dict_rows(connection, "SELECT * FROM stage_tasks ORDER BY task_id")
-        errors = _dict_rows(
-            connection,
-            """
-            SELECT
-                errors.*,
-                COALESCE(errors.item_id, tasks.item_id) AS matched_item_id,
-                COALESCE(errors.prompt_id, tasks.prompt_id) AS matched_prompt_id,
-                COALESCE(errors.image_id, tasks.image_id) AS matched_image_id,
-                tasks.seed AS seed
-            FROM stage_errors AS errors
-            LEFT JOIN stage_tasks AS tasks ON tasks.task_id = errors.task_id
-            ORDER BY errors.error_id
-            """,
-        )
-        runtimes = _dict_rows(
-            connection,
-            "SELECT * FROM runtime_events ORDER BY runtime_event_id",
-        )
-        lineage = _dict_rows(
-            connection,
-            "SELECT * FROM run_lineage ORDER BY depth, lineage_id",
-        )
+        tables = {
+            name: _rows(connection, name)
+            for name in (
+                "dataset_items",
+                "illustratability_ratings",
+                "prompts",
+                "images",
+                "verifications",
+                "image_descriptions",
+                "predictions",
+                "stage_tasks",
+                "runtime_events",
+                "run_lineage",
+            )
+        }
+        errors = _error_rows(connection, metadata["run_id"])
     finally:
         connection.close()
 
-    unfinished = [row for row in tasks if row["status"] in {"pending", "running"}]
+    unfinished = [
+        row for row in tables["stage_tasks"] if row["status"] in {"pending", "running"}
+    ]
     if unfinished:
-        row = unfinished[0]
-        raise ValueError(
-            f"Condition '{condition_id}' contains unfinished task "
-            f"'{row['task_key']}' ({row['status']})."
-        )
+        raise ValueError(f"Run contains unfinished task '{unfinished[0]['task_key']}'.")
 
-    available = _available_stages(config, tasks, lineage)
-    route_stages = {
-        "direct": "title_guessing_direct",
-        "description": "title_guessing_from_description",
-    }
-    for route in condition.routes:
-        if route_stages[route] not in available:
-            raise ValueError(
-                f"Condition '{condition_id}' declares unavailable route '{route}'."
-            )
-
+    items = tables["dataset_items"]
     if len(items) != len(config.dataset.items):
-        raise ValueError(f"Condition '{condition_id}' has an incomplete dataset table.")
+        raise ValueError("Run dataset table is incomplete.")
     items_by_index = {int(row["item_index"]): row for row in items}
+    items_by_id = {int(row["item_id"]): row for row in items}
     for index, configured in enumerate(config.dataset.items):
         row = items_by_index.get(index)
-        if row is None or (
-            row["item_key"],
-            row["domain"],
-            row["title"],
-        ) != (configured.id, configured.domain, configured.title):
-            raise ValueError(
-                f"Condition '{condition_id}' dataset differs from its snapshot."
-            )
+        if row is None or (row["item_key"], row["domain"], row["title"]) != (
+            configured.id,
+            configured.domain,
+            configured.title,
+        ):
+            raise ValueError(f"Dataset item {index} differs from the run snapshot.")
 
-    prompts_by_key = _unique_map(prompts, ("item_id", "prompt_index"), "prompt")
-    images_by_key = _unique_map(images, ("prompt_id", "seed"), "image")
-    verifications_by_image = _unique_map(
-        verifications,
-        ("image_id",),
-        "verification",
-    )
-    descriptions_by_image = _unique_map(
-        descriptions,
-        ("image_id",),
-        "description",
-    )
-    predictions_by_key = _unique_map(
-        predictions,
-        ("image_id", "input_kind"),
-        "prediction",
-    )
-    stage_models = _stage_models(config, runtimes)
+    models = _stage_models(config, tables["runtime_events"])
+    base = {
+        "condition": metadata["name"],
+        "run_id": metadata["run_id"],
+        "run_name": metadata["name"],
+        "run_directory": str(run_directory),
+        "dataset_id": config.dataset.dataset_id,
+    }
 
-    normalized_errors: list[dict[str, Any]] = []
-    for row in errors:
-        normalized = dict(row)
-        normalized["item_id"] = row["matched_item_id"]
-        normalized["prompt_id"] = row["matched_prompt_id"]
-        normalized["image_id"] = row["matched_image_id"]
-        normalized["condition_id"] = condition_id
-        normalized["run_id"] = metadata["run_id"]
-        normalized_errors.append(normalized)
+    ratings: list[dict[str, Any]] = []
+    for row in tables["illustratability_ratings"]:
+        item = items_by_id[int(row["item_id"])]
+        ratings.append(
+            {
+                **base,
+                "rating_model": models["illustratability_rating"],
+                "item_key": item["item_key"],
+                "item_index": int(item["item_index"]),
+                "domain": item["domain"],
+                "title": item["title"],
+                "title_length_group": _title_length_group(item["title"]),
+                "score": int(row["score"]),
+                "backend_request_id": row["backend_request_id"],
+                "raw_response": row["raw_response"],
+            }
+        )
+
+    available = _available_stages(config, tables["stage_tasks"], tables["run_lineage"])
+    routes = []
+    if "title_guessing_direct" in available:
+        routes.append(("direct", "image", "title_guessing_direct"))
+    if "title_guessing_from_description" in available:
+        routes.append(("description", "description", "title_guessing_from_description"))
+
+    prompts = _map(tables["prompts"], ("item_id", "prompt_index"), "prompt")
+    images = _map(tables["images"], ("prompt_id", "seed"), "image")
+    verifications = _map(tables["verifications"], ("image_id",), "verification")
+    descriptions = _map(tables["image_descriptions"], ("image_id",), "description")
+    predictions = _map(tables["predictions"], ("image_id", "input_kind"), "prediction")
 
     observations: list[dict[str, Any]] = []
-    verifier_rows: list[dict[str, Any]] = []
-    for item_index, configured_item in enumerate(config.dataset.items):
+    for item_index, configured in enumerate(config.dataset.items):
         item = items_by_index[item_index]
         item_id = int(item["item_id"])
         for prompt_index, prompt_seed in enumerate(config.experiment.prompt_seeds):
-            prompt = prompts_by_key.get((item_id, prompt_index))
+            prompt = prompts.get((item_id, prompt_index))
             if prompt is not None and int(prompt["sampling_seed"]) != prompt_seed:
-                raise ValueError(
-                    f"Condition '{condition_id}' stores the wrong prompt seed for "
-                    f"{configured_item.id}:{prompt_index}."
-                )
+                raise ValueError("Stored prompt seed differs from the run snapshot.")
             prompt_id = None if prompt is None else int(prompt["prompt_id"])
             for image_seed in config.experiment.image_seeds:
                 image = (
-                    None
-                    if prompt_id is None
-                    else images_by_key.get((prompt_id, image_seed))
+                    None if prompt_id is None else images.get((prompt_id, image_seed))
                 )
                 image_id = None if image is None else int(image["image_id"])
-                image_path: Path | None = None
-                if image is not None:
-                    image_path = _resolve_image_path(run_directory, str(image["path"]))
-                    if not image_path.is_file():
-                        raise FileNotFoundError(
-                            f"Condition '{condition_id}' references a missing image: "
-                            f"{image_path}"
-                        )
                 verification = (
-                    None
-                    if image_id is None
-                    else verifications_by_image.get((image_id,))
+                    None if image_id is None else verifications.get((image_id,))
                 )
                 description = (
-                    None if image_id is None else descriptions_by_image.get((image_id,))
+                    None if image_id is None else descriptions.get((image_id,))
                 )
-                common = {
-                    "condition_id": condition_id,
-                    "condition_label": condition.label or condition_id,
-                    "design": condition.design,
-                    "pg": condition.pg,
-                    "bg": condition.bg,
-                    "bb": condition.bb,
-                    "bi": condition.bi,
-                    "run_id": metadata["run_id"],
-                    "run_name": metadata["name"],
-                    "run_directory": str(run_directory),
-                    "dataset_id": config.dataset.dataset_id,
-                    "item_key": configured_item.id,
-                    "item_index": item_index,
-                    "domain": configured_item.domain,
-                    "expected_title": configured_item.title,
-                    "title_length_group": _title_length_group(configured_item.title),
-                    "prompt_index": prompt_index,
-                    "prompt_seed": prompt_seed,
-                    "prompt_id": prompt_id,
-                    "prompt_text": None if prompt is None else prompt["text"],
-                    "image_seed": image_seed,
-                    "image_id": image_id,
-                    "image_path": None if image_path is None else str(image_path),
-                    "verification_passed": (
-                        None if verification is None else bool(verification["passed"])
-                    ),
-                    "verification_reason": (
-                        None if verification is None else verification["reason"]
-                    ),
-                    "image_description": (
-                        None if description is None else description["text"]
-                    ),
-                    "prompt_model": stage_models["prompt_generation"],
-                    "image_model": stage_models["image_generation"],
-                    "verifier_model": stage_models["verification"],
-                    "description_model": stage_models["image_description"],
-                }
-                verifier_rows.append(dict(common))
-
-                for route in condition.routes:
-                    input_kind = "image" if route == "direct" else "description"
-                    route_stage = route_stages[route]
+                for route, input_kind, route_stage in routes:
                     prediction = (
                         None
                         if image_id is None
-                        else predictions_by_key.get((image_id, input_kind))
+                        else predictions.get((image_id, input_kind))
                     )
                     error = _latest_error(
-                        normalized_errors,
+                        errors,
                         item_id=item_id,
                         prompt_id=prompt_id,
                         image_id=image_id,
+                        prompt_seed=prompt_seed,
                         image_seed=image_seed,
                         route_stage=route_stage,
                     )
-                    predicted_title = (
-                        None if prediction is None else str(prediction["title"])
-                    )
-                    strict = (
-                        None
-                        if predicted_title is None
-                        else title_exact_match(configured_item.title, predicted_title)
-                    )
-                    normalized = (
-                        None
-                        if predicted_title is None
-                        else title_normalized_exact_match(
-                            configured_item.title,
-                            predicted_title,
-                        )
-                    )
-                    passed = verification is not None and bool(verification["passed"])
                     observations.append(
                         {
-                            **common,
+                            **base,
+                            "item_key": configured.id,
+                            "item_index": item_index,
+                            "domain": configured.domain,
+                            "expected_title": configured.title,
+                            "title_length_group": _title_length_group(configured.title),
+                            "prompt_index": prompt_index,
+                            "prompt_seed": prompt_seed,
+                            "prompt_id": prompt_id,
+                            "prompt_text": None if prompt is None else prompt["text"],
+                            "image_seed": image_seed,
+                            "image_id": image_id,
+                            "image_path": (
+                                None
+                                if image is None
+                                else _image_path(run_directory, image["path"])
+                            ),
                             "route": route,
-                            "prediction_model": stage_models[route_stage],
-                            "prediction_status": (
-                                "completed"
-                                if prediction is not None
-                                else "failed"
-                                if error is not None
-                                else "missing"
+                            "prompt_model": models["prompt_generation"],
+                            "image_model": models["image_generation"],
+                            "verifier_model": models["verification"],
+                            "description_model": models["image_description"],
+                            "prediction_model": models[route_stage],
+                            "verification_passed": (
+                                None
+                                if verification is None
+                                else bool(verification["passed"])
+                            ),
+                            "verification_reason": (
+                                None if verification is None else verification["reason"]
+                            ),
+                            "image_description": (
+                                None if description is None else description["text"]
                             ),
                             "prediction_id": (
                                 None
                                 if prediction is None
                                 else prediction["prediction_id"]
                             ),
-                            "predicted_title": predicted_title,
+                            "predicted_title": (
+                                None if prediction is None else prediction["title"]
+                            ),
                             "confidence": (
                                 None if prediction is None else prediction["confidence"]
                             ),
@@ -432,102 +430,116 @@ def _load_condition(
                                 if prediction is None
                                 else prediction["raw_response"]
                             ),
-                            "strict_exact_match": strict,
-                            "normalized_exact_match": normalized,
-                            "end_to_end_strict_score": int(passed and strict is True),
-                            "end_to_end_normalized_score": int(
-                                passed and normalized is True
+                            "prediction_status": (
+                                "completed"
+                                if prediction is not None
+                                else "failed"
+                                if error is not None
+                                else "missing"
                             ),
                             "error_stage": None if error is None else error["stage"],
-                            "error_type": None
-                            if error is None
-                            else error["error_type"],
+                            "error_type": (
+                                None if error is None else error["error_type"]
+                            ),
                             "error_message": None
                             if error is None
                             else error["message"],
                         }
                     )
 
-    run_row = {
-        "condition_id": condition_id,
-        "condition_label": condition.label or condition_id,
-        "design": condition.design,
-        "pg": condition.pg,
-        "bg": condition.bg,
-        "bb": condition.bb,
-        "bi": condition.bi,
-        "routes": tuple(condition.routes),
-        "run_id": metadata["run_id"],
-        "run_name": metadata["name"],
-        "run_directory": str(run_directory),
-        "status": metadata["status"],
-        "created_at": metadata["created_at"],
-        "started_at": metadata["started_at"],
-        "finished_at": metadata["finished_at"],
-        "dataset_id": config.dataset.dataset_id,
-        "title_count": len(config.dataset.items),
-        "prompt_seeds": tuple(config.experiment.prompt_seeds),
-        "image_seeds": tuple(config.experiment.image_seeds),
-        "retry_limit": config.experiment.retry_limit,
-        "prompt_model": stage_models["prompt_generation"],
-        "image_model": stage_models["image_generation"],
-        "verifier_model": stage_models["verification"],
-        "description_model": stage_models["image_description"],
-        "direct_model": stage_models["title_guessing_direct"],
-        "description_title_model": stage_models["title_guessing_from_description"],
-    }
+    for row in errors:
+        row.update(base)
+    timings = _timing_rows(
+        tables["stage_tasks"], tables["runtime_events"], metadata["run_id"]
+    )
+    for row in timings:
+        row.update(base)
 
-    normalized_runtimes: list[dict[str, Any]] = []
-    for row in runtimes:
-        runtime = dict(row)
-        runtime["condition_id"] = condition_id
-        runtime["run_directory"] = str(run_directory)
-        origin_run_id = row["origin_run_id"] or metadata["run_id"]
-        origin_event_id = row["origin_runtime_event_id"] or row["runtime_event_id"]
-        runtime["provenance_event_key"] = f"{origin_run_id}:{origin_event_id}"
-        runtime["condition_runtime_eligible"] = row["execution_origin"] == "local"
-        normalized_runtimes.append(runtime)
+    timing_frame = pd.DataFrame.from_records(timings)
+    if not timing_frame.empty:
+        started = pd.to_datetime(timing_frame["started_at"], utc=True)
+        finished = pd.to_datetime(timing_frame["finished_at"], utc=True)
+        timing_frame["duration_seconds"] = (finished - started).dt.total_seconds()
+        timing_frame["unique_provenance"] = ~timing_frame[
+            "provenance_timing_key"
+        ].duplicated()
 
-    return observations, run_row, normalized_errors, verifier_rows, normalized_runtimes
-
-
-def load_study_frames(study: LoadedStudy | Path) -> StudyFrames:
-    """Load all selected runs read-only and return normalized DataFrames."""
-    loaded = load_study(study) if isinstance(study, Path) else study
-    observations: list[dict[str, Any]] = []
-    runs: list[dict[str, Any]] = []
-    errors: list[dict[str, Any]] = []
-    verifier: list[dict[str, Any]] = []
-    runtimes: list[dict[str, Any]] = []
-
-    for condition_id, condition in loaded.config.conditions.items():
-        values = _load_condition(
-            condition_id,
-            condition,
-            loaded.run_directories[condition_id],
-        )
-        condition_observations, run, condition_errors, checks, runtime = values
-        observations.extend(condition_observations)
-        runs.append(run)
-        errors.extend(condition_errors)
-        verifier.extend(checks)
-        runtimes.extend(runtime)
-
-    runtime_frame = pd.DataFrame.from_records(runtimes)
-    if not runtime_frame.empty:
-        started = pd.to_datetime(runtime_frame["started_at"], utc=True)
-        finished = pd.to_datetime(runtime_frame["finished_at"], utc=True)
-        runtime_frame["duration_seconds"] = (finished - started).dt.total_seconds()
-        runtime_frame["study_runtime_eligible"] = ~runtime_frame[
-            "provenance_event_key"
-        ].duplicated(keep="first")
-
-    return StudyFrames(
-        observations=pd.DataFrame.from_records(observations),
-        runs=pd.DataFrame.from_records(runs),
+    return AnalysisTables(
+        observations=score_observations(pd.DataFrame.from_records(observations)),
+        ratings=pd.DataFrame.from_records(ratings),
         errors=pd.DataFrame.from_records(errors),
-        verifier=pd.DataFrame.from_records(verifier).drop_duplicates(
-            subset=["condition_id", "item_key", "prompt_seed", "image_seed"]
-        ),
-        runtimes=runtime_frame,
+        timings=timing_frame,
+    )
+
+
+def _with_metadata(frame: pd.DataFrame, values: dict[str, object]) -> pd.DataFrame:
+    result = frame.copy()
+    for name, value in values.items():
+        result[name] = value
+    return result
+
+
+def _concat(frames: list[pd.DataFrame]) -> pd.DataFrame:
+    nonempty = [frame for frame in frames if not frame.empty]
+    return pd.concat(nonempty, ignore_index=True) if nonempty else pd.DataFrame()
+
+
+def load_job(
+    path: str | Path,
+    entries: Iterable[str | int] | None = None,
+) -> AnalysisTables:
+    """Load explicitly selected entries from one persisted sequential job."""
+    job_directory = Path(path).expanduser().resolve()
+    record = read_job_record(job_database_path(job_directory))
+    snapshot = load_job_snapshot(job_directory / JOB_SNAPSHOT_FILENAME)
+    persisted = read_job_entries(job_database_path(job_directory), job_directory)
+    if len(snapshot.entries) != len(persisted):
+        raise ValueError("Job snapshot and database entry counts differ.")
+    by_name = {entry.name: entry for entry in snapshot.entries}
+    if len(by_name) != len(snapshot.entries):
+        raise ValueError("Job snapshot contains duplicate entry names.")
+
+    requested = None if entries is None else set(entries)
+    selected = []
+    for configured, stored in zip(snapshot.entries, persisted, strict=True):
+        if requested is not None and (
+            configured.name not in requested and configured.index not in requested
+        ):
+            continue
+        selected.append((configured, stored))
+    if requested is not None and len(selected) != len(requested):
+        found = {entry.name for entry, _ in selected} | {
+            entry.index for entry, _ in selected
+        }
+        raise ValueError(f"Unknown job entries: {sorted(requested - found, key=str)}")
+
+    grouped: dict[str, list[pd.DataFrame]] = {
+        "observations": [],
+        "ratings": [],
+        "errors": [],
+        "timings": [],
+    }
+    for configured, stored in selected:
+        tables = load_run(stored.run_directory)
+        metadata = {
+            "job_id": record.job_id,
+            "job_name": record.name,
+            "job_directory": str(job_directory),
+            "entry_index": configured.index,
+            "entry_name": configured.name,
+            "condition": configured.name,
+        }
+        for name, frames in grouped.items():
+            frames.append(_with_metadata(getattr(tables, name), metadata))
+
+    timing_frame = _concat(grouped["timings"])
+    if not timing_frame.empty:
+        timing_frame["unique_provenance"] = ~timing_frame[
+            "provenance_timing_key"
+        ].duplicated()
+    return AnalysisTables(
+        observations=_concat(grouped["observations"]),
+        ratings=_concat(grouped["ratings"]),
+        errors=_concat(grouped["errors"]),
+        timings=timing_frame,
     )

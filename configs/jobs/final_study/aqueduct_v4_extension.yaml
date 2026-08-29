@@ -1,5 +1,5 @@
 # Set source_jobs.local_indirect.directory before running this optional job.
-schema_version: 3
+schema_version: 4
 job:
   name: final_aqueduct_v4_extension
   output_directory: runs

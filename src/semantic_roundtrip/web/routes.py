@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from semantic_roundtrip.persistence.job.schema import job_database_path
 from semantic_roundtrip.persistence.run.result_queries import (
+    read_illustratability_ratings,
     read_image_artifact_path,
     read_result_trace_page,
 )
@@ -17,7 +18,6 @@ from semantic_roundtrip.status.common import STATUS_READ_ERRORS
 from semantic_roundtrip.status.discovery import list_jobs, list_standalone_runs
 from semantic_roundtrip.status.jobs import get_job_status
 from semantic_roundtrip.status.runs import get_run_status
-
 
 router = APIRouter()
 
@@ -220,6 +220,7 @@ def run_results(
             page=page,
             page_size=RESULTS_PAGE_SIZE,
         )
+        ratings = read_illustratability_ratings(database_path)
     except STATUS_READ_ERRORS as error:
         raise _unreadable_status(error) from error
 
@@ -235,6 +236,7 @@ def run_results(
         run=run,
         run_path=run_directory.relative_to(runs_root).as_posix(),
         result_page=result_page,
+        ratings=ratings,
         has_direct_route=any(
             stage.name == "title_guessing_direct" for stage in run.stages
         ),

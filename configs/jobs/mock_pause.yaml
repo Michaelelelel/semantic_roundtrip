@@ -1,4 +1,4 @@
-schema_version: 3
+schema_version: 4
 
 job:
   name: mock_pause_job
