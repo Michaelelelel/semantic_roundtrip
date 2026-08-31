@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "accuracy.html" import show_accuracy %}
 
 {% block title %}{{ job.name }}{% endblock %}
 
@@ -31,6 +32,9 @@
 
   <section>
     <h2>Child runs</h2>
+    <p class="accuracy-note">Accuracy is end-to-end Strict Exact Match over all planned observations, including failures.
+      Provisional values include unfinished work. — means the route is not configured.</p>
+    <div class="table-scroll">
     <table>
         <thead>
           <tr>
@@ -38,6 +42,8 @@
             <th>Status</th>
             <th>Experiment</th>
             <th>Run</th>
+            <th>Direct accuracy</th>
+            <th>Indirect accuracy</th>
             <th>Models</th>
             <th>Error</th>
           </tr>
@@ -64,11 +70,14 @@
                   </a>
                 {% endif %}
               </td>
+              <td class="accuracy-cell">{{ show_accuracy(entry_accuracies[entry.index], "image", entry.child.status) }}</td>
+              <td class="accuracy-cell">{{ show_accuracy(entry_accuracies[entry.index], "description", entry.child.status) }}</td>
               <td>{{ entry.models|join(", ") }}</td>
               <td class="error-text">{{ entry.last_error or "-" }}</td>
             </tr>
           {% endfor %}
         </tbody>
     </table>
+    </div>
   </section>
 {% endblock %}

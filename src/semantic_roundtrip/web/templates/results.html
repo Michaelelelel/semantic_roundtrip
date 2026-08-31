@@ -1,8 +1,24 @@
 {% extends "base.html" %}
+{% from "accuracy.html" import accuracy_summary %}
 
-{% macro show_prediction(result, missing_label) %}
+{% macro missing_result(trace, stage) -%}
+  {% if is_terminal or stage in trace.terminal_stages
+        or (stage != "illustratability_rating" and trace.prompt_id is none and "prompt_generation" in trace.terminal_stages)
+        or (stage not in ("illustratability_rating", "prompt_generation") and trace.image_id is none and "image_generation" in trace.terminal_stages)
+        or (stage == "title_guessing_from_description" and trace.image_description is none and "image_description" in trace.terminal_stages) %}
+    Not produced
+  {% else %}
+    Pending
+  {% endif %}
+{%- endmacro %}
+
+{% macro stage_heading(stage, label) %}
+  {{ label }}{% if stages[stage].imported %}<br><small>imported</small>{% endif %}
+{% endmacro %}
+
+{% macro show_prediction(result, trace, stage) %}
   {% if result is none %}
-    {{ missing_label }}
+    {{ missing_result(trace, stage) }}
   {% else %}
     <strong>{{ result.title }}</strong>
     {% if result.confidence is not none %}
@@ -40,7 +56,7 @@
     </div>
   {% endif %}
 
-  {% set missing_label = "Not produced" if is_terminal else "Pending" %}
+  {{ accuracy_summary(accuracies, run.status) }}
 
   {% if result_page.traces %}
     <p>
@@ -49,21 +65,23 @@
     </p>
 
     {% for trace in result_page.traces %}
-      <article class="result">
-        <div class="result-image">
-          {% if trace.image_id is not none %}
-            <a href="{{ url_for('run_image', image_id=trace.image_id, run_path=run_path) }}">
-              <img
-                src="{{ url_for('run_image', image_id=trace.image_id, run_path=run_path) }}"
-                alt="Generated image for {{ trace.expected_title }} in {{ trace.domain }}"
-                loading="lazy"
-              >
-            </a>
-            <p>Image seed: <span class="mono">{{ trace.image_seed }}</span></p>
-          {% else %}
-            <p>{{ missing_label }}.</p>
-          {% endif %}
-        </div>
+      <article class="result{% if 'image_generation' not in stages %} result--text-only{% endif %}">
+        {% if 'image_generation' in stages %}
+          <div class="result-image">
+            {% if trace.image_id is not none %}
+              <a href="{{ url_for('run_image', image_id=trace.image_id, run_path=run_path) }}">
+                <img
+                  src="{{ url_for('run_image', image_id=trace.image_id, run_path=run_path) }}"
+                  alt="Generated image for {{ trace.expected_title }} in {{ trace.domain }}"
+                  loading="lazy"
+                >
+              </a>
+              <p>Image seed: <span class="mono">{{ trace.image_seed }}</span></p>
+            {% else %}
+              <p>{{ missing_result(trace, "image_generation") }}</p>
+            {% endif %}
+          </div>
+        {% endif %}
 
         <table>
           <tbody>
@@ -74,35 +92,41 @@
                 · <span class="mono">{{ trace.item_key }}</span>
               </td>
             </tr>
-            {% if has_illustratability_rating %}
+            {% if 'illustratability_rating' in stages %}
               <tr>
-                <th>Illustratability</th>
+                <th>{{ stage_heading("illustratability_rating", "Illustratability") }}</th>
                 <td>
                   {% if trace.illustratability_score is none %}
-                    {{ missing_label }}
+                    {{ missing_result(trace, "illustratability_rating") }}
                   {% else %}
                     <strong>{{ trace.illustratability_score }}</strong> / 100
                   {% endif %}
                 </td>
               </tr>
             {% endif %}
-            <tr>
-              <th>Generated prompt</th>
-              <td>
-                {{ trace.prompt_text }}
-                <br>
-                <small>
-                  Prompt {{ trace.prompt_index + 1 }} · sampling seed
-                  <span class="mono">{{ trace.prompt_sampling_seed }}</span>
-                </small>
-              </td>
-            </tr>
-            {% if has_verification %}
+            {% if 'prompt_generation' in stages %}
               <tr>
-                <th>Verification</th>
+                <th>{{ stage_heading("prompt_generation", "Generated prompt") }}</th>
+                <td>
+                  {% if trace.prompt_id is not none %}
+                    {{ trace.prompt_text }}
+                    <br>
+                    <small>
+                      Prompt {{ trace.prompt_index + 1 }} · sampling seed
+                      <span class="mono">{{ trace.prompt_sampling_seed }}</span>
+                    </small>
+                  {% else %}
+                    {{ missing_result(trace, "prompt_generation") }}
+                  {% endif %}
+                </td>
+              </tr>
+            {% endif %}
+            {% if 'verification' in stages %}
+              <tr>
+                <th>{{ stage_heading("verification", "Verification") }}</th>
                 <td>
                   {% if trace.verification_passed is none %}
-                    {{ missing_label }}
+                    {{ missing_result(trace, "verification") }}
                   {% elif trace.verification_passed %}
                     <span class="value--yes">Passed</span>
                   {% else %}
@@ -112,20 +136,22 @@
                 </td>
               </tr>
             {% endif %}
-            {% if has_direct_route %}
+            {% if 'title_guessing_direct' in stages %}
               <tr>
-                <th>Direct route</th>
-                <td>{{ show_prediction(trace.direct_result, missing_label) }}</td>
+                <th>{{ stage_heading("title_guessing_direct", "Direct route") }}</th>
+                <td>{{ show_prediction(trace.direct_result, trace, "title_guessing_direct") }}</td>
               </tr>
             {% endif %}
-            {% if has_description_route %}
+            {% if 'image_description' in stages %}
               <tr>
-                <th>Image description</th>
-                <td>{{ trace.image_description or missing_label }}</td>
+                <th>{{ stage_heading("image_description", "Image description") }}</th>
+                <td>{{ trace.image_description if trace.image_description is not none else missing_result(trace, "image_description") }}</td>
               </tr>
+            {% endif %}
+            {% if 'title_guessing_from_description' in stages %}
               <tr>
-                <th>Description route</th>
-                <td>{{ show_prediction(trace.description_result, missing_label) }}</td>
+                <th>{{ stage_heading("title_guessing_from_description", "Description route") }}</th>
+                <td>{{ show_prediction(trace.description_result, trace, "title_guessing_from_description") }}</td>
               </tr>
             {% endif %}
           </tbody>
@@ -147,33 +173,6 @@
       {% endif %}
     </p>
   {% else %}
-    {% if has_illustratability_rating %}
-      {% if ratings %}
-        <h2>Illustratability ratings</h2>
-        <table>
-          <thead>
-            <tr><th>Domain</th><th>Title</th><th>Score</th></tr>
-          </thead>
-          <tbody>
-            {% for rating in ratings %}
-              <tr>
-                <td>{{ rating.domain }}</td>
-                <td>{{ rating.title }}</td>
-                <td><strong>{{ rating.score }}</strong> / 100</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        <p>No image result traces were produced by this rating-only run.</p>
-      {% elif is_terminal %}
-        <p>No illustratability ratings were produced.</p>
-      {% else %}
-        <p>No illustratability ratings are available yet.</p>
-      {% endif %}
-    {% elif is_terminal %}
-      <p>No generated prompts were produced.</p>
-    {% else %}
-      <p>No generated prompts are available yet.</p>
-    {% endif %}
+    <p>No dataset items are available.</p>
   {% endif %}
 {% endblock %}

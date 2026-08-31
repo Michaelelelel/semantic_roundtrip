@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "accuracy.html" import accuracy_summary %}
 
 {% block title %}{{ run.name }}{% endblock %}
 
@@ -34,6 +35,8 @@
     <div><dt>Created</dt><dd>{{ run.created_at|datetime }}</dd></div>
     <div><dt>Last update</dt><dd>{{ run.last_update|datetime }}</dd></div>
   </dl>
+
+  {{ accuracy_summary(accuracies, run.status) }}
 
   <section>
     <h2>Pipeline stages</h2>

@@ -1,0 +1,31 @@
+{% macro show_accuracy(accuracies, route, status) -%}
+  {% if accuracies is none %}
+    Unavailable
+  {% elif route not in accuracies %}
+    —
+  {% else %}
+    {% set value = accuracies[route] %}
+    {% if not value.predictions and status not in ("completed", "failed", "interrupted") %}
+      Pending
+    {% else %}
+      <strong>{{ "%.1f"|format(value.percent) }}%</strong>
+      <small>({{ value.correct }} / {{ value.expected }})</small>
+    {% endif %}
+    {% if status != "completed" %}<br><small>Provisional</small>{% endif %}
+    <br><small>{{ value.predictions }} / {{ value.expected }} predictions</small>
+  {% endif %}
+{%- endmacro %}
+
+{% macro accuracy_summary(accuracies, status) %}
+  {% if accuracies %}
+    <dl class="metadata accuracy-summary">
+      {% for route, label in (("image", "Direct accuracy"), ("description", "Indirect accuracy")) %}
+        {% if route in accuracies %}
+          <div><dt>{{ label }}</dt><dd>{{ show_accuracy(accuracies, route, status) }}</dd></div>
+        {% endif %}
+      {% endfor %}
+    </dl>
+    <p class="accuracy-note">End-to-end Strict Exact Match: correct title and passed verification / all planned observations.
+      Missing predictions or verification count as zero. Provisional values include unfinished work.</p>
+  {% endif %}
+{% endmacro %}

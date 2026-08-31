@@ -7,11 +7,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
+from semantic_roundtrip.config_resolution import load_effective_config
 from semantic_roundtrip.persistence.job.schema import job_database_path
+from semantic_roundtrip.persistence.run.config_snapshot import EFFECTIVE_CONFIG_FILENAME
 from semantic_roundtrip.persistence.run.result_queries import (
-    read_illustratability_ratings,
+    RouteAccuracy,
     read_image_artifact_path,
     read_result_trace_page,
+    read_route_accuracies,
 )
 from semantic_roundtrip.persistence.run.schema import database_path_for_run
 from semantic_roundtrip.status.common import STATUS_READ_ERRORS
@@ -128,6 +131,11 @@ def _unreadable_status(error: BaseException) -> HTTPException:
     )
 
 
+def _run_accuracies(run_directory: Path) -> dict[str, RouteAccuracy]:
+    config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
+    return read_route_accuracies(database_path_for_run(run_directory), config)
+
+
 @router.get("/", response_class=HTMLResponse)
 def overview(request: Request, runs_root: RunsRoot) -> HTMLResponse:
     """Show all persisted jobs and standalone experiment runs."""
@@ -169,11 +177,18 @@ def job_detail(
         entry.index: entry.run_directory.relative_to(runs_root).as_posix()
         for entry in job.entries
     }
+    entry_accuracies = {}
+    for entry in job.entries:
+        try:
+            entry_accuracies[entry.index] = _run_accuracies(entry.run_directory)
+        except STATUS_READ_ERRORS:
+            entry_accuracies[entry.index] = None
     return _render(
         request,
         "job.html",
         job=job,
         entry_paths=entry_paths,
+        entry_accuracies=entry_accuracies,
         auto_refresh=job.status not in TERMINAL_STATUSES,
     )
 
@@ -189,6 +204,7 @@ def run_detail(
 
     try:
         run = get_run_status(run_directory)
+        accuracies = _run_accuracies(run_directory)
     except STATUS_READ_ERRORS as error:
         raise _unreadable_status(error) from error
 
@@ -196,6 +212,7 @@ def run_detail(
         request,
         "run.html",
         run=run,
+        accuracies=accuracies,
         run_path=run_directory.relative_to(runs_root).as_posix(),
         parent_job_id=_parent_job_id(run_directory, runs_root),
         auto_refresh=run.status not in TERMINAL_STATUSES,
@@ -215,12 +232,14 @@ def run_results(
 
     try:
         run = get_run_status(run_directory)
+        config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
         result_page = read_result_trace_page(
             database_path,
+            config,
             page=page,
             page_size=RESULTS_PAGE_SIZE,
         )
-        ratings = read_illustratability_ratings(database_path)
+        accuracies = read_route_accuracies(database_path, config)
     except STATUS_READ_ERRORS as error:
         raise _unreadable_status(error) from error
 
@@ -236,17 +255,8 @@ def run_results(
         run=run,
         run_path=run_directory.relative_to(runs_root).as_posix(),
         result_page=result_page,
-        ratings=ratings,
-        has_illustratability_rating=any(
-            stage.name == "illustratability_rating" for stage in run.stages
-        ),
-        has_verification=any(stage.name == "verification" for stage in run.stages),
-        has_direct_route=any(
-            stage.name == "title_guessing_direct" for stage in run.stages
-        ),
-        has_description_route=any(
-            stage.name == "title_guessing_from_description" for stage in run.stages
-        ),
+        accuracies=accuracies,
+        stages={stage.name: stage for stage in run.stages},
         is_terminal=run.status in TERMINAL_STATUSES,
         auto_refresh=run.status not in TERMINAL_STATUSES,
     )
