@@ -24,23 +24,19 @@ def score_observations(observations: pd.DataFrame) -> pd.DataFrame:
 
     strict: list[bool | None] = []
     normalized: list[bool | None] = []
-    for expected, predicted in zip(
-        result["expected_title"], result["predicted_title"], strict=True
-    ):
+    for expected, predicted in zip(result["expected_title"], result["predicted_title"], strict=True):
         if pd.isna(predicted):
             strict.append(None)
             normalized.append(None)
         else:
             strict.append(title_exact_match(str(expected), str(predicted)))
-            normalized.append(
-                title_normalized_exact_match(str(expected), str(predicted))
-            )
+            normalized.append(title_normalized_exact_match(str(expected), str(predicted)))
     result["strict_exact_match"] = pd.array(strict, dtype="boolean")
     result["normalized_exact_match"] = pd.array(normalized, dtype="boolean")
-    verifier_passed = result["verification_passed"].fillna(False).astype(bool)
-    result["end_to_end_strict_score"] = (
-        verifier_passed & result["strict_exact_match"].fillna(False)
-    ).astype(int)
+    verifier_passed = result["verification_passed"].astype("boolean").fillna(False)
+    result["end_to_end_strict_score"] = (verifier_passed & result["strict_exact_match"].fillna(False)).astype(
+        int
+    )
     result["end_to_end_normalized_score"] = (
         verifier_passed & result["normalized_exact_match"].fillna(False)
     ).astype(int)
@@ -74,15 +70,15 @@ def aggregate_titles(
         predictions=("prediction_id", "count"),
         verifier_passes=(
             "verification_passed",
-            lambda values: values.fillna(False).astype(bool).sum(),
+            lambda values: values.eq(True).sum(),
         ),
         strict_accuracy=(
             "strict_exact_match",
-            lambda values: values.fillna(False).astype(bool).mean(),
+            lambda values: values.astype("boolean").fillna(False).mean(),
         ),
         normalized_accuracy=(
             "normalized_exact_match",
-            lambda values: values.fillna(False).astype(bool).mean(),
+            lambda values: values.astype("boolean").fillna(False).mean(),
         ),
         end_to_end_strict_accuracy=("end_to_end_strict_score", "mean"),
         end_to_end_normalized_accuracy=("end_to_end_normalized_score", "mean"),
@@ -105,12 +101,15 @@ def _stratified_groups(
     return tuple(np.asarray(index, dtype=int) for index in groups.values())
 
 
-def _stratified_indices(
+def _stratified_samples(
     groups: tuple[np.ndarray, ...],
     rng: np.random.Generator,
+    repetitions: int,
 ) -> np.ndarray:
-    sampled = [rng.choice(index, size=len(index), replace=True) for index in groups]
-    return np.concatenate(sampled)
+    """Rows are whole-title resamples; each stratum keeps its original size."""
+    return np.column_stack(
+        [rng.choice(index, size=(repetitions, len(index)), replace=True) for index in groups]
+    )
 
 
 def paired_stratified_bootstrap(
@@ -139,16 +138,13 @@ def paired_stratified_bootstrap(
         raise ValueError("Contrast does not have one complete paired title grid.")
     contrast = pivot.reset_index()[identity]
     contrast["value"] = sum(
-        pivot[condition].to_numpy(dtype=float) * weight
-        for condition, weight in condition_weights.items()
+        pivot[condition].to_numpy(dtype=float) * weight for condition, weight in condition_weights.items()
     )
     estimate = float(contrast["value"].mean())
     rng = np.random.default_rng(seed)
-    samples = np.empty(repetitions, dtype=float)
     groups = _stratified_groups(contrast, strata)
-    for index in range(repetitions):
-        sampled = _stratified_indices(groups, rng)
-        samples[index] = contrast.iloc[sampled]["value"].mean()
+    sampled = _stratified_samples(groups, rng, repetitions)
+    samples = contrast["value"].to_numpy(dtype=float)[sampled].mean(axis=1)
     low, high = np.quantile(samples, [0.025, 0.975])
     return {
         "titles": len(contrast),
@@ -174,6 +170,8 @@ def illustratability_spearman(
     seed: int = BOOTSTRAP_SEED,
 ) -> pd.DataFrame:
     """Correlate ratings with title outcomes, separately for each PG model."""
+    if repetitions < 1:
+        raise ValueError("Bootstrap repetitions must be positive.")
     keys = [model_column, "dataset_id", "item_key", "domain", "title_length_group"]
     rating_values = ratings[[*keys, "score"]].dropna(subset=["score"])
     outcome_values = outcomes[[*keys, outcome_column]].dropna(subset=[outcome_column])
@@ -184,26 +182,26 @@ def illustratability_spearman(
         validate="one_to_one",
     )
     result: list[dict[str, float | int | str]] = []
-    for offset, (model, frame) in enumerate(
-        merged.groupby(model_column, sort=True, dropna=False)
-    ):
+    for offset, (model, frame) in enumerate(merged.groupby(model_column, sort=True, dropna=False)):
         rho = _spearman(frame["score"], frame[outcome_column])
         if np.isnan(rho):
             valid = np.empty(0, dtype=float)
             low = high = float("nan")
         else:
-            bootstrap = np.empty(repetitions, dtype=float)
             rng = np.random.default_rng(seed + offset)
             groups = _stratified_groups(
                 frame,
                 ("domain", "title_length_group"),
             )
-            for index in range(repetitions):
-                sampled = _stratified_indices(groups, rng)
-                values = frame.iloc[sampled]
-                bootstrap[index] = _spearman(
-                    values["score"], values[outcome_column]
-                )
+            sampled = _stratified_samples(groups, rng, repetitions)
+            # Rank each resample independently, including average ranks for ties.
+            x = pd.DataFrame(frame["score"].to_numpy()[sampled]).rank(axis=1).to_numpy()
+            y = pd.DataFrame(frame[outcome_column].to_numpy()[sampled]).rank(axis=1).to_numpy()
+            x -= x.mean(axis=1, keepdims=True)
+            y -= y.mean(axis=1, keepdims=True)
+            denominator = np.sqrt((x * x).sum(axis=1) * (y * y).sum(axis=1))
+            bootstrap = np.full(repetitions, np.nan)
+            np.divide((x * y).sum(axis=1), denominator, out=bootstrap, where=denominator > 0)
             valid = bootstrap[~np.isnan(bootstrap)]
             if len(valid) < repetitions * 0.95:
                 low = high = float("nan")
@@ -219,4 +217,14 @@ def illustratability_spearman(
                 "valid_bootstrap_repetitions": len(valid),
             }
         )
-    return pd.DataFrame.from_records(result)
+    return pd.DataFrame.from_records(
+        result,
+        columns=[
+            model_column,
+            "titles",
+            "spearman_rho",
+            "ci95_low",
+            "ci95_high",
+            "valid_bootstrap_repetitions",
+        ],
+    )

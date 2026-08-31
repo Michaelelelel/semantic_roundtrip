@@ -23,7 +23,7 @@ stages:
     prompt_profile: prompts/illustratability/rating_v2.yaml
     parameters:
       temperature: 1.0
-      top_p: 1.0
+      top_p: 0.95
       max_tokens: 16384
       seed: 4001
   prompt_generation:
@@ -31,5 +31,5 @@ stages:
     prompt_profile: prompts/prompt_generation/visual_single_v5.yaml
     parameters:
       temperature: 1.0
-      top_p: 1.0
+      top_p: 0.95
       max_tokens: 16384

@@ -60,5 +60,9 @@ runs/
 *.sqlite
 *.db
 
+# Notebook outputs are generated locally; the source notebook is tracked.
+notebooks/results/
+notebooks/.ipynb_checkpoints/
+
 # Large or licensed source snapshots used to build the title benchmark stay local.
 /data/title_sources/

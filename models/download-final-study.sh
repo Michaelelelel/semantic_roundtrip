@@ -12,8 +12,8 @@ model_root="${1:-$script_directory}"
 "${script_directory}/multimodal/download-qwen3.8-27b-bf16.sh" "$model_root"
 "${script_directory}/multimodal/download-gemma-4-31b-it-bf16.sh" "$model_root"
 
-# Fixed verifier.
-"${script_directory}/vision/download-qwen3-vl-8b-instruct-f16.sh" "$model_root"
+# Verification reuses the Qwen3.8 multimodal checkpoint downloaded above.
+# The former Qwen3-VL-8B download remains available separately for comparison.
 
 # Fixed image generator.
 "${script_directory}/image/download-stable-diffusion-3.5-large-bf16.sh" "$model_root"

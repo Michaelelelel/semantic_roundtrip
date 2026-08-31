@@ -18,7 +18,7 @@ backends:
   image_model:
     profile: ../../../backends/image/stable-diffusion-3.5-large-bf16-comfyui.yaml
   verifier:
-    profile: ../../../backends/vision/qwen3-vl-8b-instruct-f16-llamacpp.yaml
+    profile: ../../../backends/vision/qwen3.8-27b-bf16-llamacpp.yaml
   description_model:
     profile: ../../../backends/vision/qwen2.5-vl-32b-instruct-f16-llamacpp.yaml
   interpretation_model:
@@ -29,7 +29,7 @@ stages:
     prompt_profile: prompts/illustratability/rating_v2.yaml
     parameters:
       temperature: 1.0
-      top_p: 1.0
+      top_p: 0.95
       max_tokens: 16384
       seed: 4001
   prompt_generation:
@@ -37,7 +37,7 @@ stages:
     prompt_profile: prompts/prompt_generation/visual_single_v5.yaml
     parameters:
       temperature: 1.0
-      top_p: 1.0
+      top_p: 0.95
       max_tokens: 16384
   image_generation:
     backend: image_model
@@ -52,7 +52,7 @@ stages:
       repeat_penalty: 1.0
       presence_penalty: 0.0
       frequency_penalty: 0.0
-      max_tokens: 128
+      max_tokens: 512
       seed: 3001
   image_description:
     backend: description_model
@@ -60,7 +60,7 @@ stages:
     parameters:
       temperature: 1.0
       top_k: 0
-      top_p: 1.0
+      top_p: 0.95
       min_p: 0.0
       repeat_penalty: 1.0
       presence_penalty: 0.0
@@ -74,7 +74,7 @@ stages:
       parameters:
         temperature: 1.0
         top_k: 0
-        top_p: 1.0
+        top_p: 0.95
         min_p: 0.0
         repeat_penalty: 1.0
         presence_penalty: 0.0
