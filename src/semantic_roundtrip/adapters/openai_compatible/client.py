@@ -191,10 +191,16 @@ class OpenAICompatibleChatClient:
         try:
             response_data = response.json()
             choice = _first_choice(response_data)
-            content = _choice_content(choice)
             finish_reason = choice.get("finish_reason")
             if finish_reason is not None and not isinstance(finish_reason, str):
                 raise TypeError("finish reason is not text")
+            if finish_reason == "length":
+                raise AdapterError(
+                    f"{self._error_subject} response was truncated because "
+                    "the token limit was reached.",
+                    raw_response,
+                )
+            content = _choice_content(choice)
             visible_content_token_logprobs = (
                 _visible_content_token_logprobs(choice, content)
                 if include_token_logprobs

@@ -28,6 +28,8 @@ from semantic_roundtrip.status.models import (
 def print_job_plan(plan: JobPlan) -> bool:
     """Print expected work and return whether preflight issues were found."""
     typer.echo(f"Job: {plan.name}")
+    for alias, directory in plan.source_jobs.items():
+        typer.echo(f"Source job: {alias}={directory}")
     typer.echo(f"Experiment entries: {len(plan.entries)}")
     typer.echo(
         "Expected outputs: "

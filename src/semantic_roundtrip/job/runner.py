@@ -1,6 +1,6 @@
 """Sequential execution and resume behavior for persisted jobs."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from shutil import copy2
@@ -122,9 +122,13 @@ def _create_job_context(loaded: LoadedJobConfig) -> JobContext:
     )
 
 
-def prepare_job(config_path: Path) -> PreparedJob:
+def prepare_job(
+    config_path: Path,
+    *,
+    source_jobs: Mapping[str, Path] | None = None,
+) -> PreparedJob:
     """Validate and freeze a new job before executing any experiment."""
-    loaded = load_job_config(config_path)
+    loaded = load_job_config(config_path, source_jobs=source_jobs)
     plan = plan_job(loaded)
     if plan.missing_credentials:
         names = ", ".join(plan.missing_credentials)
@@ -138,7 +142,16 @@ def prepare_job(config_path: Path) -> PreparedJob:
     runs_directory.mkdir()
 
     input_config_path = context.directory / JOB_INPUT_FILENAME
-    copy2(loaded.source_path, input_config_path)
+    if source_jobs:
+        with input_config_path.open("x", encoding="utf-8") as file:
+            yaml.safe_dump(
+                loaded.input_config.model_dump(mode="json", exclude_none=True),
+                file,
+                sort_keys=False,
+                allow_unicode=True,
+            )
+    else:
+        copy2(loaded.source_path, input_config_path)
 
     run_directories: list[Path] = []
     prepared_children: dict[str, PreparedExperiment] = {}

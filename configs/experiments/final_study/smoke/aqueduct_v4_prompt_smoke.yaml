@@ -24,7 +24,7 @@ stages:
     parameters:
       temperature: 1.0
       top_p: 0.95
-      max_tokens: 16384
+      max_tokens: 32000
       seed: 4001
   prompt_generation:
     backend: prompt_model
@@ -32,4 +32,4 @@ stages:
     parameters:
       temperature: 1.0
       top_p: 0.95
-      max_tokens: 16384
+      max_tokens: 32000

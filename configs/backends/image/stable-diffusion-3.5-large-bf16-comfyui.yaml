@@ -20,7 +20,7 @@ settings:
     "4":
       ckpt_name: sd3.5_large.safetensors
     "40":
-      text: ""
+      text: "text, letters, words, logos, watermarks"
     "43":
       clip_name1: clip_g.safetensors
       clip_name2: clip_l.safetensors

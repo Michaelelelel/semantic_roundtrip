@@ -1,12 +1,11 @@
-# Replace source_jobs.local_smoke.directory before running.
+# Bind the source with --source-job local_smoke=runs/FINAL_SMOKE_LOCAL_JOB.
 schema_version: 4
 job:
   name: final_smoke_external_import
   output_directory: runs
   continue_on_error: true
 source_jobs:
-  local_smoke:
-    directory: /REPLACE/WITH/FINAL_SMOKE_LOCAL_JOB
+  local_smoke: {}
 experiments:
 - name: external_from_job_entry
   config: ../../experiments/final_study/smoke/external_import_direct.yaml

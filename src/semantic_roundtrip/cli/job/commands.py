@@ -2,8 +2,10 @@
 
 from enum import Enum
 from pathlib import Path
+from typing import Annotated
 
 import typer
+from typer.models import OptionInfo
 
 from semantic_roundtrip.cli.common import (
     EXPECTED_COMMAND_ERRORS,
@@ -27,7 +29,6 @@ from semantic_roundtrip.job.runner import (
     request_job_pause,
 )
 from semantic_roundtrip.status.discovery import list_jobs
-
 
 app = typer.Typer(
     help="Plan and manage a persisted collection of experiment runs.",
@@ -74,6 +75,30 @@ def _job_directory_option() -> Path:
     )
 
 
+def _source_jobs_option() -> OptionInfo:
+    """Bind external job aliases without editing the job YAML."""
+    return typer.Option(
+        "--source-job",
+        help=(
+            "External job binding ALIAS=DIRECTORY; repeat for multiple sources. "
+            "Relative directories are resolved from the current working directory."
+        ),
+    )
+
+
+def _parse_source_jobs(bindings: list[str] | None) -> dict[str, Path]:
+    sources: dict[str, Path] = {}
+    for binding in bindings or []:
+        alias, separator, directory = binding.partition("=")
+        if not separator or not alias.strip() or not directory.strip():
+            raise ValueError("--source-job requires ALIAS=DIRECTORY.")
+        alias = alias.strip()
+        if alias in sources:
+            raise ValueError(f"Duplicate --source-job alias: {alias}")
+        sources[alias] = Path(directory)
+    return sources
+
+
 @app.command("list")
 def list_command(
     root: Path = runs_root_option(),
@@ -97,10 +122,15 @@ def list_command(
 
 
 @app.command("plan")
-def plan(config_path: Path = _job_config_option()) -> None:
+def plan(
+    config_path: Path = _job_config_option(),
+    source_jobs: Annotated[list[str] | None, _source_jobs_option()] = None,
+) -> None:
     """Validate a job and display its expected work without creating artifacts."""
     try:
-        loaded = load_job_config(config_path)
+        loaded = load_job_config(
+            config_path, source_jobs=_parse_source_jobs(source_jobs)
+        )
         job_plan = plan_job(loaded)
     except EXPECTED_COMMAND_ERRORS as error:
         exit_with_error(error)
@@ -110,10 +140,15 @@ def plan(config_path: Path = _job_config_option()) -> None:
 
 
 @app.command("start")
-def start(config_path: Path = _job_config_option()) -> None:
+def start(
+    config_path: Path = _job_config_option(),
+    source_jobs: Annotated[list[str] | None, _source_jobs_option()] = None,
+) -> None:
     """Create and execute a new persisted job."""
     try:
-        prepared = prepare_job(config_path)
+        prepared = prepare_job(
+            config_path, source_jobs=_parse_source_jobs(source_jobs)
+        )
         print_job_info(prepared)
         summary = execute_job(prepared, report=typer.echo)
     except KeyboardInterrupt as error:

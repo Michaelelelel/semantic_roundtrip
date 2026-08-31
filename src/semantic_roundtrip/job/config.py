@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -53,9 +54,9 @@ class JobExperimentReference(ConfigModel):
 
 
 class ExternalJobSource(ConfigModel):
-    """One completed job that may provide named source entries."""
+    """A named external job, bound in YAML or when planning/starting a job."""
 
-    directory: Path
+    directory: Path | None = None
 
 
 class JobEntrySource(ConfigModel):
@@ -167,6 +168,7 @@ class JobPlan:
     """Preflight summary for a complete job."""
 
     name: str
+    source_jobs: dict[str, Path]
     entries: tuple[JobPlanEntry, ...]
     expected_outputs: dict[str, int]
     model_stacks: tuple[str, ...]
@@ -252,6 +254,12 @@ def _resolve_job_inheritance(
         if configured_job is None:
             raise ValueError(f"Unknown source_jobs alias: {reference.job}")
         job_directory = configured_job.directory
+        if job_directory is None:
+            raise ValueError(
+                f"Source job '{reference.job}' needs a directory. Set "
+                f"source_jobs.{reference.job}.directory or pass "
+                f"--source-job {reference.job}=DIRECTORY."
+            )
         if not job_directory.is_absolute():
             job_directory = (base_directory / job_directory).resolve()
         source = resolve_job_entry_run(job_directory, reference.entry)
@@ -277,10 +285,20 @@ def _resolve_job_inheritance(
     return resolved, source_config
 
 
-def load_job_config(path: Path) -> LoadedJobConfig:
+def load_job_config(
+    path: Path,
+    *,
+    source_jobs: Mapping[str, Path] | None = None,
+) -> LoadedJobConfig:
     """Load a job and fully validate every referenced experiment."""
     path = path.resolve()
     input_config = InputJobConfig.model_validate(_read_yaml(path))
+    sources = dict(input_config.source_jobs)
+    for alias, directory in (source_jobs or {}).items():
+        if alias not in sources:
+            raise ValueError(f"Unknown source_jobs alias: {alias}")
+        sources[alias] = ExternalJobSource(directory=directory.expanduser().resolve())
+    input_config = input_config.model_copy(update={"source_jobs": sources})
     names = [entry.name for entry in input_config.experiments]
     if len(names) != len(set(names)):
         raise ValueError("Every job experiment name must be unique.")
@@ -444,6 +462,11 @@ def plan_job(
 
     return JobPlan(
         name=loaded.input_config.job.name,
+        source_jobs={
+            alias: (loaded.source_path.parent / source.directory).resolve()
+            for alias, source in loaded.input_config.source_jobs.items()
+            if source.directory is not None
+        },
         entries=tuple(entries),
         expected_outputs=totals,
         model_stacks=tuple(model_stacks),

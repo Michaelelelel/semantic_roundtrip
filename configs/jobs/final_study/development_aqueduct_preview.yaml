@@ -1,4 +1,4 @@
-# Set source_jobs.local_indirect.directory before running this optional job.
+# Bind the source with --source-job local_indirect=runs/JOB_DIRECTORY.
 schema_version: 4
 job:
   name: development_aqueduct_preview
@@ -138,5 +138,4 @@ experiments:
     stages:
     - image_description
 source_jobs:
-  local_indirect:
-    directory: ../../../runs/REPLACE_WITH_DEVELOPMENT_INDIRECT_LOCAL_JOB
+  local_indirect: {}
