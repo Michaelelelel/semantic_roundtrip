@@ -1,16 +1,15 @@
 """Shared low-level SQLite connection and timestamp helpers."""
 
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
 
 PERSISTENCE_ERRORS = (sqlite3.Error,)
 
 
 def utc_now() -> str:
     """Return the current UTC timestamp in the persisted ISO format."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def parse_datetime(value: str | None) -> datetime | None:

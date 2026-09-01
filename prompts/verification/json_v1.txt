@@ -1,9 +1,0 @@
-Determine whether this generated image is suitable for a semantic round-trip
-benchmark. It fails verification if it contains visible written text, gives away
-the title through lettering, or appears to directly reproduce an official cover,
-poster, or trademarked design.
-
-Return only valid JSON in exactly this form:
-{"passed": true, "reason": null}
-
-When it fails, set "passed" to false and provide a short reason string.

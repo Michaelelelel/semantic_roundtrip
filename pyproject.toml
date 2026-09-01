@@ -28,7 +28,8 @@ analysis = [
     "matplotlib>=3.11.1,<4",
     "nbconvert>=7.17.0,<8",
     "numpy>=2.4.3,<3",
-    "pandas>=2.3.3,<3"
+    "pandas>=2.3.3,<3",
+    "seaborn>=0.13.2,<1"
 ]
 dev = [
     "ruff>=0.15.21,<1"
@@ -45,3 +46,8 @@ where = ["src"]
 
 [tool.ruff]
 target-version = "py314"
+
+[tool.ruff.lint.per-file-ignores]
+# Typer declares CLI options through evaluated default values by design.
+"src/semantic_roundtrip/cli/job/commands.py" = ["B008"]
+"src/semantic_roundtrip/cli/run/commands.py" = ["B008"]

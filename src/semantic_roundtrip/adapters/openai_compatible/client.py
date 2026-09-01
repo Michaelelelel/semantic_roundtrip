@@ -437,7 +437,9 @@ def _is_nonvisible_control_token(item: dict[str, Any]) -> bool:
         return False
 
     paired_markers = (("<|", "|>"), ("<｜", "｜>"))
-    if any(token.startswith(start) and token.endswith(end) for start, end in paired_markers):
+    if any(
+        token.startswith(start) and token.endswith(end) for start, end in paired_markers
+    ):
         return True
 
     return token.casefold() in {

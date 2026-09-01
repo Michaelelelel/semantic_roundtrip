@@ -27,7 +27,7 @@ backends:
 stages:
   prompt_generation:
     backend: mock
-    prompt_profile: prompts/prompt_generation/visual_single_v1.yaml
+    prompt_profile: prompts/prompt_generation/visual_single_v5.yaml
     parameters:
       delay_seconds: 1
 
@@ -54,6 +54,6 @@ stages:
         delay_seconds: 1
     from_description:
       backend: mock
-      template_path: prompts/title_guessing/description_plain_v1.txt
+      template_path: prompts/title_guessing/description_plain_v3.txt
       parameters:
         delay_seconds: 1

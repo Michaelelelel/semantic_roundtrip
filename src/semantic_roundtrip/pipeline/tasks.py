@@ -1,14 +1,10 @@
 """Resumable adapter-task execution shared by pipeline stages."""
 
 from collections.abc import Callable
-from typing import TypeVar
 
 from semantic_roundtrip.adapters.errors import AdapterError
 from semantic_roundtrip.persistence.run.database import RunDatabase
 from semantic_roundtrip.persistence.run.tasks import TaskRecord
-
-
-ResultType = TypeVar("ResultType")
 
 
 class PauseRequested(Exception):
@@ -21,7 +17,7 @@ def raise_if_pause_requested(database: RunDatabase) -> None:
         raise PauseRequested
 
 
-def run_task(
+def run_task[ResultType](
     operation: Callable[[], ResultType],
     *,
     database: RunDatabase,
@@ -60,7 +56,7 @@ def run_task(
     raise RuntimeError("Task retry loop ended unexpectedly.")
 
 
-def load_or_run_single(
+def load_or_run_single[ResultType](
     *,
     database: RunDatabase,
     stage: str,

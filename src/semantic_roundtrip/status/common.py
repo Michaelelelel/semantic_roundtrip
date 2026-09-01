@@ -1,6 +1,6 @@
 """Shared calculations and expected read failures for status discovery."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -8,7 +8,6 @@ import yaml
 
 from semantic_roundtrip.persistence.sqlite import PERSISTENCE_ERRORS
 from semantic_roundtrip.status.models import UnavailableStatus
-
 
 STATUS_READ_ERRORS = (OSError, ValueError, yaml.YAMLError, *PERSISTENCE_ERRORS)
 
@@ -30,7 +29,7 @@ def elapsed_seconds(
     elif status == "paused" and heartbeat_at is not None:
         end = heartbeat_at
     else:
-        end = now if now is not None else datetime.now(timezone.utc)
+        end = now if now is not None else datetime.now(UTC)
 
     return max(0.0, (end - started_at).total_seconds())
 

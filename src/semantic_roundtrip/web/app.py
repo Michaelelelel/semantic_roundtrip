@@ -15,7 +15,6 @@ from semantic_roundtrip.web.formatting import (
 )
 from semantic_roundtrip.web.routes import router
 
-
 RUNS_ROOT_ENVIRONMENT_VARIABLE = "SEMANTIC_ROUNDTRIP_RUNS_ROOT"
 WEB_DIRECTORY = Path(__file__).parent
 

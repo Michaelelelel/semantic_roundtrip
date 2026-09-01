@@ -11,7 +11,6 @@ from semantic_roundtrip.runtime.base import (
     RuntimeTarget,
 )
 
-
 DEFAULT_REQUEST_TIMEOUT_SECONDS = 30.0
 DEFAULT_TRANSITION_TIMEOUT_SECONDS = 900.0
 DEFAULT_POLL_INTERVAL_SECONDS = 0.5

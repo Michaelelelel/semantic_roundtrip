@@ -24,19 +24,23 @@ def score_observations(observations: pd.DataFrame) -> pd.DataFrame:
 
     strict: list[bool | None] = []
     normalized: list[bool | None] = []
-    for expected, predicted in zip(result["expected_title"], result["predicted_title"], strict=True):
+    for expected, predicted in zip(
+        result["expected_title"], result["predicted_title"], strict=True
+    ):
         if pd.isna(predicted):
             strict.append(None)
             normalized.append(None)
         else:
             strict.append(title_exact_match(str(expected), str(predicted)))
-            normalized.append(title_normalized_exact_match(str(expected), str(predicted)))
+            normalized.append(
+                title_normalized_exact_match(str(expected), str(predicted))
+            )
     result["strict_exact_match"] = pd.array(strict, dtype="boolean")
     result["normalized_exact_match"] = pd.array(normalized, dtype="boolean")
     verifier_passed = result["verification_passed"].astype("boolean").fillna(False)
-    result["end_to_end_strict_score"] = (verifier_passed & result["strict_exact_match"].fillna(False)).astype(
-        int
-    )
+    result["end_to_end_strict_score"] = (
+        verifier_passed & result["strict_exact_match"].fillna(False)
+    ).astype(int)
     result["end_to_end_normalized_score"] = (
         verifier_passed & result["normalized_exact_match"].fillna(False)
     ).astype(int)
@@ -108,7 +112,10 @@ def _stratified_samples(
 ) -> np.ndarray:
     """Rows are whole-title resamples; each stratum keeps its original size."""
     return np.column_stack(
-        [rng.choice(index, size=(repetitions, len(index)), replace=True) for index in groups]
+        [
+            rng.choice(index, size=(repetitions, len(index)), replace=True)
+            for index in groups
+        ]
     )
 
 
@@ -120,7 +127,7 @@ def paired_stratified_bootstrap(
     condition_column: str = "condition",
     repetitions: int = BOOTSTRAP_REPETITIONS,
     seed: int = BOOTSTRAP_SEED,
-    strata: tuple[str, ...] = ("domain", "title_length_group"),
+    strata: tuple[str, ...] = ("domain",),
 ) -> dict[str, float | int]:
     """Estimate one paired title contrast and its stratified percentile interval."""
     if not condition_weights:
@@ -138,7 +145,8 @@ def paired_stratified_bootstrap(
         raise ValueError("Contrast does not have one complete paired title grid.")
     contrast = pivot.reset_index()[identity]
     contrast["value"] = sum(
-        pivot[condition].to_numpy(dtype=float) * weight for condition, weight in condition_weights.items()
+        pivot[condition].to_numpy(dtype=float) * weight
+        for condition, weight in condition_weights.items()
     )
     estimate = float(contrast["value"].mean())
     rng = np.random.default_rng(seed)
@@ -182,7 +190,9 @@ def illustratability_spearman(
         validate="one_to_one",
     )
     result: list[dict[str, float | int | str]] = []
-    for offset, (model, frame) in enumerate(merged.groupby(model_column, sort=True, dropna=False)):
+    for offset, (model, frame) in enumerate(
+        merged.groupby(model_column, sort=True, dropna=False)
+    ):
         rho = _spearman(frame["score"], frame[outcome_column])
         if np.isnan(rho):
             valid = np.empty(0, dtype=float)
@@ -191,17 +201,23 @@ def illustratability_spearman(
             rng = np.random.default_rng(seed + offset)
             groups = _stratified_groups(
                 frame,
-                ("domain", "title_length_group"),
+                ("domain",),
             )
             sampled = _stratified_samples(groups, rng, repetitions)
             # Rank each resample independently, including average ranks for ties.
             x = pd.DataFrame(frame["score"].to_numpy()[sampled]).rank(axis=1).to_numpy()
-            y = pd.DataFrame(frame[outcome_column].to_numpy()[sampled]).rank(axis=1).to_numpy()
+            y = (
+                pd.DataFrame(frame[outcome_column].to_numpy()[sampled])
+                .rank(axis=1)
+                .to_numpy()
+            )
             x -= x.mean(axis=1, keepdims=True)
             y -= y.mean(axis=1, keepdims=True)
             denominator = np.sqrt((x * x).sum(axis=1) * (y * y).sum(axis=1))
             bootstrap = np.full(repetitions, np.nan)
-            np.divide((x * y).sum(axis=1), denominator, out=bootstrap, where=denominator > 0)
+            np.divide(
+                (x * y).sum(axis=1), denominator, out=bootstrap, where=denominator > 0
+            )
             valid = bootstrap[~np.isnan(bootstrap)]
             if len(valid) < repetitions * 0.95:
                 low = high = float("nan")

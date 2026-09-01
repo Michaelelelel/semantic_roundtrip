@@ -1,9 +1,9 @@
 """Creation and identification of experiment runs."""
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from pathlib import Path
 import re
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
 from uuid import uuid4
 
 
@@ -23,7 +23,7 @@ def create_run_id(name: str, created_at: datetime) -> str:
     multiple runs start at the same time.
     """
 
-    timestamp_text = created_at.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    timestamp_text = created_at.astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
 
     readable_name = (
         re.sub(
@@ -51,7 +51,7 @@ def create_run_directory(base_path: Path, run_id: str) -> Path:
 
 def create_run(base_path: Path, name: str) -> RunContext:
     """Create a new run and return its identity and directory."""
-    created_at = datetime.now(timezone.utc)
+    created_at = datetime.now(UTC)
 
     for _ in range(5):
         run_id = create_run_id(name, created_at)

@@ -2,20 +2,19 @@
 
 from pathlib import Path
 from types import TracebackType
-from typing import Literal
+from typing import Literal, Self
 
 from semantic_roundtrip.persistence.run.manager import RunContext
 from semantic_roundtrip.persistence.run.queries import RunRecord, read_run_record
 from semantic_roundtrip.persistence.run.results import RunResultStore
+from semantic_roundtrip.persistence.run.runtime_events import RuntimeEventStore
 from semantic_roundtrip.persistence.run.schema import (
     connect_run_database,
     database_path_for_run,
     require_run_schema,
 )
-from semantic_roundtrip.persistence.run.runtime_events import RuntimeEventStore
 from semantic_roundtrip.persistence.run.tasks import RunTaskStore
 from semantic_roundtrip.persistence.sqlite import utc_now
-
 
 RunStatus = Literal[
     "created",
@@ -77,7 +76,7 @@ class RunDatabase:
         self.tasks = RunTaskStore(self._connection, run_context)
         self.runtime_events = RuntimeEventStore(self._connection, run_context)
 
-    def __enter__(self) -> "RunDatabase":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(

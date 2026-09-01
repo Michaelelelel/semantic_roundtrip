@@ -10,7 +10,6 @@ from semantic_roundtrip.config import (
     DatasetProfile,
     InputAppConfig,
     PipelineStageName,
-    PredictionInputKind,
     ResolvedAppConfig,
     ResolvedBackend,
     ResolvedDatasetConfig,
@@ -72,19 +71,6 @@ def configured_stage_names(config: ResolvedAppConfig) -> tuple[StageName, ...]:
         for stage_name in STAGE_NAMES
         if get_stage_config(config, stage_name) is not None
     )
-
-
-def configured_prediction_inputs(
-    config: ResolvedAppConfig,
-) -> tuple[PredictionInputKind, ...]:
-    """Return configured prediction inputs in pipeline execution order."""
-    inputs: list[PredictionInputKind] = []
-    title_guessing = config.stages.title_guessing
-    if title_guessing is not None and title_guessing.direct is not None:
-        inputs.append("image")
-    if title_guessing is not None and title_guessing.from_description is not None:
-        inputs.append("description")
-    return tuple(inputs)
 
 
 def resolve_stage_adapter(

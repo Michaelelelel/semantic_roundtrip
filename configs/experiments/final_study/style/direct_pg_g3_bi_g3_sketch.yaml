@@ -1,9 +1,9 @@
 schema_version: 8
 run:
-  name: direct_pg_q38_bi_q38_sketch
+  name: direct_pg_g3_bi_g3_sketch
   output_directory: runs
 dataset:
-  profile: ../../../datasets/development_titles_v1.yaml
+  profile: ../../../datasets/final_titles_v1.yaml
 experiment:
   prompt_seeds:
   - 1000
@@ -14,13 +14,13 @@ experiment:
   retry_limit: 1
 backends:
   prompt_model:
-    profile: ../../../backends/text/qwen3.8-27b-bf16-llamacpp.yaml
+    profile: ../../../backends/text/gemma-3-27b-it-f16-llamacpp.yaml
   image_model:
     profile: ../../../backends/image/stable-diffusion-3.5-large-bf16-comfyui.yaml
   verifier:
     profile: ../../../backends/vision/qwen3.8-27b-bf16-llamacpp.yaml
   reconstruction_model:
-    profile: ../../../backends/vision/qwen3.8-27b-bf16-llamacpp.yaml
+    profile: ../../../backends/vision/gemma-3-27b-it-f16-llamacpp.yaml
 stages:
   prompt_generation:
     backend: prompt_model

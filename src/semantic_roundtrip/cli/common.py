@@ -15,7 +15,6 @@ from semantic_roundtrip.adapters.errors import AdapterError
 from semantic_roundtrip.persistence.sqlite import PERSISTENCE_ERRORS
 from semantic_roundtrip.runtime import RuntimeControllerError
 
-
 console = Console()
 
 EXPECTED_COMMAND_ERRORS = (

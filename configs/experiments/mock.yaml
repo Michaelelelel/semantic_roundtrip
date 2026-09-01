@@ -30,7 +30,7 @@ stages:
 
   prompt_generation:
     backend: mock
-    prompt_profile: prompts/prompt_generation/visual_single_v1.yaml
+    prompt_profile: prompts/prompt_generation/visual_single_v5.yaml
 
   image_generation:
     backend: mock
@@ -47,4 +47,4 @@ stages:
       backend: mock
     from_description:
       backend: mock
-      template_path: prompts/title_guessing/description_plain_v1.txt
+      template_path: prompts/title_guessing/description_plain_v3.txt

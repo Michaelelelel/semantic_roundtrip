@@ -17,7 +17,6 @@ import requests
 import yaml
 
 DOMAINS = ("songs", "movies", "bands")
-LENGTH_GROUPS = ("short", "medium", "long")
 DEFAULT_SOURCE_DIRECTORY = Path("data/title_sources/v1")
 DEFAULT_OUTPUT = Path("configs/datasets/final_titles_v1.yaml")
 DEFAULT_REPORT = Path("configs/datasets/final_titles_v1_sources.csv")
@@ -47,8 +46,8 @@ class Candidate:
 def parse_arguments() -> Namespace:
     parser = ArgumentParser(
         description=(
-            "Create a reproducible title-length-balanced dataset from the "
-            "downloaded source snapshot."
+            "Create a reproducible random title dataset from the downloaded "
+            "source snapshot."
         )
     )
     parser.add_argument(
@@ -167,7 +166,7 @@ def fetch_listenbrainz_metadata(source_directory: Path) -> None:
     )
     write_json(
         source_directory / "listenbrainz_artist_metadata.json",
-        artist_metadata,normalized_title
+        artist_metadata,
     )
 
 
@@ -327,7 +326,7 @@ def eligible_candidate_pool(
     seen_titles: set[str] = set()
 
     for candidate in candidates:
-        normalized = (candidate.title)
+        normalized = normalized_title(candidate.title)
         if (
             not normalized
             or candidate.year > cutoff_year
@@ -355,34 +354,29 @@ def select_titles(
     titles_per_domain: int,
     seed: int,
 ) -> list[Candidate]:
-    target_per_group = titles_per_domain // len(LENGTH_GROUPS)
     selected = []
 
     for domain in DOMAINS:
+        candidates = list(pools[domain])
+        random.Random(f"{seed}:{domain}").shuffle(candidates)
         used_selection_groups: set[str] = set()
-        for group in LENGTH_GROUPS:
-            candidates = [
-                row for row in pools[domain] if length_group(row.title) == group
-            ]
-            random.Random(f"{seed}:{domain}:{group}").shuffle(candidates)
+        domain_selection = []
+        for candidate in candidates:
+            selection_group = candidate.selection_group
+            if selection_group and selection_group in used_selection_groups:
+                continue
+            domain_selection.append(candidate)
+            if selection_group:
+                used_selection_groups.add(selection_group)
+            if len(domain_selection) == titles_per_domain:
+                break
 
-            group_selection = []
-            for candidate in candidates:
-                selection_group = candidate.selection_group
-                if selection_group and selection_group in used_selection_groups:
-                    continue
-                group_selection.append(candidate)
-                if selection_group:
-                    used_selection_groups.add(selection_group)
-                if len(group_selection) == target_per_group:
-                    break
-
-            if len(group_selection) != target_per_group:
-                raise ValueError(
-                    f"Only {len(group_selection)} selectable {group} {domain} titles "
-                    f"were found; {target_per_group} are required."
-                )
-            selected.extend(group_selection)
+        if len(domain_selection) != titles_per_domain:
+            raise ValueError(
+                f"Only {len(domain_selection)} selectable {domain} titles were "
+                f"found; {titles_per_domain} are required."
+            )
+        selected.extend(domain_selection)
 
     return sorted(
         selected,
@@ -448,7 +442,7 @@ def write_outputs(
         "length_group",
     )
     with report_path.open("w", encoding="utf-8", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer = csv.DictWriter(file, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         for identifier, row in rows:
             writer.writerow(
@@ -492,8 +486,8 @@ def main() -> None:
     if arguments.fetch_metadata:
         fetch_listenbrainz_metadata(arguments.source_directory)
         return
-    if arguments.titles_per_domain <= 0 or arguments.titles_per_domain % 3:
-        raise ValueError("--titles-per-domain must be a positive multiple of 3.")
+    if arguments.titles_per_domain <= 0:
+        raise ValueError("--titles-per-domain must be positive.")
     if arguments.candidate_pool_size < arguments.titles_per_domain:
         raise ValueError("--candidate-pool-size must be at least --titles-per-domain.")
 

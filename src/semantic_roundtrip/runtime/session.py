@@ -12,7 +12,6 @@ from semantic_roundtrip.runtime.factory import (
     resolve_runtime_target,
 )
 
-
 ControllerFactory = Callable[[RuntimeTarget], RuntimeController]
 
 

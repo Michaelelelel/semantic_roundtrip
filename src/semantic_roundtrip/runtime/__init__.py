@@ -8,7 +8,6 @@ from semantic_roundtrip.runtime.base import (
 )
 from semantic_roundtrip.runtime.session import RuntimeSession
 
-
 __all__ = [
     "RuntimeController",
     "RuntimeControllerError",

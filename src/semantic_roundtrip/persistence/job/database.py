@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from types import TracebackType
-from typing import Literal
+from typing import Literal, Self
 
 from semantic_roundtrip.job import JobContext
 from semantic_roundtrip.persistence.job.schema import (
@@ -13,7 +13,6 @@ from semantic_roundtrip.persistence.job.schema import (
     require_job_schema,
 )
 from semantic_roundtrip.persistence.sqlite import parse_datetime, utc_now
-
 
 JobStatus = Literal[
     "created",
@@ -120,7 +119,7 @@ class JobDatabase:
         self._connection = connect_job_database(database_path)
         require_job_schema(self._connection)
 
-    def __enter__(self) -> "JobDatabase":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(

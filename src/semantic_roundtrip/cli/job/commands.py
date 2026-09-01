@@ -146,9 +146,7 @@ def start(
 ) -> None:
     """Create and execute a new persisted job."""
     try:
-        prepared = prepare_job(
-            config_path, source_jobs=_parse_source_jobs(source_jobs)
-        )
+        prepared = prepare_job(config_path, source_jobs=_parse_source_jobs(source_jobs))
         print_job_info(prepared)
         summary = execute_job(prepared, report=typer.echo)
     except KeyboardInterrupt as error:
@@ -163,6 +161,7 @@ def start(
     print_job_execution_summary(summary)
     if summary.status == "failed":
         raise typer.Exit(code=1)
+
 
 @app.command("status")
 def status(

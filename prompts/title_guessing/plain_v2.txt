@@ -1,6 +1,0 @@
-This image represents an item from the domain "$domain". Guess its exact title
-or name.
-
-Always make your single best guess, even when uncertain. Do not refuse, discuss
-limitations, request more information, or mention internet or tool access.
-Return exactly one title or name on one line, without quotes or an explanation.

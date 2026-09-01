@@ -10,7 +10,6 @@ from semantic_roundtrip.runtime.base import (
     RuntimeTarget,
 )
 
-
 DEFAULT_REQUEST_TIMEOUT_SECONDS = 30.0
 DEFAULT_RELEASE_GRACE_SECONDS = 1.0
 
@@ -33,7 +32,6 @@ class ComfyUIRuntimeController(RuntimeController):
 
     def load(self, target: RuntimeTarget) -> None:
         """Let the first real ComfyUI workflow load its configured checkpoint."""
-        pass
 
     def unload(self, target: RuntimeTarget) -> None:
         try:

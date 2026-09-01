@@ -26,7 +26,6 @@ from semantic_roundtrip.experiment_runner import (
 )
 from semantic_roundtrip.status.discovery import list_standalone_runs
 
-
 app = typer.Typer(
     help="Start and manage one experiment run.",
     no_args_is_help=True,
@@ -109,6 +108,7 @@ def start(
         exit_with_error(error)
 
     print_run_summary(summary)
+
 
 @app.command("status")
 def status(

@@ -2,16 +2,16 @@
   "3": {
     "class_type": "KSampler",
     "inputs": {
-      "cfg": 5.45,
+      "cfg": 4.5,
       "denoise": 1,
       "latent_image": ["53", 0],
-      "model": ["4", 0],
+      "model": ["54", 0],
       "negative": ["40", 0],
       "positive": ["16", 0],
-      "sampler_name": "euler",
+      "sampler_name": "dpmpp_2m",
       "scheduler": "sgm_uniform",
       "seed": 8566257,
-      "steps": 20
+      "steps": 28
     }
   },
   "4": {
@@ -62,6 +62,13 @@
       "batch_size": 1,
       "height": 1024,
       "width": 1024
+    }
+  },
+  "54": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": ["4", 0],
+      "shift": 3
     }
   }
 }

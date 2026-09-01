@@ -3,7 +3,7 @@ run:
   name: direct_pg_q38_bi_q38_sketch
   output_directory: runs
 dataset:
-  profile: ../../../datasets/development_titles_v1.yaml
+  profile: ../../../datasets/final_titles_v1.yaml
 experiment:
   prompt_seeds:
   - 1000
