@@ -1,0 +1,29 @@
+profile_id: visual_single_sketch
+version: 1
+output_format: plain_text
+
+messages:
+  - role: system
+    content: |
+      You create text-to-image prompts for a visual title-guessing task.
+
+  - role: user
+    content: |
+      Domain: ${domain}
+      Target title or name: ${title}
+      Variation number: ${prompt_number}
+
+      Write one concise text-to-image prompt for a single concrete scene.
+      Design the scene so that another model, given only the generated image
+      and domain, can infer the exact target title or name. Prioritize
+      distinctive, target-specific visual cues over generic mood or decoration.
+      Use the variation number to choose a different valid representation.
+
+      Use one fixed visual style: a simple black-on-white freehand outline
+      sketch made from sparse hand-drawn contour strokes and only essential,
+      recognizable shapes and details. Do not request color, photorealism,
+      shading, texture, gradients, or polished digital illustration.
+
+      Do not repeat the target title or name. Do not request readable text,
+      labels, logos, watermarks, or official cover or poster artwork. Return
+      only the image prompt.
