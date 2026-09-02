@@ -195,60 +195,40 @@ def show_job_list(
     *,
     root: Path,
 ) -> None:
-    """Print discovered jobs and their current child-run progress."""
-    console.print(f"[bold]Jobs:[/bold] {root}")
+    """Print compact job summaries with copyable, untruncated IDs."""
+    typer.echo(f"Jobs: {root}")
     if not results:
-        console.print("No jobs found.")
+        typer.echo("No jobs found.")
         return
 
-    table = Table()
-    table.add_column("Status")
-    table.add_column("Job")
-    table.add_column("Job ID")
-    table.add_column("Started / created")
-    table.add_column("Elapsed", justify="right")
-    table.add_column("Updated")
-    table.add_column("Runs", justify="right")
-    table.add_column("Active run")
-    table.add_column("Stage")
-    table.add_column("ETA")
-    table.add_column("Last error")
-
     for result in results:
+        typer.echo()
         if not isinstance(result, JobStatus):
-            table.add_row(
-                result.status,
-                result.directory.name,
-                "-",
-                "-",
-                "-",
-                "-",
-                "-",
-                "-",
-                "-",
-                "-",
-                result.error,
-            )
+            typer.echo(result.directory.name)
+            typer.echo(result.status)
+            typer.echo(f"Directory: {result.directory}")
+            typer.echo(f"Last error: {result.error}")
             continue
 
-        active_run = result.active_entry_name or "-"
-        if result.active_run_id is not None:
-            active_run = f"{active_run} ({result.active_run_id})"
+        typer.echo(result.name)
         displayed_status = result.status
         if result.failed_tasks:
             displayed_status += f" ({result.failed_tasks} failed)"
-        table.add_row(
-            displayed_status,
-            result.name,
-            result.job_id,
-            format_timestamp(result.started_at or result.created_at),
-            format_duration(result.elapsed_seconds),
-            format_timestamp(result.last_update),
-            f"{result.completed_entries}/{result.total_entries}",
-            active_run,
-            format_stage(result.active_stage),
-            format_eta(result.eta_state, result.eta_seconds),
-            result.last_error or "-",
+        typer.echo(
+            f"{displayed_status} | "
+            f"{result.completed_entries}/{result.total_entries} runs | "
+            f"{format_duration(result.elapsed_seconds)}"
         )
-
-    console.print(table)
+        # Plain output keeps the ID intact even when the terminal soft-wraps it.
+        typer.echo(f"Job ID: {result.job_id}")
+        if result.active_entry_name is not None:
+            typer.echo(f"Active entry: {result.active_entry_name}")
+        if result.active_run_id is not None:
+            typer.echo(f"Active run ID: {result.active_run_id}")
+        if result.active_stage is not None or result.eta_state != "none":
+            typer.echo(
+                f"Stage: {format_stage(result.active_stage)} | "
+                f"ETA: {format_eta(result.eta_state, result.eta_seconds)}"
+            )
+        if result.last_error:
+            typer.echo(f"Last error: {result.last_error}")

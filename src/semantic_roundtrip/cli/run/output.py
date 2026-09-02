@@ -111,59 +111,36 @@ def show_run_list(
     *,
     root: Path,
 ) -> None:
-    """Print discovered standalone runs."""
-    console.print(f"[bold]Standalone runs:[/bold] {root}")
+    """Print compact standalone-run summaries with copyable, untruncated IDs."""
+    typer.echo(f"Standalone runs: {root}")
     if not results:
-        console.print("No standalone runs found.")
+        typer.echo("No standalone runs found.")
         return
 
-    table = Table()
-    table.add_column("Status")
-    table.add_column("Run")
-    table.add_column("Run ID")
-    table.add_column("Started / created")
-    table.add_column("Elapsed", justify="right")
-    table.add_column("Stage")
-    table.add_column("Progress", justify="right")
-    table.add_column("ETA")
-    table.add_column("Last update")
-    table.add_column("Last error")
-
     for result in results:
+        typer.echo()
         if not isinstance(result, RunStatus):
-            table.add_row(
-                result.status,
-                result.directory.name,
-                "-",
-                "-",
-                "-",
-                "-",
-                "-",
-                "-",
-                "-",
-                result.error,
-            )
+            typer.echo(result.directory.name)
+            typer.echo(result.status)
+            typer.echo(f"Directory: {result.directory}")
+            typer.echo(f"Last error: {result.error}")
             continue
 
+        typer.echo(result.name)
+        displayed_status = result.status
+        if result.failed_tasks:
+            displayed_status += f" ({result.failed_tasks} failed)"
+        typer.echo(f"{displayed_status} | {format_duration(result.elapsed_seconds)}")
+        typer.echo(f"Run ID: {result.run_id}")
         active = next(
             (stage for stage in result.stages if stage.name == result.active_stage),
             None,
         )
         progress = "-" if active is None else f"{active.produced}/{active.expected}"
-        displayed_status = result.status
-        if result.failed_tasks:
-            displayed_status += f" ({result.failed_tasks} failed)"
-        table.add_row(
-            displayed_status,
-            result.name,
-            result.run_id,
-            format_timestamp(result.started_at or result.created_at),
-            format_duration(result.elapsed_seconds),
-            format_stage(result.active_stage),
-            progress,
-            format_eta(result.eta_state, result.eta_seconds),
-            format_timestamp(result.last_update),
-            result.last_error or "-",
-        )
-
-    console.print(table)
+        if result.active_stage is not None or result.eta_state != "none":
+            typer.echo(
+                f"Stage: {format_stage(result.active_stage)} | {progress} | "
+                f"ETA: {format_eta(result.eta_state, result.eta_seconds)}"
+            )
+        if result.last_error:
+            typer.echo(f"Last error: {result.last_error}")
