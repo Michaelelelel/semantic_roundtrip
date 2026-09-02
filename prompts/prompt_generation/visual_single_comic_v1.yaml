@@ -1,0 +1,24 @@
+profile_id: visual_single_comic
+version: 1
+output_format: plain_text
+
+messages:
+  - role: system
+    content: |
+      Create one concise text-to-image prompt that communicates the supplied
+      title or name through a concrete visual scene.
+
+  - role: user
+    content: |
+      Domain: ${domain}
+      Title: ${title}
+
+      Infer the exact title or name and choose distinctive visual cues that
+      could let another model reconstruct it. Return only one image prompt.
+
+      The prompt must begin exactly with:
+      A stylized comic or cartoon illustration depicting
+
+      Keep the comic or cartoon execution broad: colour, line work and visual
+      treatment may vary. Do not include the title, readable text, letters,
+      speech bubbles, captions, logos, watermarks, or existing cover/poster art.

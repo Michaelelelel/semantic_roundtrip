@@ -17,7 +17,7 @@ BOOTSTRAP_SEED = 20260829
 
 
 def score_observations(observations: pd.DataFrame) -> pd.DataFrame:
-    """Add reconstruction-only and end-to-end Exact Match columns."""
+    """Add prediction-only and end-to-end Exact Match columns."""
     result = observations.copy()
     if result.empty:
         return result
@@ -76,13 +76,13 @@ def aggregate_titles(
             "verification_passed",
             lambda values: values.eq(True).sum(),
         ),
-        strict_accuracy=(
+        prediction_only_strict_accuracy=(
             "strict_exact_match",
-            lambda values: values.astype("boolean").fillna(False).mean(),
+            lambda values: values.astype("boolean").mean(),
         ),
-        normalized_accuracy=(
+        prediction_only_normalized_accuracy=(
             "normalized_exact_match",
-            lambda values: values.astype("boolean").fillna(False).mean(),
+            lambda values: values.astype("boolean").mean(),
         ),
         end_to_end_strict_accuracy=("end_to_end_strict_score", "mean"),
         end_to_end_normalized_accuracy=("end_to_end_normalized_score", "mean"),

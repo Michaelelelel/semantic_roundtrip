@@ -8,7 +8,7 @@ run_hf() {
     elif [ -x "$HOME/.venvs/hf-download/bin/hf" ]; then
         "$HOME/.venvs/hf-download/bin/hf" "$@"
     else
-        echo "Install the Hugging Face CLI; see setupproject.md." >&2
+        echo "Install the Hugging Face CLI; see RUNNING.md." >&2
         return 1
     fi
 }
