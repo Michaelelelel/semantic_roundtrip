@@ -3,44 +3,67 @@
 This file records the exact executable protocol. Scientific justification and
 interpretation belong in the thesis.
 
-## Four-style selection pilot (revision `final_v2`)
+## Four-style comparison (revision `final_v2`)
 
-`configs/jobs/style_pilot/free.yaml`, `sketch.yaml`, `comic.yaml` and
-`photorealistic.yaml` are separate pilot jobs. Each uses the same 90 held-out
-titles (30 per domain), only Q25/Q25, G3/G3, Q38/Q38 and G4/G4 PG/BI pairs,
-prompt seed `1000` and image seed `8566257`. There are 360 planned images and
-direct predictions per job. No rating, description or indirect guessing stages
-are executed. The blind strict Q38 verifier, 28-step SD profile and non-style
-inference settings remain fixed; only the explicit style instruction differs.
+The unrestricted `direct_core` job and the `direct_photorealistic`,
+`direct_comic` and `direct_sketch` jobs form the style comparison. Every job
+uses `final_titles_v1` (30 titles per domain), the complete 4 x 4 PG/BI matrix,
+prompt seeds `1000` and `1001`, and image seeds `8566257` and `2875613`.
+Each style therefore has 1,440 generated images and 5,760 direct predictions.
+The unrestricted diagonal entries also create the ratings, descriptions and
+paired indirect baselines required by the main study; those extra outputs do
+not change the direct observations used here.
 
-`scripts/datasets/build_style_pilot.py` samples from the saved eligible top-300
-CSV after excluding the existing random and high-illustratability final sets.
-It shuffles each domain with seed `20260903`, enforces one song per primary
-artist and writes dataset YAML, source CSV and a JSON provenance manifest.
-There are no length or rating quotas. This held-out selection is not the full
-candidate population and is not a replacement for either final dataset.
+The four prompt profiles share the same task wording and differ only in the
+style instruction. The prompt verifier, both Q38 image-verification policies,
+28-step SD profile and all other inference settings remain fixed. The report
+shows blind-strict and title-aware image verification, each crossed with Strict
+and Normalized Exact Match. Every outcome also requires the prompt verifier to
+pass and uses the same complete planned denominator. Blind-strict image
+verification with Strict Exact Match is primary. This complete direct
+comparison supports a documented style choice but does not establish a
+universal optimum or an indirect-route style effect.
 
-The pilot reports strict and normalized end-to-end accuracy, both with the same
-complete planned denominator, plus per-model/per-domain and technical tables.
-It uses one seed pair and cannot establish seed robustness, crossed PG/BI style
-interactions or superiority on the indirect route. The shared main-study style
-is selected separately after reviewing this evidence. Existing main job
-definitions below are retained; the pilot does not silently replace SQ1.
-
-For the supervisor's rating figure, `RATING_JOB` identifies the complete
+For the candidate-distribution figure, `RATING_JOB` identifies the complete
 four-model candidate-rating job. Each candidate contributes its equally weighted
 Q25/G3/Q38/G4 mean only when all four ratings are available. Histograms use a
-fixed 0--100 scale in separate domain panels and report incomplete ratings.
+fixed 0--100 scale with 20 five-point bins in separate domain panels and report
+incomplete ratings.
 The 900-candidate pool must not be confused with either 90-title final set.
 
-The existing notebook's `ANALYSIS_MODE=style_pilot` requires no indirect or
-Aqueduct jobs. Commands are in [`../../../RUNNING.md`](../../../RUNNING.md).
+The completed rating job `20260902T162529Z_candidate-illustratability_a1cfe5f2`
+is preserved in [`../../../artifacts/candidate_illustratability/`](../../../artifacts/candidate_illustratability/README.md),
+with all 3,600 valid ratings, no missing ratings, raw responses, snapshots and
+the executed distribution report. Its README reproduces the figure using the
+dedicated distribution notebook without model calls. Archiving changes no selection rule.
+
+This profile is a dataset-design diagnostic: inspect low/high-score
+concentrations, asymmetry, sparse tails, domain differences and missing ratings.
+The protocol retains the unfiltered random main dataset. Skewness alone is not
+a defect, and no balanced/normal score distribution or automatic
+filtering threshold is required. A strong concentration near low scores prompts
+discussion of how informative the planned comparisons can be, not automatic
+title exclusion. Ratings are model judgements, not reconstruction probabilities.
+Record the dataset rationale with the report. Any change needs an explicit
+protocol revision before new main runs: filtering changes the target population
+and must not serve merely to increase accuracy.
+The high-illustratability supplement remains distinct from the random main study.
+
+`notebooks/style_decision.ipynb` takes the four complete 4 x 4 style jobs.
+`notebooks/illustratability_distribution.ipynb` takes only the candidate-rating
+job and defaults to the archived input. Neither needs indirect or Aqueduct jobs.
+Commands are in [`../../../EXPERIMENTS.md`](../../../EXPERIMENTS.md).
 
 ## Roles and routes
 
 - PG: title and domain to visual prompt.
 - BG: visual prompt to image.
-- Verifier: rejects images with unambiguously readable meaningful writing.
+- Prompt verifier: deterministic normalized search for the reference title in
+  the generated prompt.
+- Strict image verifier: blind Q38 check rejecting any unambiguously readable
+  meaningful writing.
+- Title-aware image verifier: Q38 receives the reference title and rejects only
+  readable writing that communicates that title; unrelated text is allowed.
 - BI: image to title on the direct route.
 - BB: image to neutral description; BI reconstructs the title from that
   description on the indirect route.
@@ -98,11 +121,12 @@ equal-compute comparison.
 | `aqueduct_v4_extension.yaml` | 20 additions | 360 | complete indirect 3 x 4 x 3 |
 | `direct_sketch.yaml` | 16 | 1,440 | paired direct style supplement |
 | `direct_comic.yaml` | 16 | 1,440 | paired broad comic-style supplement |
+| `direct_photorealistic.yaml` | 16 | 1,440 | paired photorealistic condition |
 | `direct_thinking.yaml` | 12 additions | 720 | native-thinking direct supplement |
 | `direct_illustratable.yaml` | 16 | 1,440 | high-illustratability direct supplement |
 
 `candidate_illustratability.yaml` is a four-model rating prerequisite, not an
-eighth reconstruction job. It must complete before the illustratability datasets
+additional reconstruction job. It must complete before the illustratability datasets
 and jobs can be generated.
 
 The Aqueduct job imports the exact completed `indirect_local` job. It must be
@@ -120,7 +144,11 @@ thinking-off direct job during analysis.
 - PG: `prompts/prompt_generation/visual_single_v5.yaml`.
 - Sketch PG: `prompts/prompt_generation/visual_single_sketch_v2.yaml`.
 - Comic PG: `prompts/prompt_generation/visual_single_comic_v1.yaml`.
-- Verifier: `prompts/verification/json_v3.txt`.
+- Photorealistic PG:
+  `prompts/prompt_generation/visual_single_photorealistic_v1.yaml`.
+- Strict image verifier: `prompts/verification/json_v3.txt`.
+- Title-aware image verifier:
+  `prompts/verification/title_aware_json_v1.txt`.
 - BB: `prompts/image_description/plain_v1.txt`.
 - Direct BI: `prompts/title_guessing/plain_v3.txt`.
 - Indirect BI: `prompts/title_guessing/description_plain_v3.txt`.
@@ -144,6 +172,14 @@ A stylized comic or cartoon illustration depicting
 Colour, line work and concrete comic execution remain free. Readable text,
 speech bubbles, logos and the target title remain prohibited.
 
+The photorealistic condition requires this exact prefix:
+
+```text
+A photorealistic image depicting
+```
+
+All remaining content constraints match the unrestricted prompt.
+
 ## Text inference
 
 Common sampled profile: temperature 1, top-p 0.95, top-k 0, min-p 0,
@@ -156,11 +192,12 @@ repeat penalty 1, presence penalty 0 and frequency penalty 0.
 | D32 PG and BI | native DeepSeek | 16,384 | 7,200 s |
 | O120 PG and BI | Harmony medium | 16,384 | 7,200 s |
 | V4 PG and BI | Aqueduct high | 32,000 | 3,600 s |
-| fixed Q38 verifier | off; temperature 0, top-p 1 | 512 | 1,800 s |
+| both fixed Q38 image verifiers | off; temperature 0, top-p 1 | 512 | 1,800 s |
 
 The primary, style and illustratability matrices keep Q38/G4 thinking off. In
 the separate thinking supplement, Q38 and G4 use native thinking whenever they
-occupy PG or BI; Q25 and G3 are unchanged and the Q38 verifier remains off.
+occupy PG or BI; Q25 and G3 are unchanged and both Q38 image verifiers remain
+thinking-off.
 Q38 uses the `deepseek` reasoning format and G4 uses `auto`, with no explicit
 thinking budget, a 16,384-token output ceiling and a 7,200-second timeout.
 
@@ -187,29 +224,39 @@ optimum. Historical runs keep their own saved workflow.
 
 ## Outcomes and analysis
 
-Primary outcome: title-level end-to-end Strict Exact Match.
+Primary outcome: title-level end-to-end Strict Exact Match under the prompt and
+blind-strict image policies.
 
-An observation scores 1 only when verification passes, a prediction exists and
-Strict Exact Match is true. Rejections, missing predictions, invalid responses,
-timeouts and exhausted retries score 0 and remain in the full planned
-denominator. They are also reported as technical counts.
+Every generated prompt is checked deterministically for a normalized literal
+occurrence of the reference title. Every generated image is independently
+checked twice by Q38: the blind-strict policy looks for any meaningful readable
+writing, while the title-aware policy looks only for readable writing that
+communicates the supplied reference title. Verification never prevents image
+generation, description or title reconstruction.
+
+The primary observation scores 1 only when the prompt check passes, the strict
+image check passes, a prediction exists and Strict Exact Match is true. Three
+sensitivity outcomes combine the same prompt gate with title-aware image
+verification and/or Normalized Exact Match. All four use the identical complete
+planned denominator. Rejections, missing decisions, missing predictions,
+invalid responses, timeouts and exhausted retries score 0 and remain in that
+denominator. Each cause is also reported separately.
 
 The supporting `prediction_only_strict_accuracy` is exact matches divided by
-available predictions, regardless of verification. The supplementary
-`verifier_accepted_strict_accuracy` divides correct, accepted observations by
-all accepted observations, including those with missing predictions. Neither
-replaces the primary denominator. An empty denominator is reported as `n/a`.
-Count-based tables cover all configured main and supplementary matrices, overall,
-by condition and by domain, with planned, produced and accepted counts. Prediction
-coverage, acceptance rate, explicit rejections, missing verifier decisions,
-missing predictions and missing predictions linked to an error are separate. The error
-table additionally reports terminal and recovered attempts at every stage.
+available predictions, regardless of verification. Conditional accepted-subset
+tables are labelled by image-verification policy and never replace the primary
+denominator. An empty denominator is reported as `n/a`. Count-based tables cover
+all configured main and supplementary matrices, overall, by condition and by
+domain, with planned, produced and accepted counts. Prediction coverage,
+policy-specific acceptance, explicit rejections, missing verifier decisions,
+missing predictions and errors are reported separately.
 
-For example, four planned observations, three predictions, two exact titles and
-two accepted images yield 25.0% end-to-end, 66.7% prediction-only and 50.0%
-verifier-accepted accuracy if only one exact title belongs to an accepted image.
-Prediction coverage is 75.0% and the acceptance rate is 50.0%. Conditional
-accuracy changes the evaluated subset; it is not an improvement of the model.
+For example, four planned observations, three predictions, two exact titles,
+four passed prompt checks and two passed strict image checks yield 25.0% primary
+end-to-end accuracy when only one exact title belongs to a strictly accepted
+image. Prediction-only accuracy is 66.7%, prediction coverage is 75.0% and
+strict-image acceptance is 50.0%. Conditional accuracy changes the evaluated
+subset; it is not an improvement of the model.
 
 Strict Exact Match remains case-sensitive after trimming outer whitespace
 (`strict_trimmed_exact_v1`). Normalized Exact Match uses Unicode NFC, casefold,
@@ -221,34 +268,37 @@ English/German curly single/double quotes. It never removes reference-title
 punctuation apart from that mapping, internal quotes, Markdown or explanatory
 text. The method ID is
 `nfc_casefold_whitespace_middot_dashes_outer_quotes_exact_v3`, printed in the
-analysis report. Main-study normalized values remain supporting tables; the
-style-selection pilot additionally plots both metrics. Existing raw outputs,
-historical reports and strict website scoring remain unchanged.
+analysis report. Main-study normalized values remain supporting tables. The
+style report plots all four image-policy/title-matching combinations.
+Existing raw outputs and historical run decisions remain unchanged.
 
-Both normalized Exact Match and the optional prompt-title search use
+Both Normalized Exact Match and the prompt verifier use
 `normalize_title_text()` in `src/semantic_roundtrip/evaluation.py`. Exact Match
 compares complete strings; `title_occurs_in_text()` searches a literal phrase
 with Unicode word guards on both ends. Its method is
 `nfc_casefold_whitespace_middot_dashes_word_boundaries_v1`. `WALL·E` and `WALL-E`
 match, but `Wally` and `WALLE` do not; `Up` does not match `group`. Ordinary full
-stops are not converted to hyphens. PG `title_check_report: true` writes a
-`prompt_title_check.json` sidecar from persisted prompts after that stage, also
-on resume. A hit flags a lexical occurrence, not a request to render writing.
-It never excludes work, triggers regeneration, or changes accuracy. The notebook
-can also recompute flags from historical raw prompts without modifying runs.
+stops are not converted to hyphens. The deterministic decision and method ID are
+persisted per prompt. A title occurrence fails the prompt policy and therefore
+scores 0 in every end-to-end outcome, but it never triggers regeneration or
+prevents downstream work. The status website reports persisted prompt, strict
+image and title-aware image decisions separately. Current code reads and writes
+only experiment schema 9 and run-database schema 11; older jobs require their
+original checkout.
 
 Four seed observations are averaged per title before comparisons. Confidence
 intervals use 10,000 paired bootstrap resamples of complete titles, stratified
 only by domain, with seed `20260829`; reported 95% percentile intervals are
 pointwise. Title length remains descriptive only.
 
-Supporting outputs are Normalized Exact Match, verifier decisions, technical
-failures, runtime provenance and visible-answer likelihood when token alignment
-is valid. Answer likelihood is diagnostic, not calibrated confidence and not a
-cross-model ranking.
+Supporting outputs are the three verifier decisions, Normalized Exact Match,
+the title-aware sensitivity outcome, technical failures, runtime provenance and
+visible-answer likelihood when token alignment is valid. Answer likelihood is
+diagnostic, not calibrated confidence and not a cross-model ranking.
 
-The analysis notebook takes `DIRECT_JOB`, `INDIRECT_JOB`, `AQUEDUCT_JOB`,
-`SKETCH_JOB`, `COMIC_JOB`, `THINKING_JOB` and `ILLUSTRATABLE_JOB`. It reports:
+`notebooks/final_study.ipynb` takes `DIRECT_JOB`, `INDIRECT_JOB`, `AQUEDUCT_JOB`,
+`SKETCH_JOB`, `COMIC_JOB`, `THINKING_JOB` and `ILLUSTRATABLE_JOB`. All seven
+completed jobs are required for Run All. It reports:
 
 - direct 4 x 4 accuracy and predeclared PG, BI and same-minus-mixed contrasts;
 - complete indirect 3 x 4 x 3 accuracy and local/hosted role contrasts;
@@ -276,11 +326,16 @@ scale; difference heatmaps share a symmetric -100 to +100 pp scale. Effect plots
 display estimates and the calculated pointwise intervals. Each figure is
 displayed inline and exported as a 300-dpi PNG and vector PDF, with fixed
 scientific titles independent of the input job's development/final designation.
+Supporting CSV tables and input/code/software provenance are saved quietly to
+the notebook's output directory. The three notebooks have no analysis-mode
+switches or embedded helper definitions. Shared table assembly and plotting are
+in `analysis/reporting.py` and `analysis/plotting.py`; the existing statistical
+calculations in `analysis/statistics.py` are unchanged.
 
 RQ1 compares selected direct Qwen/Gemma configurations. RQ2 compares PG, BB and
 BI choices on the indirect route. RQ3 compares both routes on identical images.
-RQ4 reports domain subgroups. SQ1 compares unrestricted direct reconstruction
-with the paired Sketch and Comic conditions. SQ2 compares the thinking-off and
+RQ4 reports domain subgroups. SQ1 compares unrestricted, photorealistic, Sketch
+and Comic direct reconstruction. SQ2 compares the thinking-off and
 native-thinking direct matrices. SQ3 reports the association with model-rated
 illustratability and the descriptive random-versus-high-illustratability
 comparison. SQ1--SQ3 are supplementary, not additional primary research
@@ -288,7 +343,8 @@ questions.
 
 ## Protocol validation and stability
 
-The fixed verifier is assessed on the complete 168-image development census.
+The two image-verification policies are assessed on the same complete 168-image
+development census; prompt decisions are deterministic and require no model.
 Sketch and comic manipulations are each checked in all 48 generated prompt
 prefixes and a fixed 24-image sample. The procedure is recorded in
 [`../../../manual_evaluation/README.md`](../../../manual_evaluation/README.md).
@@ -298,4 +354,5 @@ In a fixed-protocol study job, isolated terminal model failures remain
 zero-valued observations and do not trigger parameter changes. A method change
 requires a new study revision; existing run snapshots remain unchanged.
 
-Execution commands: [`../../../RUNNING.md`](../../../RUNNING.md).
+Main and supplementary execution: [`../../../EXPERIMENTS.md`](../../../EXPERIMENTS.md).
+Shared installation and operation: [`../../../RUNNING.md`](../../../RUNNING.md).

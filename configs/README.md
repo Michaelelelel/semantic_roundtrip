@@ -62,19 +62,17 @@ belong in the experiment.
 
 ## Experiment
 
-An optional `title_check_report: true` under `stages.prompt_generation` writes
-`prompt_title_check.json` after prompt generation. It flags normalized literal
-title occurrences without filtering, retrying or changing scores. The default
-is false; existing run snapshots and the database schema stay compatible.
-Normalization and matching are shared with analysis in
-`src/semantic_roundtrip/evaluation.py`; exact rules and method IDs are in the
-[study protocol](jobs/final_study/STUDY_DESIGN.md#outcomes-and-analysis).
-
-Experiment schema 8 selects a dataset, seeds, backend aliases and the stages run
-locally:
+Experiment schema 9 selects a dataset, seeds, backend aliases and locally run
+stages. The grouped verification stage is optional. It can enable the
+deterministic prompt-title check and either or both image policies. The blind
+strict policy rejects any meaningful readable writing; the title-aware policy
+receives the reference title and rejects only writing that communicates that
+title. Omit `verification` for no checks, or omit one image policy to run only
+the other. The final-study configs enable all three decisions. Checks affect
+evaluation but do not stop later stages.
 
 ```yaml
-schema_version: 8
+schema_version: 9
 
 run:
   name: my_direct_run
@@ -100,6 +98,13 @@ stages:
     backend: model
   verification:
     backend: model
+    prompt:
+      policy: reference_title_absent
+    image:
+      strict:
+        template_path: prompts/verification/json_v3.txt
+      title_aware:
+        template_path: prompts/verification/title_aware_json_v1.txt
   title_guessing:
     direct:
       backend: model
@@ -156,12 +161,16 @@ An inherited stage includes all required predecessors:
 | `prompt_generation` | prompt |
 | `image_generation` | prompt, image |
 | `verification` | prompt, image, verification |
-| `title_guessing_direct` | verification chain, direct prediction |
-| `image_description` | verification chain, description |
-| `title_guessing_from_description` | description chain, indirect prediction |
+| `title_guessing_direct` | prompt, image, direct prediction |
+| `image_description` | prompt, image, description |
+| `title_guessing_from_description` | prompt, image, description, indirect prediction |
 | `illustratability_rating` | rating only |
 
 Use the flattened title-stage names only inside `inherit.stages`.
+Verification is an independent evaluation branch. Request `verification`
+explicitly beside a reconstruction stage when a derived run must retain its
+persisted checks. Omit it only when the derived run executes the current
+verification stage again.
 
 Exactly one source form is allowed:
 
@@ -213,6 +222,7 @@ not repair or silently regenerate mismatches.
 - Optionally inspect source bindings, counts and model roles with `job plan`.
 - Keep the generated run and job snapshots with the results.
 
-DGX commands are in [`../RUNNING.md`](../RUNNING.md). The executable thesis
-protocol is in
+Shared DGX setup and operation are in [`../RUNNING.md`](../RUNNING.md).
+Use [`../EXPERIMENTS.md`](../EXPERIMENTS.md) for the main, four-style and
+supplementary experiment sequence. The executable thesis protocol is in
 [`jobs/final_study/STUDY_DESIGN.md`](jobs/final_study/STUDY_DESIGN.md).
