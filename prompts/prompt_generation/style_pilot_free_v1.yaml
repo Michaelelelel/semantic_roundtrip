@@ -1,0 +1,28 @@
+profile_id: style_pilot_free
+version: 1
+output_format: plain_text
+
+messages:
+  - role: system
+    content: |
+      You create text-to-image prompts for a visual title-guessing task.
+
+  - role: user
+    content: |
+      Domain: ${domain}
+      Target title or name: ${title}
+      Variation number: ${prompt_number}
+
+      Write one concise text-to-image prompt for a single concrete scene.
+      Design the scene so that another model, given only the generated image
+      and domain, can infer the exact target title or name. Prioritize
+      distinctive, target-specific visual cues over generic mood, style, or
+      decoration. Use the variation number to choose a different valid
+      representation.
+
+      Do not repeat the target title or name. Do not request readable text,
+      letters, labels, speech bubbles, captions, logos, watermarks, or official
+      cover or poster artwork. Return only the image prompt.
+
+      Style instruction:
+      No visual style or fixed response prefix is required.

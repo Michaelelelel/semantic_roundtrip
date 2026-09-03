@@ -171,6 +171,10 @@ class StageConfig(ConfigModel):
 
 class PromptGenerationStage(StageConfig):
     prompt_profile: Path
+    title_check_report: bool = Field(
+        default=False,
+        description="Write a report-only title check after local PG; never gate or retry.",
+    )
 
 
 class IllustratabilityRatingStage(StageConfig):
