@@ -1,8 +1,8 @@
 """Vision stages using an OpenAI-compatible multimodal chat endpoint."""
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
-from string import Template
 from typing import Any
 
 from semantic_roundtrip.adapters.errors import AdapterError
@@ -30,6 +30,13 @@ from semantic_roundtrip.evaluation import (
     TITLE_AWARE_IMAGE_VERIFICATION_METHOD,
     normalize_title_text,
 )
+from semantic_roundtrip.prompting import (
+    PromptProfile,
+    load_prompt_profile,
+    prompt_profile_variables,
+    render_prompt_profile,
+    validate_prompt_profile_variables,
+)
 
 VERIFICATION_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -51,13 +58,28 @@ VERIFICATION_RESPONSE_FORMAT: dict[str, Any] = {
 }
 
 
-def _image_message(*, image_path: Path, instruction: str) -> ChatMessage:
-    return ChatMessage(
-        role="user",
-        content=(
-            ImageContent(image_file_data_url(image_path)),
-            TextContent(instruction),
-        ),
+def _image_messages(
+    *,
+    profile: PromptProfile,
+    image_path: Path,
+    variables: Mapping[str, str],
+) -> tuple[ChatMessage, ...]:
+    """Render a chat profile and attach the image to its sole user message."""
+    rendered = render_prompt_profile(profile, variables=variables)
+    if sum(message.role == "user" for message in rendered) != 1:
+        raise ValueError(
+            f"Vision prompt profile '{profile.profile_id}' must contain exactly "
+            "one user message."
+        )
+    image = ImageContent(image_file_data_url(image_path))
+    return tuple(
+        ChatMessage(
+            role=message.role,
+            content=(image, TextContent(message.content))
+            if message.role == "user"
+            else message.content,
+        )
+        for message in rendered
     )
 
 
@@ -71,10 +93,17 @@ class OpenAICompatibleImageVerifier:
     ) -> None:
         self._config = settings
         self._policy = policy
-        self._template = Template(
-            Path(settings.template_path).read_text(encoding="utf-8")
+        self._prompt_profile = load_prompt_profile(settings.prompt_profile).profile
+        available_variables = (
+            set() if policy == "strict" else {"title", "normalized_title"}
         )
-        identifiers = set(self._template.get_identifiers())
+        validate_prompt_profile_variables(
+            self._prompt_profile,
+            available=available_variables,
+        )
+        if self._prompt_profile.output_format != "json":
+            raise ValueError("Image verification requires a JSON prompt profile.")
+        identifiers = prompt_profile_variables(self._prompt_profile)
         title_fields = {"title", "normalized_title"}
         if policy == "strict" and identifiers & title_fields:
             raise ValueError(
@@ -110,11 +139,10 @@ class OpenAICompatibleImageVerifier:
             }
         )
         completion = self._client.complete(
-            messages=(
-                _image_message(
-                    image_path=image_path,
-                    instruction=self._template.substitute(template_values),
-                ),
+            messages=_image_messages(
+                profile=self._prompt_profile,
+                image_path=image_path,
+                variables=template_values,
             ),
             generation_parameters=self._config.generation_parameters(),
             response_format=VERIFICATION_RESPONSE_FORMAT,
@@ -166,9 +194,15 @@ class OpenAICompatibleImageDescriber:
 
     def __init__(self, settings: OpenAICompatibleStageSettings) -> None:
         self._config = settings
-        self._template = Template(
-            Path(settings.template_path).read_text(encoding="utf-8")
+        self._prompt_profile = load_prompt_profile(settings.prompt_profile).profile
+        validate_prompt_profile_variables(
+            self._prompt_profile,
+            available={"domain"},
         )
+        if self._prompt_profile.output_format != "plain_text":
+            raise ValueError(
+                "Image description requires a plain-text prompt profile."
+            )
         self._client = OpenAICompatibleChatClient(
             endpoint=settings.endpoint,
             model_id=settings.model_id,
@@ -184,11 +218,10 @@ class OpenAICompatibleImageDescriber:
         domain: str | None,
     ) -> ImageDescription:
         completion = self._client.complete(
-            messages=(
-                _image_message(
-                    image_path=image_path,
-                    instruction=self._template.substitute(domain=domain or ""),
-                ),
+            messages=_image_messages(
+                profile=self._prompt_profile,
+                image_path=image_path,
+                variables={"domain": domain or ""},
             ),
             generation_parameters=self._config.generation_parameters(),
             reasoning_effort=self._config.reasoning_effort,
@@ -222,9 +255,13 @@ class OpenAICompatibleImageTitleGuesser:
 
     def __init__(self, settings: OpenAICompatibleStageSettings) -> None:
         self._config = settings
-        self._template = Template(
-            Path(settings.template_path).read_text(encoding="utf-8")
+        self._prompt_profile = load_prompt_profile(settings.prompt_profile).profile
+        validate_prompt_profile_variables(
+            self._prompt_profile,
+            available={"domain"},
         )
+        if self._prompt_profile.output_format != "plain_text":
+            raise ValueError("Title guessing requires a plain-text prompt profile.")
         self._client = OpenAICompatibleChatClient(
             endpoint=settings.endpoint,
             model_id=settings.model_id,
@@ -240,11 +277,10 @@ class OpenAICompatibleImageTitleGuesser:
         domain: str | None,
     ) -> TitlePrediction:
         completion = self._client.complete(
-            messages=(
-                _image_message(
-                    image_path=image_path,
-                    instruction=self._template.substitute(domain=domain or ""),
-                ),
+            messages=_image_messages(
+                profile=self._prompt_profile,
+                image_path=image_path,
+                variables={"domain": domain or ""},
             ),
             generation_parameters=self._config.generation_parameters(),
             include_token_logprobs=self._config.request_token_logprobs,

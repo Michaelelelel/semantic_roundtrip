@@ -29,7 +29,7 @@ class MockAdapterSettings(ConfigModel):
     """Settings shared by all deterministic mock adapters."""
 
     delay_seconds: float = Field(default=0.0, ge=0)
-    template_path: Path | None = None
+    prompt_profile: Path | None = None
     seed: int | None = Field(default=None, ge=0)
     temperature: float | None = Field(default=None, ge=0)
     top_p: float | None = Field(default=None, gt=0, le=1)

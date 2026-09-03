@@ -1,0 +1,12 @@
+profile_id: image_description
+version: 1
+output_format: plain_text
+
+messages:
+  - role: user
+    content: |
+      Describe the image accurately and concretely in one concise paragraph. Focus on
+      the distinctive visible subjects, setting, actions, objects, colours, and
+      composition that could help identify what the image represents. Do not guess or
+      mention a source title. Return only the description without Markdown or an
+      explanation.

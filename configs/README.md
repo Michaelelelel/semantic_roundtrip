@@ -62,7 +62,7 @@ belong in the experiment.
 
 ## Experiment
 
-Experiment schema 9 selects a dataset, seeds, backend aliases and locally run
+Experiment schema 10 selects a dataset, seeds, backend aliases and locally run
 stages. The grouped verification stage is optional. It can enable the
 deterministic prompt-title check and either or both image policies. The blind
 strict policy rejects any meaningful readable writing; the title-aware policy
@@ -72,7 +72,7 @@ the other. The final-study configs enable all three decisions. Checks affect
 evaluation but do not stop later stages.
 
 ```yaml
-schema_version: 9
+schema_version: 10
 
 run:
   name: my_direct_run
@@ -102,13 +102,34 @@ stages:
       policy: reference_title_absent
     image:
       strict:
-        template_path: prompts/verification/json_v3.txt
+        prompt_profile: prompts/verification/json_v3.yaml
       title_aware:
-        template_path: prompts/verification/title_aware_json_v1.txt
+        prompt_profile: prompts/verification/title_aware_json_v1.yaml
   title_guessing:
     direct:
       backend: model
+      prompt_profile: prompts/title_guessing/plain_v3.yaml
 ```
+
+Every model instruction is a versioned YAML chat profile. A profile records its
+identity, version, output format and ordered messages:
+
+```yaml
+profile_id: title_guessing_direct
+version: 3
+output_format: plain_text
+
+messages:
+  - role: user
+    content: |
+      Identify the exact title represented by this image.
+      Domain: ${domain}
+```
+
+Messages may use the `system`, `user` and `assistant` roles. Vision stages
+attach the image to their single user message. Profile variables are validated
+against the inputs available to the configured stage. All prompt-bearing stage
+fields are named `prompt_profile`; plain-text prompt files are not supported.
 
 Available local stages:
 

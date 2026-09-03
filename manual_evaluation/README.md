@@ -12,8 +12,8 @@ six titles and four seed combinations.
 1. Open each image listed in `Verifier_168`.
 2. Without seeing either stored verifier decision, enter
    `manual_strict_accept` using the exact rule in
-   `prompts/verification/json_v3.txt` and `manual_title_aware_accept` using
-   `prompts/verification/title_aware_json_v1.txt`.
+   `prompts/verification/json_v3.yaml` and `manual_title_aware_accept` using
+   `prompts/verification/title_aware_json_v1.yaml`.
 3. Classify text as `none`, `ambiguous_or_pseudo` or `clear_meaningful`.
 4. Finish both manual labels before entering `strict_verifier_accept` and
    `title_aware_verifier_accept` as `yes`, `no` or `invalid`.

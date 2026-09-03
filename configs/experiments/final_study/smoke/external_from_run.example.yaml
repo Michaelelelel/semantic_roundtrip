@@ -1,5 +1,5 @@
 # Replace inherit.from_run with a completed current-schema run.
-schema_version: 9
+schema_version: 10
 run:
   name: external_import_direct_smoke
   output_directory: runs
@@ -16,7 +16,7 @@ stages:
   title_guessing:
     direct:
       backend: reconstruction_model
-      template_path: prompts/title_guessing/plain_v3.txt
+      prompt_profile: prompts/title_guessing/plain_v3.yaml
       parameters:
         temperature: 1.0
         top_k: 0

@@ -191,7 +191,7 @@ class PromptVerificationPolicy(ConfigModel):
 class ImageVerificationCheck(ConfigModel):
     """One image-verification policy and its versioned model instruction."""
 
-    template_path: Path
+    prompt_profile: Path
 
 
 class ImageVerificationPolicies(ConfigModel):
@@ -221,11 +221,11 @@ class VerificationStage(StageConfig):
 
 
 class ImageDescriptionStage(StageConfig):
-    template_path: Path
+    prompt_profile: Path
 
 
 class TitleGuessingStage(StageConfig):
-    template_path: Path | None = None
+    prompt_profile: Path
 
 
 class TitleGuessingRoutes(ConfigModel):
@@ -304,7 +304,7 @@ class ResolvedRunInheritance(ConfigModel):
 class InputAppConfig(ConfigModel):
     """Human-maintained experiment configuration with backend references."""
 
-    schema_version: Literal[9]
+    schema_version: Literal[10]
     run: RunConfig
     dataset: InputDatasetConfig | None = None
     inherit: InputRunInheritance | None = None
@@ -324,7 +324,7 @@ class InputAppConfig(ConfigModel):
 class ResolvedAppConfig(ConfigModel):
     """Self-contained effective configuration stored with a run."""
 
-    schema_version: Literal[9]
+    schema_version: Literal[10]
     configuration_kind: Literal["effective"] = "effective"
     run: RunConfig
     dataset: ResolvedDatasetConfig

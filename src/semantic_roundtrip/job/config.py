@@ -21,6 +21,7 @@ from semantic_roundtrip.config import (
     StageName,
 )
 from semantic_roundtrip.config_resolution import (
+    configured_prompt_profile_paths,
     expected_stage_outputs,
     load_input_config,
 )
@@ -329,10 +330,8 @@ def load_job_config(
                 resolved_inheritance=resolved_inheritance,
                 source_config=source_config,
             )
-        if config.stages.prompt_generation is not None:
-            load_prompt_profile(config.stages.prompt_generation.prompt_profile)
-        if config.stages.illustratability_rating is not None:
-            load_prompt_profile(config.stages.illustratability_rating.prompt_profile)
+        for prompt_profile in configured_prompt_profile_paths(config):
+            load_prompt_profile(prompt_profile)
         create_adapters(config)
         experiments.append(
             LoadedJobExperiment(

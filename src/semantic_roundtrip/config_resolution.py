@@ -92,6 +92,33 @@ def configured_image_verification_policies(
     )
 
 
+def configured_prompt_profile_paths(config: ResolvedAppConfig) -> tuple[Path, ...]:
+    """Return every model prompt profile used by the experiment."""
+    paths: list[Path] = []
+    if config.stages.illustratability_rating is not None:
+        paths.append(config.stages.illustratability_rating.prompt_profile)
+    if config.stages.prompt_generation is not None:
+        paths.append(config.stages.prompt_generation.prompt_profile)
+
+    verification = config.stages.verification
+    if verification is not None and verification.image is not None:
+        for policy in configured_image_verification_policies(config):
+            check = getattr(verification.image, policy)
+            assert check is not None
+            paths.append(check.prompt_profile)
+
+    if config.stages.image_description is not None:
+        paths.append(config.stages.image_description.prompt_profile)
+
+    title_guessing = config.stages.title_guessing
+    if title_guessing is not None:
+        if title_guessing.direct is not None:
+            paths.append(title_guessing.direct.prompt_profile)
+        if title_guessing.from_description is not None:
+            paths.append(title_guessing.from_description.prompt_profile)
+    return tuple(paths)
+
+
 def resolve_stage_adapter(
     config: ResolvedAppConfig,
     stage_name: StageName,
@@ -118,7 +145,16 @@ def resolve_stage_adapter(
         )
 
     settings = backend.settings | stage.parameters
-    template_path = getattr(stage, "template_path", None)
+    prompt_profile = (
+        stage.prompt_profile
+        if stage_name
+        in {
+            "image_description",
+            "title_guessing_direct",
+            "title_guessing_from_description",
+        }
+        else None
+    )
     if stage_name == "verification":
         if image_verification_policy is None:
             raise ValueError(
@@ -131,18 +167,18 @@ def resolve_stage_adapter(
                 f"Image-verification policy '{image_verification_policy}' is not "
                 "configured."
             )
-        template_path = check.template_path
+        prompt_profile = check.prompt_profile
     elif image_verification_policy is not None:
         raise ValueError(
             "image_verification_policy is valid only for the verification stage."
         )
-    if template_path is not None:
-        if "template_path" in settings:
+    if prompt_profile is not None:
+        if "prompt_profile" in settings:
             raise ValueError(
-                f"Stage '{stage_name}' must configure template_path with its "
+                f"Stage '{stage_name}' must configure prompt_profile with its "
                 "dedicated field, not in backend settings or parameters."
             )
-        settings["template_path"] = template_path
+        settings["prompt_profile"] = prompt_profile
 
     return StageAdapterConfig(
         adapter=backend.adapter,

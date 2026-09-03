@@ -1,4 +1,4 @@
-schema_version: 9
+schema_version: 10
 run:
   name: indirect_pg_v4_bb_g4_bi_o120
   output_directory: runs
@@ -17,7 +17,7 @@ stages:
   title_guessing:
     from_description:
       backend: interpretation_model
-      template_path: prompts/title_guessing/description_plain_v3.txt
+      prompt_profile: prompts/title_guessing/description_plain_v3.yaml
       parameters:
         temperature: 1.0
         top_k: 0

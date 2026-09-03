@@ -1,4 +1,4 @@
-schema_version: 9
+schema_version: 10
 
 run:
   name: example_direct_from_verification
@@ -24,3 +24,4 @@ stages:
   title_guessing:
     direct:
       backend: reconstruction_model
+      prompt_profile: prompts/title_guessing/plain_v3.yaml

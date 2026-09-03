@@ -141,17 +141,23 @@ thinking-off direct job during analysis.
 
 ## Prompts
 
+All model instructions are versioned YAML chat profiles containing an explicit
+output format and ordered `system`, `user` or `assistant` messages. Vision stages
+attach the image to the profile's single user message. A profile may
+intentionally contain only that user message; no empty or synthetic system
+message is required.
+
 - PG: `prompts/prompt_generation/visual_single_v5.yaml`.
 - Sketch PG: `prompts/prompt_generation/visual_single_sketch_v2.yaml`.
 - Comic PG: `prompts/prompt_generation/visual_single_comic_v1.yaml`.
 - Photorealistic PG:
   `prompts/prompt_generation/visual_single_photorealistic_v1.yaml`.
-- Strict image verifier: `prompts/verification/json_v3.txt`.
+- Strict image verifier: `prompts/verification/json_v3.yaml`.
 - Title-aware image verifier:
-  `prompts/verification/title_aware_json_v1.txt`.
-- BB: `prompts/image_description/plain_v1.txt`.
-- Direct BI: `prompts/title_guessing/plain_v3.txt`.
-- Indirect BI: `prompts/title_guessing/description_plain_v3.txt`.
+  `prompts/verification/title_aware_json_v1.yaml`.
+- BB: `prompts/image_description/plain_v1.yaml`.
+- Direct BI: `prompts/title_guessing/plain_v3.yaml`.
+- Indirect BI: `prompts/title_guessing/description_plain_v3.yaml`.
 - Illustratability: `prompts/illustratability/rating_v2.yaml`.
 
 The unrestricted PG prompt requests one concise concrete scene and prohibits
@@ -283,7 +289,7 @@ persisted per prompt. A title occurrence fails the prompt policy and therefore
 scores 0 in every end-to-end outcome, but it never triggers regeneration or
 prevents downstream work. The status website reports persisted prompt, strict
 image and title-aware image decisions separately. Current code reads and writes
-only experiment schema 9 and run-database schema 11; older jobs require their
+only experiment schema 10 and run-database schema 11; older jobs require their
 original checkout.
 
 Four seed observations are averaged per title before comparisons. Confidence

@@ -79,13 +79,13 @@ class OpenAICompatibleGenerationSettings(ConfigModel):
 
 
 class OpenAICompatibleStageSettings(OpenAICompatibleGenerationSettings):
-    """Settings shared by templated text and multimodal chat stages."""
+    """Settings shared by profiled text and multimodal chat stages."""
 
     endpoint: str = Field(min_length=1)
     model_id: str = Field(min_length=1)
     api_key_env: str | None = Field(default=None, min_length=1)
     request_token_logprobs: bool = True
-    template_path: Path
+    prompt_profile: Path
     timeout_seconds: float = Field(default=300, gt=0)
     reasoning_effort: str | None = Field(default=None, min_length=1)
     reasoning_format: ReasoningFormat | None = None

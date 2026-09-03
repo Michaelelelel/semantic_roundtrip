@@ -12,14 +12,14 @@ INPUT_CONFIG_FILENAME = "config_input.yaml"
 EFFECTIVE_CONFIG_FILENAME = "config_snapshot.yaml"
 PROMPT_PROFILE_FILENAME = "prompt_profile.yaml"
 ILLUSTRATABILITY_PROMPT_PROFILE_FILENAME = "illustratability_prompt_profile.yaml"
-STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME = "verification_image_strict_prompt.txt"
+STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME = "verification_image_strict_profile.yaml"
 TITLE_AWARE_IMAGE_VERIFICATION_PROMPT_FILENAME = (
-    "verification_image_title_aware_prompt.txt"
+    "verification_image_title_aware_profile.yaml"
 )
-IMAGE_DESCRIPTION_PROMPT_FILENAME = "image_description_prompt.txt"
-DIRECT_TITLE_GUESSING_PROMPT_FILENAME = "title_guessing_direct_prompt.txt"
+IMAGE_DESCRIPTION_PROMPT_FILENAME = "image_description_profile.yaml"
+DIRECT_TITLE_GUESSING_PROMPT_FILENAME = "title_guessing_direct_profile.yaml"
 DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME = (
-    "title_guessing_from_description_prompt.txt"
+    "title_guessing_from_description_profile.yaml"
 )
 
 
@@ -77,7 +77,7 @@ def create_prompt_snapshots(
     *,
     loaded_illustratability_profile: LoadedPromptProfile | None = None,
 ) -> dict[str, Path]:
-    """Copy every prompt file referenced by this experiment."""
+    """Copy every prompt profile referenced by this experiment."""
     snapshots: dict[str, Path] = {}
     if loaded_illustratability_profile is not None:
         snapshot_path = run_directory / ILLUSTRATABILITY_PROMPT_PROFILE_FILENAME
@@ -95,7 +95,7 @@ def create_prompt_snapshots(
             (
                 None
                 if config.stages.image_description is None
-                else config.stages.image_description.template_path
+                else config.stages.image_description.prompt_profile
             ),
             IMAGE_DESCRIPTION_PROMPT_FILENAME,
         ),
@@ -103,7 +103,7 @@ def create_prompt_snapshots(
             (
                 None
                 if title_guessing is None or title_guessing.direct is None
-                else title_guessing.direct.template_path
+                else title_guessing.direct.prompt_profile
             ),
             DIRECT_TITLE_GUESSING_PROMPT_FILENAME,
         ),
@@ -111,7 +111,7 @@ def create_prompt_snapshots(
             (
                 None
                 if title_guessing is None or title_guessing.from_description is None
-                else title_guessing.from_description.template_path
+                else title_guessing.from_description.prompt_profile
             ),
             DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME,
         ),
@@ -120,12 +120,12 @@ def create_prompt_snapshots(
     if verification is not None and verification.image is not None:
         if verification.image.strict is not None:
             configured_prompts["verification_image_strict"] = (
-                verification.image.strict.template_path,
+                verification.image.strict.prompt_profile,
                 STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME,
             )
         if verification.image.title_aware is not None:
             configured_prompts["verification_image_title_aware"] = (
-                verification.image.title_aware.template_path,
+                verification.image.title_aware.prompt_profile,
                 TITLE_AWARE_IMAGE_VERIFICATION_PROMPT_FILENAME,
             )
     for name, (source_path, filename) in configured_prompts.items():
@@ -142,7 +142,7 @@ def use_prompt_snapshots(
     config: ResolvedAppConfig,
     run_directory: Path,
 ) -> ResolvedAppConfig:
-    """Use copied prompt files when resuming a new-format run."""
+    """Use copied prompt profiles when resuming a run."""
     illustratability_rating = config.stages.illustratability_rating
     illustratability_path = run_directory / ILLUSTRATABILITY_PROMPT_PROFILE_FILENAME
     if illustratability_rating is not None and illustratability_path.is_file():
@@ -163,7 +163,7 @@ def use_prompt_snapshots(
         strict_path = run_directory / STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME
         if verification.image.strict is not None and strict_path.is_file():
             image_updates["strict"] = verification.image.strict.model_copy(
-                update={"template_path": strict_path}
+                update={"prompt_profile": strict_path}
             )
         title_aware_path = (
             run_directory / TITLE_AWARE_IMAGE_VERIFICATION_PROMPT_FILENAME
@@ -174,7 +174,7 @@ def use_prompt_snapshots(
         ):
             image_updates["title_aware"] = (
                 verification.image.title_aware.model_copy(
-                    update={"template_path": title_aware_path}
+                    update={"prompt_profile": title_aware_path}
                 )
             )
         if image_updates:
@@ -188,7 +188,7 @@ def use_prompt_snapshots(
     image_description_path = run_directory / IMAGE_DESCRIPTION_PROMPT_FILENAME
     if image_description is not None and image_description_path.is_file():
         image_description = image_description.model_copy(
-            update={"template_path": image_description_path}
+            update={"prompt_profile": image_description_path}
         )
 
     title_guessing = config.stages.title_guessing
@@ -196,7 +196,7 @@ def use_prompt_snapshots(
     direct_title_guessing_path = run_directory / DIRECT_TITLE_GUESSING_PROMPT_FILENAME
     if direct_title_guessing is not None and direct_title_guessing_path.is_file():
         direct_title_guessing = direct_title_guessing.model_copy(
-            update={"template_path": direct_title_guessing_path}
+            update={"prompt_profile": direct_title_guessing_path}
         )
 
     description_title_guessing = (
@@ -210,7 +210,7 @@ def use_prompt_snapshots(
         and description_title_guessing_path.is_file()
     ):
         description_title_guessing = description_title_guessing.model_copy(
-            update={"template_path": description_title_guessing_path}
+            update={"prompt_profile": description_title_guessing_path}
         )
 
     if title_guessing is not None:

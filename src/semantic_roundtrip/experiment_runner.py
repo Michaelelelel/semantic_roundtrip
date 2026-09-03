@@ -6,6 +6,7 @@ from pathlib import Path
 from semantic_roundtrip.adapters.factory import AdapterBundle, create_adapters
 from semantic_roundtrip.config import ResolvedAppConfig
 from semantic_roundtrip.config_resolution import (
+    configured_prompt_profile_paths,
     load_effective_config,
     load_input_config,
 )
@@ -71,6 +72,8 @@ def prepare_experiment(
         )
         config = config.model_copy(update={"run": run_config})
 
+    for prompt_profile_path in configured_prompt_profile_paths(config):
+        load_prompt_profile(prompt_profile_path)
     loaded_prompt_profile = (
         None
         if config.stages.prompt_generation is None
@@ -195,6 +198,8 @@ def resume_experiment(
         ),
         run_directory,
     )
+    for prompt_profile_path in configured_prompt_profile_paths(config):
+        load_prompt_profile(prompt_profile_path)
     loaded_prompt_profile = (
         None
         if config.stages.prompt_generation is None

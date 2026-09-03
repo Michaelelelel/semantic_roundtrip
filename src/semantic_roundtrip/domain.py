@@ -16,7 +16,7 @@ class BenchmarkItem:
 
 @dataclass(frozen=True, slots=True)
 class PromptMessage:
-    """One provider-independent message used to generate an image prompt."""
+    """One provider-independent chat message rendered from a prompt profile."""
 
     role: Literal["system", "user", "assistant"]
     content: str

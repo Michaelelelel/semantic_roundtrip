@@ -72,9 +72,11 @@ def execute_illustratability_rating_stage(
 
         messages = render_prompt_profile(
             prompt_profile,
-            title=item.title,
-            domain=item.domain,
-            prompt_index=0,
+            variables={
+                "title": item.title,
+                "domain": item.domain,
+                "prompt_number": "1",
+            },
         )
 
         def rate(
@@ -132,9 +134,11 @@ def _load_or_generate_prompt(
 
     messages = render_prompt_profile(
         prompt_profile,
-        title=item.title,
-        domain=item.domain,
-        prompt_index=prompt_index,
+        variables={
+            "title": item.title,
+            "domain": item.domain,
+            "prompt_number": str(prompt_index + 1),
+        },
     )
 
     def generate() -> tuple[int, GeneratedPrompt]:

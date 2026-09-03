@@ -1,8 +1,6 @@
 """Text-input title guessing through an OpenAI-compatible chat endpoint."""
 
 import math
-from pathlib import Path
-from string import Template
 from typing import Any
 
 from semantic_roundtrip.adapters.errors import AdapterError
@@ -15,6 +13,11 @@ from semantic_roundtrip.adapters.openai_compatible.settings import (
     OpenAICompatibleStageSettings,
 )
 from semantic_roundtrip.domain import TitlePrediction
+from semantic_roundtrip.prompting import (
+    load_prompt_profile,
+    render_prompt_profile,
+    validate_prompt_profile_variables,
+)
 
 
 def title_prediction_from_completion(
@@ -58,9 +61,13 @@ class OpenAICompatibleTextTitleGuesser:
 
     def __init__(self, settings: OpenAICompatibleStageSettings) -> None:
         self._config = settings
-        self._template = Template(
-            Path(settings.template_path).read_text(encoding="utf-8")
+        self._prompt_profile = load_prompt_profile(settings.prompt_profile).profile
+        validate_prompt_profile_variables(
+            self._prompt_profile,
+            available={"description", "domain"},
         )
+        if self._prompt_profile.output_format != "plain_text":
+            raise ValueError("Title guessing requires a plain-text prompt profile.")
         self._client = OpenAICompatibleChatClient(
             endpoint=settings.endpoint,
             model_id=settings.model_id,
@@ -75,15 +82,17 @@ class OpenAICompatibleTextTitleGuesser:
         description: str,
         domain: str | None,
     ) -> TitlePrediction:
+        rendered_messages = render_prompt_profile(
+            self._prompt_profile,
+            variables={
+                "description": description,
+                "domain": domain or "",
+            },
+        )
         completion = self._client.complete(
-            messages=(
-                ChatMessage(
-                    role="user",
-                    content=self._template.substitute(
-                        description=description,
-                        domain=domain or "",
-                    ),
-                ),
+            messages=tuple(
+                ChatMessage(role=message.role, content=message.content)
+                for message in rendered_messages
             ),
             generation_parameters=self._config.generation_parameters(),
             include_token_logprobs=self._config.request_token_logprobs,

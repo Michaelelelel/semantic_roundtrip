@@ -65,7 +65,7 @@ versioned executable protocol.
 ## Repository map
 
 - `configs/`: datasets, backends, experiments, jobs and deployment catalogs.
-- `prompts/`: versioned prompt profiles and templates.
+- `prompts/`: versioned YAML chat profiles with explicit message roles.
 - `workflows/`: pinned image-generation workflows.
 - `src/semantic_roundtrip/`: adapters, runtime control, pipeline, persistence,
   analysis and status website.

@@ -1,9 +1,0 @@
-Identify the exact title or name represented by this image description.
-Domain: $domain
-
-Image description:
-$description
-
-Make one best guess, even if uncertain. Do not repeat the description. Return
-only that title or name on one line. No quotation marks, labels, explanations,
-alternatives, or "by ..." attribution.

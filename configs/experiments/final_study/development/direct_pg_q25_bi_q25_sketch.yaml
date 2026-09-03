@@ -1,4 +1,4 @@
-schema_version: 9
+schema_version: 10
 run:
   name: direct_pg_q25_bi_q25_sketch
   output_directory: runs
@@ -42,9 +42,9 @@ stages:
       policy: reference_title_absent
     image:
       strict:
-        template_path: prompts/verification/json_v3.txt
+        prompt_profile: prompts/verification/json_v3.yaml
       title_aware:
-        template_path: prompts/verification/title_aware_json_v1.txt
+        prompt_profile: prompts/verification/title_aware_json_v1.yaml
     parameters:
       temperature: 0.0
       top_k: 0
@@ -58,7 +58,7 @@ stages:
   title_guessing:
     direct:
       backend: reconstruction_model
-      template_path: prompts/title_guessing/plain_v3.txt
+      prompt_profile: prompts/title_guessing/plain_v3.yaml
       parameters:
         temperature: 1.0
         top_k: 0
