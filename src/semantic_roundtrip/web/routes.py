@@ -15,6 +15,7 @@ from semantic_roundtrip.persistence.run.result_queries import (
     read_image_artifact_path,
     read_result_trace_page,
     read_route_accuracies,
+    read_verification_summary,
 )
 from semantic_roundtrip.persistence.run.schema import database_path_for_run
 from semantic_roundtrip.status.common import STATUS_READ_ERRORS
@@ -204,7 +205,10 @@ def run_detail(
 
     try:
         run = get_run_status(run_directory)
-        accuracies = _run_accuracies(run_directory)
+        config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
+        database_path = database_path_for_run(run_directory)
+        accuracies = read_route_accuracies(database_path, config)
+        verification = read_verification_summary(database_path, config)
     except STATUS_READ_ERRORS as error:
         raise _unreadable_status(error) from error
 
@@ -213,6 +217,7 @@ def run_detail(
         "run.html",
         run=run,
         accuracies=accuracies,
+        verification=verification,
         run_path=run_directory.relative_to(runs_root).as_posix(),
         parent_job_id=_parent_job_id(run_directory, runs_root),
         auto_refresh=run.status not in TERMINAL_STATUSES,
@@ -240,6 +245,7 @@ def run_results(
             page_size=RESULTS_PAGE_SIZE,
         )
         accuracies = read_route_accuracies(database_path, config)
+        verification = read_verification_summary(database_path, config)
     except STATUS_READ_ERRORS as error:
         raise _unreadable_status(error) from error
 
@@ -256,6 +262,7 @@ def run_results(
         run_path=run_directory.relative_to(runs_root).as_posix(),
         result_page=result_page,
         accuracies=accuracies,
+        verification=verification,
         stages={stage.name: stage for stage in run.stages},
         is_terminal=run.status in TERMINAL_STATUSES,
         auto_refresh=run.status not in TERMINAL_STATUSES,

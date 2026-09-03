@@ -1,6 +1,6 @@
-# Replace inherit.from_run with a current-schema development root run.
-# The seeds must match that source; only Verification executes locally.
-schema_version: 8
+# Replace inherit.from_run with a completed source run. The seeds must match.
+# Prompts, images and direct predictions are imported; only Verification runs.
+schema_version: 9
 run:
   name: verification_q38_development_check
   output_directory: runs
@@ -14,7 +14,13 @@ backends:
 stages:
   verification:
     backend: verifier
-    template_path: prompts/verification/json_v3.txt
+    prompt:
+      policy: reference_title_absent
+    image:
+      strict:
+        template_path: prompts/verification/json_v3.txt
+      title_aware:
+        template_path: prompts/verification/title_aware_json_v1.txt
     parameters:
       temperature: 0.0
       top_k: 0
@@ -28,4 +34,4 @@ stages:
 inherit:
   from_run: /REPLACE/WITH/SOURCE/RUN
   stages:
-  - image_generation
+  - title_guessing_direct

@@ -12,7 +12,9 @@ class PipelineSummary:
     illustratability_ratings: int
     prompts: int
     images: int
-    verifications: int
+    prompt_verifications: int
+    strict_image_verifications: int
+    title_aware_image_verifications: int
     image_descriptions: int
     predictions: int
     failed_tasks: int

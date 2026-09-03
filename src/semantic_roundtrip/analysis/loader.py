@@ -14,6 +14,7 @@ import pandas as pd
 from semantic_roundtrip.analysis.statistics import score_observations
 from semantic_roundtrip.config import ResolvedAppConfig, StageName
 from semantic_roundtrip.config_resolution import (
+    configured_image_verification_policies,
     configured_stage_names,
     get_stage_config,
     load_effective_config,
@@ -117,6 +118,26 @@ def _available_stages(
     return available
 
 
+def _verification_checks(
+    config: ResolvedAppConfig,
+    tasks: list[dict[str, Any]],
+) -> tuple[bool, frozenset[str]]:
+    verification = config.stages.verification
+    prompt = verification is not None and verification.prompt is not None
+    image = set(configured_image_verification_policies(config))
+    for row in tasks:
+        if row["stage"] != "verification":
+            continue
+        task_key = str(row["task_key"])
+        prompt |= task_key.startswith(
+            "verification:prompt:reference_title_absent:"
+        )
+        for policy in ("strict", "title_aware"):
+            if task_key.startswith(f"verification:image:{policy}:"):
+                image.add(policy)
+    return prompt, frozenset(image)
+
+
 def _image_path(run_directory: Path, stored_path: str) -> str:
     path = Path(stored_path)
     resolved = (path if path.is_absolute() else run_directory / path).resolve()
@@ -173,7 +194,6 @@ def _latest_error(
     relevant = {
         "prompt_generation",
         "image_generation",
-        "verification",
         route_stage,
     }
     if route_stage == "title_guessing_from_description":
@@ -259,21 +279,19 @@ def load_run(path: str | Path) -> AnalysisTables:
         if metadata["name"] != config.run.name:
             raise ValueError("Run database and effective configuration names differ.")
 
-        tables = {
-            name: _rows(connection, name)
-            for name in (
-                "dataset_items",
-                "illustratability_ratings",
-                "prompts",
-                "images",
-                "verifications",
-                "image_descriptions",
-                "predictions",
-                "stage_tasks",
-                "runtime_events",
-                "run_lineage",
-            )
-        }
+        table_names = [
+            "dataset_items",
+            "illustratability_ratings",
+            "prompts",
+            "images",
+            "image_descriptions",
+            "predictions",
+            "stage_tasks",
+            "runtime_events",
+            "run_lineage",
+        ]
+        table_names.extend(["prompt_verifications", "image_verifications"])
+        tables = {name: _rows(connection, name) for name in table_names}
         errors = _error_rows(connection, metadata["run_id"])
     finally:
         connection.close()
@@ -326,6 +344,10 @@ def load_run(path: str | Path) -> AnalysisTables:
         )
 
     available = _available_stages(config, tables["stage_tasks"], tables["run_lineage"])
+    prompt_verification_configured, image_policies = _verification_checks(
+        config,
+        tables["stage_tasks"],
+    )
     routes = []
     if "title_guessing_direct" in available:
         routes.append(("direct", "image", "title_guessing_direct"))
@@ -334,7 +356,16 @@ def load_run(path: str | Path) -> AnalysisTables:
 
     prompts = _map(tables["prompts"], ("item_id", "prompt_index"), "prompt")
     images = _map(tables["images"], ("prompt_id", "seed"), "image")
-    verifications = _map(tables["verifications"], ("image_id",), "verification")
+    prompt_verifications = _map(
+        tables["prompt_verifications"],
+        ("prompt_id", "policy"),
+        "prompt verification",
+    )
+    image_verifications = _map(
+        tables["image_verifications"],
+        ("image_id", "policy"),
+        "image verification",
+    )
     descriptions = _map(tables["image_descriptions"], ("image_id",), "description")
     predictions = _map(tables["predictions"], ("image_id", "input_kind"), "prediction")
 
@@ -347,13 +378,25 @@ def load_run(path: str | Path) -> AnalysisTables:
             if prompt is not None and int(prompt["sampling_seed"]) != prompt_seed:
                 raise ValueError("Stored prompt seed differs from the run snapshot.")
             prompt_id = None if prompt is None else int(prompt["prompt_id"])
+            prompt_verification = (
+                None
+                if prompt_id is None
+                else prompt_verifications.get((prompt_id, "reference_title_absent"))
+            )
             for image_seed in config.experiment.image_seeds:
                 image = (
                     None if prompt_id is None else images.get((prompt_id, image_seed))
                 )
                 image_id = None if image is None else int(image["image_id"])
-                verification = (
-                    None if image_id is None else verifications.get((image_id,))
+                strict_verification = (
+                    None
+                    if image_id is None
+                    else image_verifications.get((image_id, "strict"))
+                )
+                title_aware_verification = (
+                    None
+                    if image_id is None
+                    else image_verifications.get((image_id, "title_aware"))
                 )
                 description = (
                     None if image_id is None else descriptions.get((image_id,))
@@ -398,13 +441,59 @@ def load_run(path: str | Path) -> AnalysisTables:
                             "verifier_model": models["verification"],
                             "description_model": models["image_description"],
                             "prediction_model": models[route_stage],
-                            "verification_passed": (
-                                None
-                                if verification is None
-                                else bool(verification["passed"])
+                            "prompt_verification_configured": (
+                                prompt_verification_configured
                             ),
-                            "verification_reason": (
-                                None if verification is None else verification["reason"]
+                            "prompt_verification_passed": (
+                                None
+                                if prompt_verification is None
+                                else bool(prompt_verification["passed"])
+                            ),
+                            "prompt_verification_reason": (
+                                None
+                                if prompt_verification is None
+                                else prompt_verification["reason"]
+                            ),
+                            "prompt_verification_method": (
+                                None
+                                if prompt_verification is None
+                                else prompt_verification["method"]
+                            ),
+                            "strict_image_verification_passed": (
+                                None
+                                if strict_verification is None
+                                else bool(strict_verification["passed"])
+                            ),
+                            "strict_image_verification_configured": (
+                                "strict" in image_policies
+                            ),
+                            "strict_image_verification_reason": (
+                                None
+                                if strict_verification is None
+                                else strict_verification["reason"]
+                            ),
+                            "strict_image_verification_method": (
+                                None
+                                if strict_verification is None
+                                else strict_verification["method"]
+                            ),
+                            "title_aware_image_verification_configured": (
+                                "title_aware" in image_policies
+                            ),
+                            "title_aware_image_verification_passed": (
+                                None
+                                if title_aware_verification is None
+                                else bool(title_aware_verification["passed"])
+                            ),
+                            "title_aware_image_verification_reason": (
+                                None
+                                if title_aware_verification is None
+                                else title_aware_verification["reason"]
+                            ),
+                            "title_aware_image_verification_method": (
+                                None
+                                if title_aware_verification is None
+                                else title_aware_verification["method"]
                             ),
                             "image_description": (
                                 None if description is None else description["text"]

@@ -9,8 +9,8 @@ STAGE_DEPENDENCIES: dict[StageName, tuple[StageName, ...]] = {
     "prompt_generation": (),
     "image_generation": ("prompt_generation",),
     "verification": ("image_generation",),
-    "title_guessing_direct": ("verification",),
-    "image_description": ("verification",),
+    "title_guessing_direct": ("image_generation",),
+    "image_description": ("image_generation",),
     "title_guessing_from_description": ("image_description",),
 }
 

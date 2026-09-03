@@ -59,11 +59,12 @@ class ImageArtifact:
 
 
 @dataclass(frozen=True, slots=True)
-class VerificationResult:
-    """The verifier's decision for one generated image."""
+class VerificationDecision:
+    """One persisted decision from a prompt or image verification policy."""
 
     passed: bool
     raw_response: str
+    method: str
     reason: str | None = None
 
 

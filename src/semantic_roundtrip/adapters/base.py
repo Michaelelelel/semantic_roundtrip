@@ -10,7 +10,7 @@ from semantic_roundtrip.domain import (
     PromptMessage,
     PromptResponse,
     TitlePrediction,
-    VerificationResult,
+    VerificationDecision,
 )
 
 
@@ -55,14 +55,15 @@ class ImageGenerator(Protocol):
 
 
 class ImageVerifier(Protocol):
-    """Check an image for text leakage or replica suspicion."""
+    """Apply one configured text-leakage policy to an image."""
 
     def verify_image(
         self,
         *,
         image_path: Path,
-    ) -> VerificationResult:
-        """Return the verification decision and reason."""
+        reference_title: str | None = None,
+    ) -> VerificationDecision:
+        """Return a decision; title-aware policies require reference_title."""
         ...
 
 

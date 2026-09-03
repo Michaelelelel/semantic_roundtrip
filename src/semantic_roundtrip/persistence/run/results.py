@@ -4,7 +4,7 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
-from semantic_roundtrip.config import PredictionInputKind
+from semantic_roundtrip.config import ImageVerificationPolicy, PredictionInputKind
 from semantic_roundtrip.domain import (
     BenchmarkItem,
     GeneratedPrompt,
@@ -13,7 +13,7 @@ from semantic_roundtrip.domain import (
     ImageDescription,
     PromptResponse,
     TitlePrediction,
-    VerificationResult,
+    VerificationDecision,
 )
 from semantic_roundtrip.persistence.run.manager import RunContext
 from semantic_roundtrip.persistence.sqlite import utc_now
@@ -25,7 +25,9 @@ class ResultCounts:
     illustratability_ratings: int
     prompts: int
     images: int
-    verifications: int
+    prompt_verifications: int
+    strict_image_verifications: int
+    title_aware_image_verifications: int
     image_descriptions: int
     direct_predictions: int
     description_predictions: int
@@ -359,40 +361,121 @@ class RunResultStore:
             for row in rows
         ]
 
-    def get_verification(
+    def get_prompt_verification(
         self,
-        image_id: int,
-    ) -> tuple[int, VerificationResult] | None:
+        prompt_id: int,
+    ) -> tuple[int, VerificationDecision] | None:
         row = self._connection.execute(
             """
-            SELECT verification_id, passed, reason, raw_response
-            FROM verifications
-            WHERE image_id = ?
+            SELECT
+                prompt_verification_id,
+                passed,
+                reason,
+                method,
+                raw_response
+            FROM prompt_verifications
+            WHERE prompt_id = ? AND policy = 'reference_title_absent'
             """,
-            (image_id,),
+            (prompt_id,),
         ).fetchone()
         if row is None:
             return None
         return (
-            int(row["verification_id"]),
-            VerificationResult(
+            int(row["prompt_verification_id"]),
+            VerificationDecision(
                 passed=bool(row["passed"]),
                 reason=row["reason"],
+                method=row["method"],
                 raw_response=row["raw_response"],
             ),
         )
 
-    def add_verification(
+    def add_prompt_verification(
         self,
-        image_id: int,
-        result: VerificationResult,
+        prompt_id: int,
+        decision: VerificationDecision,
     ) -> int:
         return self._insert(
             """
-            INSERT INTO verifications (image_id, passed, reason, raw_response)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO prompt_verifications (
+                prompt_id,
+                policy,
+                passed,
+                reason,
+                method,
+                raw_response,
+                created_at
+            )
+            VALUES (?, 'reference_title_absent', ?, ?, ?, ?, ?)
             """,
-            (image_id, int(result.passed), result.reason, result.raw_response),
+            (
+                prompt_id,
+                int(decision.passed),
+                decision.reason,
+                decision.method,
+                decision.raw_response,
+                utc_now(),
+            ),
+        )
+
+    def get_image_verification(
+        self,
+        image_id: int,
+        policy: ImageVerificationPolicy,
+    ) -> tuple[int, VerificationDecision] | None:
+        row = self._connection.execute(
+            """
+            SELECT
+                image_verification_id,
+                passed,
+                reason,
+                method,
+                raw_response
+            FROM image_verifications
+            WHERE image_id = ? AND policy = ?
+            """,
+            (image_id, policy),
+        ).fetchone()
+        if row is None:
+            return None
+        return (
+            int(row["image_verification_id"]),
+            VerificationDecision(
+                passed=bool(row["passed"]),
+                reason=row["reason"],
+                method=row["method"],
+                raw_response=row["raw_response"],
+            ),
+        )
+
+    def add_image_verification(
+        self,
+        image_id: int,
+        policy: ImageVerificationPolicy,
+        decision: VerificationDecision,
+    ) -> int:
+        return self._insert(
+            """
+            INSERT INTO image_verifications (
+                image_id,
+                policy,
+                passed,
+                reason,
+                method,
+                raw_response,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                image_id,
+                policy,
+                int(decision.passed),
+                decision.reason,
+                decision.method,
+                decision.raw_response,
+                utc_now(),
+            ),
         )
 
     def get_image_description(
@@ -527,7 +610,17 @@ class RunResultStore:
                 ) AS illustratability_ratings,
                 (SELECT COUNT(*) FROM prompts) AS prompts,
                 (SELECT COUNT(*) FROM images) AS images,
-                (SELECT COUNT(*) FROM verifications) AS verifications,
+                (
+                    SELECT COUNT(*) FROM prompt_verifications
+                ) AS prompt_verifications,
+                (
+                    SELECT COUNT(*) FROM image_verifications
+                    WHERE policy = 'strict'
+                ) AS strict_image_verifications,
+                (
+                    SELECT COUNT(*) FROM image_verifications
+                    WHERE policy = 'title_aware'
+                ) AS title_aware_image_verifications,
                 (SELECT COUNT(*) FROM image_descriptions) AS image_descriptions,
                 (
                     SELECT COUNT(*) FROM predictions WHERE input_kind = 'image'
@@ -544,7 +637,9 @@ class RunResultStore:
             illustratability_ratings=int(row["illustratability_ratings"]),
             prompts=int(row["prompts"]),
             images=int(row["images"]),
-            verifications=int(row["verifications"]),
+            prompt_verifications=int(row["prompt_verifications"]),
+            strict_image_verifications=int(row["strict_image_verifications"]),
+            title_aware_image_verifications=int(row["title_aware_image_verifications"]),
             image_descriptions=int(row["image_descriptions"]),
             direct_predictions=int(row["direct_predictions"]),
             description_predictions=int(row["description_predictions"]),

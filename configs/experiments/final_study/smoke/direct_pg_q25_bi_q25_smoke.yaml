@@ -1,4 +1,4 @@
-schema_version: 8
+schema_version: 9
 run:
   name: direct_pg_q25_bi_q25_smoke
   output_directory: runs
@@ -53,7 +53,13 @@ stages:
     backend: image_model
   verification:
     backend: verifier
-    template_path: prompts/verification/json_v3.txt
+    prompt:
+      policy: reference_title_absent
+    image:
+      strict:
+        template_path: prompts/verification/json_v3.txt
+      title_aware:
+        template_path: prompts/verification/title_aware_json_v1.txt
     parameters:
       temperature: 0.0
       top_k: 0

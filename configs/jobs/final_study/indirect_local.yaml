@@ -12,6 +12,7 @@ experiments:
     from_entry: indirect_pg_d32_bb_q25_bi_d32
     stages:
     - image_description
+    - verification
 - name: indirect_pg_d32_bb_g3_bi_d32
   config: ../../experiments/final_study/indirect/indirect_pg_d32_bb_g3_bi_d32.yaml
   inherit:
@@ -24,6 +25,7 @@ experiments:
     from_entry: indirect_pg_d32_bb_g3_bi_d32
     stages:
     - image_description
+    - verification
 - name: indirect_pg_d32_bb_q38_bi_d32
   config: ../../experiments/final_study/indirect/indirect_pg_d32_bb_q38_bi_d32.yaml
   inherit:
@@ -36,6 +38,7 @@ experiments:
     from_entry: indirect_pg_d32_bb_q38_bi_d32
     stages:
     - image_description
+    - verification
 - name: indirect_pg_d32_bb_g4_bi_d32
   config: ../../experiments/final_study/indirect/indirect_pg_d32_bb_g4_bi_d32.yaml
   inherit:
@@ -48,6 +51,7 @@ experiments:
     from_entry: indirect_pg_d32_bb_g4_bi_d32
     stages:
     - image_description
+    - verification
 - name: indirect_pg_o120_bb_q25_bi_d32
   config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_q25_bi_d32.yaml
 - name: indirect_pg_o120_bb_q25_bi_o120
@@ -56,6 +60,7 @@ experiments:
     from_entry: indirect_pg_o120_bb_q25_bi_d32
     stages:
     - image_description
+    - verification
 - name: indirect_pg_o120_bb_g3_bi_d32
   config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_g3_bi_d32.yaml
   inherit:
@@ -68,6 +73,7 @@ experiments:
     from_entry: indirect_pg_o120_bb_g3_bi_d32
     stages:
     - image_description
+    - verification
 - name: indirect_pg_o120_bb_q38_bi_d32
   config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_q38_bi_d32.yaml
   inherit:
@@ -80,6 +86,7 @@ experiments:
     from_entry: indirect_pg_o120_bb_q38_bi_d32
     stages:
     - image_description
+    - verification
 - name: indirect_pg_o120_bb_g4_bi_d32
   config: ../../experiments/final_study/indirect/indirect_pg_o120_bb_g4_bi_d32.yaml
   inherit:
@@ -92,3 +99,4 @@ experiments:
     from_entry: indirect_pg_o120_bb_g4_bi_d32
     stages:
     - image_description
+    - verification

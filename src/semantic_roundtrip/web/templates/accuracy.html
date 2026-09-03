@@ -10,6 +10,13 @@
     {% else %}
       <strong>{{ "%.1f"|format(value.percent) }}%</strong>
       <small>({{ value.correct }} / {{ value.expected }})</small>
+      <small>strict image policy</small>
+      {% if value.title_aware_percent is not none %}
+        <br>
+        <strong>{{ "%.1f"|format(value.title_aware_percent) }}%</strong>
+        <small>({{ value.title_aware_correct }} / {{ value.expected }})</small>
+        <small>title-aware image policy</small>
+      {% endif %}
     {% endif %}
     {% if status != "completed" %}<br><small>Provisional</small>{% endif %}
     <br><small>{{ value.predictions }} / {{ value.expected }} predictions</small>
@@ -25,7 +32,8 @@
         {% endif %}
       {% endfor %}
     </dl>
-    <p class="accuracy-note">End-to-end Strict Exact Match: correct title and passed verification / all planned observations.
-      Missing predictions or verification count as zero. Provisional values include unfinished work.</p>
+    <p class="accuracy-note">End-to-end Strict Exact Match: passed prompt verification, passed image policy and correct title / all planned observations.
+      The strict image policy is primary; title-aware image verification is a sensitivity analysis.
+      Missing configured decisions or predictions count as zero. Provisional values include unfinished work.</p>
   {% endif %}
 {% endmacro %}

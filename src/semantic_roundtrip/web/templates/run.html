@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "accuracy.html" import accuracy_summary %}
+{% from "verification.html" import verification_summary %}
 
 {% block title %}{{ run.name }}{% endblock %}
 
@@ -67,4 +68,5 @@
         </tbody>
     </table>
   </section>
+  {{ verification_summary(verification) }}
 {% endblock %}

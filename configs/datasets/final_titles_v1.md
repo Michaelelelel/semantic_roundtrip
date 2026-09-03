@@ -24,6 +24,12 @@ Popularity bounds the candidate pool; it is not compared numerically across
 sources. Fixed-seed sampling avoids manual selection by expected success. Title
 length remains descriptive only.
 
+There is no illustratability filter. The separate 900-candidate rating profile
+supports this choice, including low/high-score concentrations and domain
+differences. The protocol retains the random main sample; skewness alone does
+not trigger filtering. Any later change requires a documented
+protocol decision and a new dataset version, not an overwrite of this sample.
+
 ## Sources
 
 - Songs: [ListenBrainz sitewide all-time recordings](https://listenbrainz.readthedocs.io/en/latest/users/api/statistics.html),

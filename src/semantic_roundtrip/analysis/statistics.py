@@ -17,7 +17,7 @@ BOOTSTRAP_SEED = 20260829
 
 
 def score_observations(observations: pd.DataFrame) -> pd.DataFrame:
-    """Add prediction-only and end-to-end Exact Match columns."""
+    """Add title matches and end-to-end scores for both image policies."""
     result = observations.copy()
     if result.empty:
         return result
@@ -37,13 +37,50 @@ def score_observations(observations: pd.DataFrame) -> pd.DataFrame:
             )
     result["strict_exact_match"] = pd.array(strict, dtype="boolean")
     result["normalized_exact_match"] = pd.array(normalized, dtype="boolean")
-    verifier_passed = result["verification_passed"].astype("boolean").fillna(False)
+    prompt_configured = result["prompt_verification_configured"].astype(bool)
+    prompt_passed = result["prompt_verification_passed"].astype("boolean")
+    prompt_gate = (~prompt_configured) | prompt_passed.fillna(False)
+    strict_configured = result["strict_image_verification_configured"].astype(bool)
+    strict_passed = (
+        result["strict_image_verification_passed"].astype("boolean").fillna(False)
+    )
+    strict_gate = (~strict_configured) | strict_passed
     result["end_to_end_strict_score"] = (
-        verifier_passed & result["strict_exact_match"].fillna(False)
+        prompt_gate & strict_gate & result["strict_exact_match"].fillna(False)
     ).astype(int)
     result["end_to_end_normalized_score"] = (
-        verifier_passed & result["normalized_exact_match"].fillna(False)
+        prompt_gate & strict_gate & result["normalized_exact_match"].fillna(False)
     ).astype(int)
+    title_aware_configured = result["title_aware_image_verification_configured"].astype(
+        bool
+    )
+    title_aware_passed = (
+        result["title_aware_image_verification_passed"].astype("boolean").fillna(False)
+    )
+    result["title_aware_end_to_end_strict_score"] = pd.array(
+        np.where(
+            title_aware_configured,
+            (
+                prompt_gate
+                & title_aware_passed
+                & result["strict_exact_match"].fillna(False)
+            ).astype(int),
+            pd.NA,
+        ),
+        dtype="Int64",
+    )
+    result["title_aware_end_to_end_normalized_score"] = pd.array(
+        np.where(
+            title_aware_configured,
+            (
+                prompt_gate
+                & title_aware_passed
+                & result["normalized_exact_match"].fillna(False)
+            ).astype(int),
+            pd.NA,
+        ),
+        dtype="Int64",
+    )
     return result
 
 
@@ -73,7 +110,15 @@ def aggregate_titles(
         observations=("end_to_end_strict_score", "size"),
         predictions=("prediction_id", "count"),
         verifier_passes=(
-            "verification_passed",
+            "strict_image_verification_passed",
+            lambda values: values.eq(True).sum(),
+        ),
+        prompt_verification_passes=(
+            "prompt_verification_passed",
+            lambda values: values.eq(True).sum(),
+        ),
+        title_aware_image_verification_passes=(
+            "title_aware_image_verification_passed",
             lambda values: values.eq(True).sum(),
         ),
         prediction_only_strict_accuracy=(
@@ -86,6 +131,14 @@ def aggregate_titles(
         ),
         end_to_end_strict_accuracy=("end_to_end_strict_score", "mean"),
         end_to_end_normalized_accuracy=("end_to_end_normalized_score", "mean"),
+        title_aware_end_to_end_strict_accuracy=(
+            "title_aware_end_to_end_strict_score",
+            "mean",
+        ),
+        title_aware_end_to_end_normalized_accuracy=(
+            "title_aware_end_to_end_normalized_score",
+            "mean",
+        ),
     ).reset_index()
     wrong = result[result["observations"] != expected_observations]
     if not wrong.empty:

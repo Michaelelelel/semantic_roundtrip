@@ -1,4 +1,4 @@
-"""Read-only helpers for the thesis notebook."""
+"""Read-only loading and statistics for the study notebooks."""
 
 from semantic_roundtrip.analysis.loader import AnalysisTables, load_job, load_run
 from semantic_roundtrip.analysis.statistics import (

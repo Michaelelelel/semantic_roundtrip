@@ -1,4 +1,4 @@
-schema_version: 8
+schema_version: 9
 run:
   name: aqueduct_v4_bi_smoke
   output_directory: runs
@@ -27,6 +27,11 @@ stages:
     backend: mock
   verification:
     backend: mock
+    prompt:
+      policy: reference_title_absent
+    image:
+      strict: {}
+      title_aware: {}
   image_description:
     backend: mock
     template_path: prompts/image_description/plain_v1.txt

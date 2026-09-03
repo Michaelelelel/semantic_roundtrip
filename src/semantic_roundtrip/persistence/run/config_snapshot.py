@@ -12,7 +12,10 @@ INPUT_CONFIG_FILENAME = "config_input.yaml"
 EFFECTIVE_CONFIG_FILENAME = "config_snapshot.yaml"
 PROMPT_PROFILE_FILENAME = "prompt_profile.yaml"
 ILLUSTRATABILITY_PROMPT_PROFILE_FILENAME = "illustratability_prompt_profile.yaml"
-VERIFICATION_PROMPT_FILENAME = "verification_prompt.txt"
+STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME = "verification_image_strict_prompt.txt"
+TITLE_AWARE_IMAGE_VERIFICATION_PROMPT_FILENAME = (
+    "verification_image_title_aware_prompt.txt"
+)
 IMAGE_DESCRIPTION_PROMPT_FILENAME = "image_description_prompt.txt"
 DIRECT_TITLE_GUESSING_PROMPT_FILENAME = "title_guessing_direct_prompt.txt"
 DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME = (
@@ -87,15 +90,7 @@ def create_prompt_snapshots(
             run_directory,
         )
     title_guessing = config.stages.title_guessing
-    configured_prompts = {
-        "verification": (
-            (
-                None
-                if config.stages.verification is None
-                else config.stages.verification.template_path
-            ),
-            VERIFICATION_PROMPT_FILENAME,
-        ),
+    configured_prompts: dict[str, tuple[Path | None, str]] = {
         "image_description": (
             (
                 None
@@ -121,6 +116,18 @@ def create_prompt_snapshots(
             DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME,
         ),
     }
+    verification = config.stages.verification
+    if verification is not None and verification.image is not None:
+        if verification.image.strict is not None:
+            configured_prompts["verification_image_strict"] = (
+                verification.image.strict.template_path,
+                STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME,
+            )
+        if verification.image.title_aware is not None:
+            configured_prompts["verification_image_title_aware"] = (
+                verification.image.title_aware.template_path,
+                TITLE_AWARE_IMAGE_VERIFICATION_PROMPT_FILENAME,
+            )
     for name, (source_path, filename) in configured_prompts.items():
         if source_path is None:
             continue
@@ -151,11 +158,31 @@ def use_prompt_snapshots(
         )
 
     verification = config.stages.verification
-    verification_path = run_directory / VERIFICATION_PROMPT_FILENAME
-    if verification is not None and verification_path.is_file():
-        verification = verification.model_copy(
-            update={"template_path": verification_path}
+    if verification is not None and verification.image is not None:
+        image_updates = {}
+        strict_path = run_directory / STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME
+        if verification.image.strict is not None and strict_path.is_file():
+            image_updates["strict"] = verification.image.strict.model_copy(
+                update={"template_path": strict_path}
+            )
+        title_aware_path = (
+            run_directory / TITLE_AWARE_IMAGE_VERIFICATION_PROMPT_FILENAME
         )
+        if (
+            verification.image.title_aware is not None
+            and title_aware_path.is_file()
+        ):
+            image_updates["title_aware"] = (
+                verification.image.title_aware.model_copy(
+                    update={"template_path": title_aware_path}
+                )
+            )
+        if image_updates:
+            verification = verification.model_copy(
+                update={
+                    "image": verification.image.model_copy(update=image_updates)
+                }
+            )
 
     image_description = config.stages.image_description
     image_description_path = run_directory / IMAGE_DESCRIPTION_PROMPT_FILENAME

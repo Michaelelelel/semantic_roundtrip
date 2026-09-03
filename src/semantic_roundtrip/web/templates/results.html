@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "accuracy.html" import accuracy_summary %}
+{% from "verification.html" import verification_summary %}
 
 {% macro missing_result(trace, stage) -%}
   {% if is_terminal or stage in trace.terminal_stages
@@ -57,6 +58,7 @@
   {% endif %}
 
   {{ accuracy_summary(accuracies, run.status) }}
+  {{ verification_summary(verification) }}
 
   {% if result_page.traces %}
     <p>
@@ -120,21 +122,51 @@
                   {% endif %}
                 </td>
               </tr>
+              {% if trace.prompt_verification_configured %}
+                <tr>
+                  <th>Prompt verification<br><small>reference-title absence</small></th>
+                  <td>
+                    {% if trace.prompt_verification_passed is none %}
+                      {{ missing_result(trace, "verification") }}
+                    {% elif trace.prompt_verification_passed %}
+                      <span class="value--yes">Passed</span>
+                    {% else %}
+                      <span class="value--no">Failed</span>
+                    {% endif %}
+                    {% if trace.prompt_verification_reason %} · {{ trace.prompt_verification_reason }}{% endif %}
+                  </td>
+                </tr>
+              {% endif %}
             {% endif %}
-            {% if 'verification' in stages %}
+            {% if trace.strict_image_verification_configured %}
               <tr>
-                <th>{{ stage_heading("verification", "Verification") }}</th>
+                <th>{{ stage_heading("verification", "Strict image verification") }}<br><small>any meaningful text</small></th>
                 <td>
-                  {% if trace.verification_passed is none %}
+                  {% if trace.strict_image_verification_passed is none %}
                     {{ missing_result(trace, "verification") }}
-                  {% elif trace.verification_passed %}
+                  {% elif trace.strict_image_verification_passed %}
                     <span class="value--yes">Passed</span>
                   {% else %}
                     <span class="value--no">Failed</span>
                   {% endif %}
-                  {% if trace.verification_reason %} · {{ trace.verification_reason }}{% endif %}
+                  {% if trace.strict_image_verification_reason %} · {{ trace.strict_image_verification_reason }}{% endif %}
                 </td>
               </tr>
+            {% endif %}
+            {% if trace.title_aware_image_verification_configured %}
+                <tr>
+                  <th>Title-aware image verification<br><small>reference-title text only</small></th>
+                  <td>
+                    {% if trace.title_aware_image_verification_passed is none %}
+                      {{ missing_result(trace, "verification") }}
+                    {% elif trace.title_aware_image_verification_passed %}
+                      <span class="value--yes">Passed</span>
+                    {% else %}
+                      <span class="value--no">Failed</span>
+                    {% endif %}
+                    {% if trace.title_aware_image_verification_reason %} · {{ trace.title_aware_image_verification_reason }}{% endif %}
+                  </td>
+                </tr>
             {% endif %}
             {% if 'title_guessing_direct' in stages %}
               <tr>

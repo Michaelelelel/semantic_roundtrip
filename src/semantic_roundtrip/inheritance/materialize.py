@@ -6,6 +6,9 @@ from pathlib import Path
 from shutil import copy2
 
 from semantic_roundtrip.config import ResolvedAppConfig, StageName
+from semantic_roundtrip.config_resolution import (
+    configured_image_verification_policies,
+)
 from semantic_roundtrip.inheritance.dependencies import dependency_closure
 from semantic_roundtrip.inheritance.source import load_source_run
 from semantic_roundtrip.persistence.run.config_snapshot import (
@@ -16,7 +19,8 @@ from semantic_roundtrip.persistence.run.config_snapshot import (
     IMAGE_DESCRIPTION_PROMPT_FILENAME,
     INPUT_CONFIG_FILENAME,
     PROMPT_PROFILE_FILENAME,
-    VERIFICATION_PROMPT_FILENAME,
+    STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME,
+    TITLE_AWARE_IMAGE_VERIFICATION_PROMPT_FILENAME,
 )
 from semantic_roundtrip.persistence.run.manifest import MANIFEST_FILENAME
 from semantic_roundtrip.persistence.run.schema import (
@@ -57,9 +61,14 @@ def _failed_task(
     prompt_id: int | None = None,
     image_id: int | None = None,
     seed: int | None = None,
+    task_key_prefix: str | None = None,
 ) -> bool:
     for task in tasks:
         if task["stage"] != stage or task["status"] != "failed":
+            continue
+        if task_key_prefix is not None and not str(task["task_key"]).startswith(
+            task_key_prefix
+        ):
             continue
         checks = (
             ("item_id", item_id),
@@ -113,7 +122,8 @@ def _validate_source(
     ratings = _rows(connection, "illustratability_ratings")
     prompts = _rows(connection, "prompts")
     images = _rows(connection, "images")
-    verifications = _rows(connection, "verifications")
+    prompt_verifications = _rows(connection, "prompt_verifications")
+    image_verifications = _rows(connection, "image_verifications")
     descriptions = _rows(connection, "image_descriptions")
     predictions = _rows(connection, "predictions")
     tasks = _rows(connection, "stage_tasks")
@@ -180,21 +190,61 @@ def _validate_source(
                         "Source image is missing without a terminal task error."
                     )
 
-    verification_ids = {int(row["image_id"]) for row in verifications}
+    prompt_verification_ids = {int(row["prompt_id"]) for row in prompt_verifications}
+    image_verification_keys = {
+        (int(row["image_id"]), str(row["policy"]))
+        for row in image_verifications
+    }
     description_ids = {int(row["image_id"]) for row in descriptions}
     prediction_keys = {
         (int(row["image_id"]), str(row["input_kind"])) for row in predictions
     }
+    local_verification = config.stages.verification
+    prompt_verification_required = (
+        local_verification is not None and local_verification.prompt is not None
+    ) or any(
+        str(task["task_key"]).startswith(
+            "verification:prompt:reference_title_absent:"
+        )
+        for task in tasks
+    )
+    if "verification" in stages and prompt_verification_required:
+        for prompt in prompts:
+            prompt_id = int(prompt["prompt_id"])
+            if prompt_id not in prompt_verification_ids and not _failed_task(
+                tasks,
+                "verification",
+                prompt_id=prompt_id,
+                task_key_prefix="verification:prompt:reference_title_absent:",
+            ):
+                raise MaterializationError(
+                    "Source prompt verification is missing without a terminal "
+                    "task error."
+                )
+
+    required_image_policies = set(configured_image_verification_policies(config))
+    for task in tasks:
+        task_key = str(task["task_key"])
+        for policy in ("strict", "title_aware"):
+            if task_key.startswith(f"verification:image:{policy}:"):
+                required_image_policies.add(policy)
     for image in images:
         image_id = int(image["image_id"])
-        if (
-            "verification" in stages
-            and image_id not in verification_ids
-            and not _failed_task(tasks, "verification", image_id=image_id)
-        ):
-            raise MaterializationError(
-                "Source verification is missing without a terminal task error."
-            )
+        if "verification" in stages:
+            for policy in required_image_policies:
+                if (
+                    image_id,
+                    policy,
+                ) not in image_verification_keys and not _failed_task(
+                    tasks,
+                    "verification",
+                    image_id=image_id,
+                    task_key_prefix=f"verification:image:{policy}:",
+                ):
+                    raise MaterializationError(
+                        f"Source {policy} image verification is missing without "
+                        "a terminal task error."
+                    )
         if (
             "title_guessing_direct" in stages
             and (image_id, "image") not in prediction_keys
@@ -277,7 +327,8 @@ def _copy_provenance(
         source_directory / MANIFEST_FILENAME,
         source_directory / ILLUSTRATABILITY_PROMPT_PROFILE_FILENAME,
         source_directory / PROMPT_PROFILE_FILENAME,
-        source_directory / VERIFICATION_PROMPT_FILENAME,
+        source_directory / STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME,
+        source_directory / TITLE_AWARE_IMAGE_VERIFICATION_PROMPT_FILENAME,
         source_directory / IMAGE_DESCRIPTION_PROMPT_FILENAME,
         source_directory / DIRECT_TITLE_GUESSING_PROMPT_FILENAME,
         source_directory / DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME,
@@ -425,22 +476,56 @@ def _insert_materialized_rows(
             image_map[int(row["image_id"])] = int(cursor.lastrowid)
 
     if "verification" in stages:
-        for row in _rows(source, "verifications"):
+        for row in _rows(source, "prompt_verifications"):
             origin_run_id, origin_id = _original(
-                row, "origin_run_id", "origin_verification_id", source_run_id
+                row,
+                "origin_run_id",
+                "origin_prompt_verification_id",
+                source_run_id,
             )
             target.execute(
                 """
-                INSERT INTO verifications (
-                    image_id, passed, reason, raw_response,
-                    origin_run_id, origin_verification_id
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO prompt_verifications (
+                    prompt_id, policy, passed, reason, method, raw_response,
+                    created_at, origin_run_id,
+                    origin_prompt_verification_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    prompt_map[int(row["prompt_id"])],
+                    row["policy"],
+                    row["passed"],
+                    row["reason"],
+                    row["method"],
+                    row["raw_response"],
+                    row["created_at"],
+                    origin_run_id,
+                    origin_id,
+                ),
+            )
+        for row in _rows(source, "image_verifications"):
+            origin_run_id, origin_id = _original(
+                row,
+                "origin_run_id",
+                "origin_image_verification_id",
+                source_run_id,
+            )
+            target.execute(
+                """
+                INSERT INTO image_verifications (
+                    image_id, policy, passed, reason, method, raw_response,
+                    created_at, origin_run_id,
+                    origin_image_verification_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     image_map[int(row["image_id"])],
+                    row["policy"],
                     row["passed"],
                     row["reason"],
+                    row["method"],
                     row["raw_response"],
+                    row["created_at"],
                     origin_run_id,
                     origin_id,
                 ),

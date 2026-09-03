@@ -19,10 +19,16 @@ from semantic_roundtrip.adapters.openai_compatible.settings import (
 from semantic_roundtrip.adapters.openai_compatible.title import (
     title_prediction_from_completion,
 )
+from semantic_roundtrip.config import ImageVerificationPolicy
 from semantic_roundtrip.domain import (
     ImageDescription,
     TitlePrediction,
-    VerificationResult,
+    VerificationDecision,
+)
+from semantic_roundtrip.evaluation import (
+    STRICT_IMAGE_VERIFICATION_METHOD,
+    TITLE_AWARE_IMAGE_VERIFICATION_METHOD,
+    normalize_title_text,
 )
 
 VERIFICATION_SCHEMA: dict[str, Any] = {
@@ -58,11 +64,27 @@ def _image_message(*, image_path: Path, instruction: str) -> ChatMessage:
 class OpenAICompatibleImageVerifier:
     """Verify an image through OpenAI-compatible multimodal chat."""
 
-    def __init__(self, settings: OpenAICompatibleStageSettings) -> None:
+    def __init__(
+        self,
+        settings: OpenAICompatibleStageSettings,
+        policy: ImageVerificationPolicy,
+    ) -> None:
         self._config = settings
+        self._policy = policy
         self._template = Template(
             Path(settings.template_path).read_text(encoding="utf-8")
         )
+        identifiers = set(self._template.get_identifiers())
+        title_fields = {"title", "normalized_title"}
+        if policy == "strict" and identifiers & title_fields:
+            raise ValueError(
+                "The strict image verifier must remain blind to the title."
+            )
+        if policy == "title_aware" and not title_fields.issubset(identifiers):
+            raise ValueError(
+                "The title-aware verifier prompt must include $title and "
+                "$normalized_title."
+            )
         self._client = OpenAICompatibleChatClient(
             endpoint=settings.endpoint,
             model_id=settings.model_id,
@@ -71,12 +93,27 @@ class OpenAICompatibleImageVerifier:
             error_subject="Verification",
         )
 
-    def verify_image(self, *, image_path: Path) -> VerificationResult:
+    def verify_image(
+        self,
+        *,
+        image_path: Path,
+        reference_title: str | None = None,
+    ) -> VerificationDecision:
+        if self._policy == "title_aware" and reference_title is None:
+            raise ValueError("Title-aware image verification requires a title.")
+        template_values = (
+            {}
+            if self._policy == "strict"
+            else {
+                "title": reference_title,
+                "normalized_title": normalize_title_text(reference_title),
+            }
+        )
         completion = self._client.complete(
             messages=(
                 _image_message(
                     image_path=image_path,
-                    instruction=self._template.substitute(),
+                    instruction=self._template.substitute(template_values),
                 ),
             ),
             generation_parameters=self._config.generation_parameters(),
@@ -111,10 +148,16 @@ class OpenAICompatibleImageVerifier:
                 completion.raw_response,
             ) from error
 
-        return VerificationResult(
+        method = (
+            STRICT_IMAGE_VERIFICATION_METHOD
+            if self._policy == "strict"
+            else TITLE_AWARE_IMAGE_VERIFICATION_METHOD
+        )
+        return VerificationDecision(
             passed=passed,
             reason=reason,
             raw_response=completion.raw_response,
+            method=method,
         )
 
 
@@ -221,9 +264,10 @@ class OpenAICompatibleImageTitleGuesser:
 
 def build_openai_compatible_image_verifier(
     raw_settings: dict[str, Any],
+    policy: ImageVerificationPolicy,
 ) -> OpenAICompatibleImageVerifier:
     settings = OpenAICompatibleStageSettings.model_validate(raw_settings)
-    return OpenAICompatibleImageVerifier(settings)
+    return OpenAICompatibleImageVerifier(settings, policy)
 
 
 def build_openai_compatible_image_describer(

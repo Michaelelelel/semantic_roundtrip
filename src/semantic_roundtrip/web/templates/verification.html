@@ -1,0 +1,36 @@
+{% macro verification_summary(checks) %}
+  {% if checks %}
+    <section aria-label="Verification summary">
+      <h2>Verification</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Check</th>
+            <th>Passed</th>
+            <th>Rejected</th>
+            <th>Missing</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for check in checks %}
+            <tr>
+              <td>
+                <strong>{{ check.label }}</strong><br>
+                <small class="mono">{{ check.method }}</small>
+              </td>
+              <td>{{ check.passed }} / {{ check.expected }}</td>
+              <td>{{ check.rejected }}</td>
+              <td>{{ check.unavailable }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="accuracy-note">
+        The prompt check is deterministic. Both image checks use the same image;
+        the strict policy rejects any meaningful readable text, while the title-aware
+        policy rejects only readable reference-title text. Missing configured decisions
+        remain in the end-to-end denominator.
+      </p>
+    </section>
+  {% endif %}
+{% endmacro %}

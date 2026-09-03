@@ -8,6 +8,7 @@ import yaml
 from semantic_roundtrip.config import (
     BackendProfile,
     DatasetProfile,
+    ImageVerificationPolicy,
     InputAppConfig,
     PipelineStageName,
     ResolvedAppConfig,
@@ -28,6 +29,10 @@ STAGE_NAMES: tuple[StageName, ...] = (
     "title_guessing_direct",
     "image_description",
     "title_guessing_from_description",
+)
+IMAGE_VERIFICATION_POLICIES: tuple[ImageVerificationPolicy, ...] = (
+    "strict",
+    "title_aware",
 )
 
 
@@ -73,9 +78,25 @@ def configured_stage_names(config: ResolvedAppConfig) -> tuple[StageName, ...]:
     )
 
 
+def configured_image_verification_policies(
+    config: ResolvedAppConfig,
+) -> tuple[ImageVerificationPolicy, ...]:
+    """Return image checks configured for local execution, in stable order."""
+    verification = config.stages.verification
+    if verification is None or verification.image is None:
+        return ()
+    return tuple(
+        policy
+        for policy in IMAGE_VERIFICATION_POLICIES
+        if getattr(verification.image, policy) is not None
+    )
+
+
 def resolve_stage_adapter(
     config: ResolvedAppConfig,
     stage_name: StageName,
+    *,
+    image_verification_policy: ImageVerificationPolicy | None = None,
 ) -> StageAdapterConfig:
     """Merge one stage's backend settings and scientific parameters."""
     stage = get_stage_config(config, stage_name)
@@ -98,6 +119,23 @@ def resolve_stage_adapter(
 
     settings = backend.settings | stage.parameters
     template_path = getattr(stage, "template_path", None)
+    if stage_name == "verification":
+        if image_verification_policy is None:
+            raise ValueError(
+                "Resolving verification requires an explicit image policy."
+            )
+        image = config.stages.verification.image
+        check = None if image is None else getattr(image, image_verification_policy)
+        if check is None:
+            raise ValueError(
+                f"Image-verification policy '{image_verification_policy}' is not "
+                "configured."
+            )
+        template_path = check.template_path
+    elif image_verification_policy is not None:
+        raise ValueError(
+            "image_verification_policy is valid only for the verification stage."
+        )
     if template_path is not None:
         if "template_path" in settings:
             raise ValueError(
@@ -116,7 +154,25 @@ def _validate_resolved_config(config: ResolvedAppConfig) -> None:
     for stage_name in STAGE_NAMES:
         if get_stage_config(config, stage_name) is None:
             continue
-        resolve_stage_adapter(config, stage_name)
+        if stage_name == "verification":
+            verification = config.stages.verification
+            assert verification is not None
+            if verification.backend not in config.backends:
+                raise ValueError(
+                    "Verification references unknown backend "
+                    f"'{verification.backend}'."
+                )
+            for policy in configured_image_verification_policies(config):
+                resolve_stage_adapter(
+                    config,
+                    stage_name,
+                    image_verification_policy=policy,
+                )
+        else:
+            resolve_stage_adapter(
+                config,
+                stage_name,
+            )
 
     local_stages = set(configured_stage_names(config))
     imported_stages: set[StageName] = set()
@@ -305,7 +361,12 @@ def expected_stage_outputs(config: ResolvedAppConfig) -> dict[PipelineStageName,
         "illustratability_rating": len(config.dataset.items),
         "prompt_generation": prompt_count,
         "image_generation": image_count,
-        "verification": image_count,
+        "verification": (
+            (prompt_count if config.stages.verification.prompt is not None else 0)
+            + image_count * len(configured_image_verification_policies(config))
+            if config.stages.verification is not None
+            else 0
+        ),
         "title_guessing_direct": image_count,
         "image_description": image_count,
         "title_guessing_from_description": image_count,
@@ -321,4 +382,14 @@ def expected_output_count(config: ResolvedAppConfig, stage_name: StageName) -> i
     image_count = prompt_count * len(config.experiment.image_seeds)
     if stage_name == "illustratability_rating":
         return len(config.dataset.items)
-    return prompt_count if stage_name == "prompt_generation" else image_count
+    if stage_name == "prompt_generation":
+        return prompt_count
+    if stage_name == "verification":
+        verification = config.stages.verification
+        if verification is None:
+            return 0
+        return (
+            (prompt_count if verification.prompt is not None else 0)
+            + image_count * len(configured_image_verification_policies(config))
+        )
+    return image_count

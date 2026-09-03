@@ -1,4 +1,4 @@
-schema_version: 8
+schema_version: 9
 run:
   name: indirect_pg_o120_bb_g4_bi_d32
   output_directory: runs

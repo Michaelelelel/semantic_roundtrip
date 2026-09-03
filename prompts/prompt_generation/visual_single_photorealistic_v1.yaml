@@ -1,4 +1,4 @@
-profile_id: style_pilot_free
+profile_id: visual_single_photorealistic
 version: 1
 output_format: plain_text
 
@@ -21,8 +21,11 @@ messages:
       representation.
 
       Do not repeat the target title or name. Do not request readable text,
-      letters, labels, speech bubbles, captions, logos, watermarks, or official
-      cover or poster artwork. Return only the image prompt.
+      labels, logos, watermarks, or official cover or poster artwork. Return
+      only the image prompt.
 
-      Style instruction:
-      No visual style or fixed response prefix is required.
+      Begin the response exactly with the following text, without quotation
+      marks, and continue directly after the word "depicting":
+      A photorealistic image depicting
+
+      Do not alter, omit, paraphrase, or place anything before that prefix.

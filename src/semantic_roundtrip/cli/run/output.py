@@ -37,7 +37,11 @@ def print_run_summary(summary: PipelineSummary) -> None:
     typer.echo(f"Illustratability ratings: {summary.illustratability_ratings}")
     typer.echo(f"Prompts: {summary.prompts}")
     typer.echo(f"Images: {summary.images}")
-    typer.echo(f"Verifications: {summary.verifications}")
+    typer.echo(f"Prompt verifications: {summary.prompt_verifications}")
+    typer.echo(f"Strict image verifications: {summary.strict_image_verifications}")
+    typer.echo(
+        f"Title-aware image verifications: {summary.title_aware_image_verifications}"
+    )
     typer.echo(f"Image descriptions: {summary.image_descriptions}")
     typer.echo(f"Predictions: {summary.predictions}")
     typer.echo(f"Failed tasks: {summary.failed_tasks}")

@@ -9,7 +9,7 @@ from typing import Any
 from PIL import Image
 from pydantic import Field
 
-from semantic_roundtrip.config import ConfigModel
+from semantic_roundtrip.config import ConfigModel, ImageVerificationPolicy
 from semantic_roundtrip.domain import (
     IllustratabilityRating,
     ImageArtifact,
@@ -17,7 +17,11 @@ from semantic_roundtrip.domain import (
     PromptMessage,
     PromptResponse,
     TitlePrediction,
-    VerificationResult,
+    VerificationDecision,
+)
+from semantic_roundtrip.evaluation import (
+    STRICT_IMAGE_VERIFICATION_METHOD,
+    TITLE_AWARE_IMAGE_VERIFICATION_METHOD,
 )
 
 
@@ -132,11 +136,23 @@ class MockImageGenerator:
 class MockImageVerifier:
     """Accept any valid image without calling a vision model."""
 
-    def __init__(self, delay_seconds: float = 0.0) -> None:
+    def __init__(
+        self,
+        delay_seconds: float = 0.0,
+        policy: ImageVerificationPolicy = "strict",
+    ) -> None:
         self._delay_seconds = delay_seconds
+        self._policy = policy
 
-    def verify_image(self, *, image_path: Path) -> VerificationResult:
+    def verify_image(
+        self,
+        *,
+        image_path: Path,
+        reference_title: str | None = None,
+    ) -> VerificationDecision:
         """Validate the image and return a successful decision."""
+        if self._policy == "title_aware" and reference_title is None:
+            raise ValueError("Title-aware image verification requires a title.")
         time.sleep(self._delay_seconds)
         with Image.open(image_path) as image:
             image.verify()
@@ -148,10 +164,16 @@ class MockImageVerifier:
             }
         )
 
-        return VerificationResult(
+        method = (
+            STRICT_IMAGE_VERIFICATION_METHOD
+            if self._policy == "strict"
+            else TITLE_AWARE_IMAGE_VERIFICATION_METHOD
+        )
+        return VerificationDecision(
             passed=True,
             reason=None,
             raw_response=raw_response,
+            method=method,
         )
 
 
@@ -268,9 +290,10 @@ def build_mock_image_generator(
 
 def build_mock_image_verifier(
     raw_settings: dict[str, Any],
+    policy: ImageVerificationPolicy,
 ) -> MockImageVerifier:
     settings = _load_mock_settings(raw_settings)
-    return MockImageVerifier(settings.delay_seconds)
+    return MockImageVerifier(settings.delay_seconds, policy)
 
 
 def build_mock_image_describer(

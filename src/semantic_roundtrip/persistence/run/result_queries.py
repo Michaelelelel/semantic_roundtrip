@@ -7,10 +7,16 @@ from pathlib import Path
 
 from semantic_roundtrip.config import ResolvedAppConfig
 from semantic_roundtrip.config_resolution import (
+    configured_image_verification_policies,
     configured_stage_names,
     expected_output_count,
 )
-from semantic_roundtrip.evaluation import title_exact_match
+from semantic_roundtrip.evaluation import (
+    PROMPT_TITLE_MATCH_METHOD,
+    STRICT_IMAGE_VERIFICATION_METHOD,
+    TITLE_AWARE_IMAGE_VERIFICATION_METHOD,
+    title_exact_match,
+)
 from semantic_roundtrip.inheritance.dependencies import dependency_closure
 from semantic_roundtrip.persistence.run.schema import (
     connect_run_database,
@@ -30,15 +36,42 @@ class PredictionTrace:
 
 @dataclass(frozen=True, slots=True)
 class RouteAccuracy:
-    """End-to-end Strict Exact Match over the fixed planned denominator."""
+    """Strict-title accuracy under both image policies."""
 
     correct: int
+    title_aware_correct: int | None
     expected: int
     predictions: int
 
     @property
     def percent(self) -> float:
         return 100 * self.correct / self.expected
+
+    @property
+    def title_aware_percent(self) -> float | None:
+        if self.title_aware_correct is None:
+            return None
+        return 100 * self.title_aware_correct / self.expected
+
+
+@dataclass(frozen=True, slots=True)
+class VerificationCheckSummary:
+    """Persisted decisions for one verification policy."""
+
+    key: str
+    label: str
+    expected: int
+    decided: int
+    passed: int
+    method: str
+
+    @property
+    def unavailable(self) -> int:
+        return self.expected - self.decided
+
+    @property
+    def rejected(self) -> int:
+        return self.decided - self.passed
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,10 +87,17 @@ class ResultTrace:
     prompt_index: int | None
     prompt_sampling_seed: int | None
     prompt_text: str | None
+    prompt_verification_configured: bool
+    prompt_verification_passed: bool | None
+    prompt_verification_reason: str | None
     image_id: int | None
     image_seed: int | None
-    verification_passed: bool | None
-    verification_reason: str | None
+    strict_image_verification_configured: bool
+    strict_image_verification_passed: bool | None
+    strict_image_verification_reason: str | None
+    title_aware_image_verification_configured: bool
+    title_aware_image_verification_passed: bool | None
+    title_aware_image_verification_reason: str | None
     image_description: str | None
     direct_result: PredictionTrace | None
     description_result: PredictionTrace | None
@@ -103,6 +143,27 @@ def _prediction_trace(row: sqlite3.Row, prefix: str) -> PredictionTrace | None:
     )
 
 
+def _configured_verification_checks(
+    connection: sqlite3.Connection,
+    config: ResolvedAppConfig,
+) -> tuple[bool, frozenset[str]]:
+    """Read local configuration and persisted tasks for inherited checks."""
+    verification = config.stages.verification
+    prompt = verification is not None and verification.prompt is not None
+    image = set(configured_image_verification_policies(config))
+    for row in connection.execute(
+        "SELECT task_key FROM stage_tasks WHERE stage = 'verification'"
+    ):
+        task_key = str(row["task_key"])
+        prompt |= task_key.startswith(
+            "verification:prompt:reference_title_absent:"
+        )
+        for policy in ("strict", "title_aware"):
+            if task_key.startswith(f"verification:image:{policy}:"):
+                image.add(policy)
+    return prompt, frozenset(image)
+
+
 def read_result_trace_page(
     database_path: Path,
     config: ResolvedAppConfig,
@@ -136,6 +197,9 @@ def read_result_trace_page(
     connection = connect_run_database(database_path, read_only=True)
     try:
         require_run_schema(connection)
+        prompt_verification_configured, image_policies = (
+            _configured_verification_checks(connection, config)
+        )
         total_traces = int(
             connection.execute(
                 dataset_sql
@@ -149,9 +213,32 @@ def read_result_trace_page(
                 dataset_parameters,
             ).fetchone()[0]
         )
+        verification_columns = """
+            prompt_verifications.passed AS prompt_verification_passed,
+            prompt_verifications.reason AS prompt_verification_reason,
+            strict_verifications.passed
+                AS strict_image_verification_passed,
+            strict_verifications.reason
+                AS strict_image_verification_reason,
+            title_aware_verifications.passed
+                AS title_aware_image_verification_passed,
+            title_aware_verifications.reason
+                AS title_aware_image_verification_reason,
+        """
+        verification_joins = """
+            LEFT JOIN prompt_verifications
+                ON prompt_verifications.prompt_id = prompts.prompt_id
+                AND prompt_verifications.policy = 'reference_title_absent'
+            LEFT JOIN image_verifications AS strict_verifications
+                ON strict_verifications.image_id = images.image_id
+                AND strict_verifications.policy = 'strict'
+            LEFT JOIN image_verifications AS title_aware_verifications
+                ON title_aware_verifications.image_id = images.image_id
+                AND title_aware_verifications.policy = 'title_aware'
+        """
         rows = connection.execute(
             dataset_sql
-            + """
+            + f"""
             SELECT
                 items.item_id,
                 items.item_index,
@@ -163,10 +250,9 @@ def read_result_trace_page(
                 prompts.prompt_index,
                 prompts.sampling_seed AS prompt_sampling_seed,
                 prompts.text AS prompt_text,
+                {verification_columns}
                 images.image_id,
                 images.seed AS image_seed,
-                verifications.passed AS verification_passed,
-                verifications.reason AS verification_reason,
                 image_descriptions.text AS image_description,
                 direct_predictions.prediction_id AS direct_prediction_id,
                 direct_predictions.title AS direct_title,
@@ -184,8 +270,7 @@ def read_result_trace_page(
                 ON illustratability_ratings.item_id = items.item_id
             LEFT JOIN images
                 ON images.prompt_id = prompts.prompt_id
-            LEFT JOIN verifications
-                ON verifications.image_id = images.image_id
+            {verification_joins}
             LEFT JOIN image_descriptions
                 ON image_descriptions.image_id = images.image_id
             LEFT JOIN predictions AS direct_predictions
@@ -226,15 +311,36 @@ def read_result_trace_page(
             prompt_index=row["prompt_index"],
             prompt_sampling_seed=row["prompt_sampling_seed"],
             prompt_text=row["prompt_text"],
+            prompt_verification_configured=prompt_verification_configured,
+            prompt_verification_passed=_optional_bool(
+                row["prompt_verification_passed"]
+            ),
+            prompt_verification_reason=row["prompt_verification_reason"],
             image_id=None if row["image_id"] is None else int(row["image_id"]),
             image_seed=(None if row["image_seed"] is None else int(row["image_seed"])),
-            verification_passed=_optional_bool(row["verification_passed"]),
-            verification_reason=row["verification_reason"],
+            strict_image_verification_configured="strict" in image_policies,
+            strict_image_verification_passed=_optional_bool(
+                row["strict_image_verification_passed"]
+            ),
+            strict_image_verification_reason=row["strict_image_verification_reason"],
+            title_aware_image_verification_configured=(
+                "title_aware" in image_policies
+            ),
+            title_aware_image_verification_passed=_optional_bool(
+                row["title_aware_image_verification_passed"]
+            ),
+            title_aware_image_verification_reason=row[
+                "title_aware_image_verification_reason"
+            ],
             image_description=row["image_description"],
             direct_result=_prediction_trace(row, "direct"),
             description_result=_prediction_trace(row, "description"),
             terminal_stages=_terminal_stages(
-                row, tasks_by_item[row["item_id"]], config
+                row,
+                tasks_by_item[row["item_id"]],
+                config,
+                prompt_verification_configured=prompt_verification_configured,
+                image_policies=image_policies,
             ),
         )
         for row in rows
@@ -251,6 +357,9 @@ def _terminal_stages(
     row: sqlite3.Row,
     tasks: list[sqlite3.Row],
     config: ResolvedAppConfig,
+    *,
+    prompt_verification_configured: bool,
+    image_policies: frozenset[str],
 ) -> frozenset[str]:
     """Recognize exhausted work, including a collapsed pre-prompt/image trace."""
     states = defaultdict(list)
@@ -261,6 +370,14 @@ def _terminal_stages(
                 row["prompt_id"] is not None
                 and task["seed"] != row["prompt_sampling_seed"]
             ):
+                continue
+        elif stage == "verification":
+            if row["prompt_id"] is not None and task["prompt_id"] != row["prompt_id"]:
+                continue
+            if row["image_id"] is not None and task["image_id"] not in {
+                None,
+                row["image_id"],
+            }:
                 continue
         elif stage != "illustratability_rating":
             if row["prompt_id"] is not None and task["prompt_id"] != row["prompt_id"]:
@@ -275,7 +392,14 @@ def _terminal_stages(
         if row["image_id"] is not None
         else prompts * len(config.experiment.image_seeds)
     )
-    expected = {"illustratability_rating": 1, "prompt_generation": prompts}
+    expected = {
+        "illustratability_rating": 1,
+        "prompt_generation": prompts,
+        "verification": (
+            (prompts if prompt_verification_configured else 0)
+            + len(image_policies) * images
+        ),
+    }
     return frozenset(
         stage
         for stage, statuses in states.items()
@@ -306,18 +430,37 @@ def read_route_accuracies(
     connection = connect_run_database(database_path, read_only=True)
     try:
         require_run_schema(connection)
+        prompt_configured, image_policies = _configured_verification_checks(
+            connection, config
+        )
+        verification_columns = """
+            strict_verifications.passed AS strict_passed,
+            prompt_verifications.passed AS prompt_passed,
+            title_aware_verifications.passed AS title_aware_passed
+        """
+        verification_joins = """
+            LEFT JOIN prompt_verifications
+                ON prompt_verifications.prompt_id = prompts.prompt_id
+                AND prompt_verifications.policy = 'reference_title_absent'
+            LEFT JOIN image_verifications AS strict_verifications
+                ON strict_verifications.image_id = images.image_id
+                AND strict_verifications.policy = 'strict'
+            LEFT JOIN image_verifications AS title_aware_verifications
+                ON title_aware_verifications.image_id = images.image_id
+                AND title_aware_verifications.policy = 'title_aware'
+        """
         rows = connection.execute(
-            """
+            f"""
             SELECT
                 predictions.input_kind,
                 predictions.title AS predicted_title,
                 items.title AS expected_title,
-                verifications.passed
+                {verification_columns}
             FROM predictions
             JOIN images USING (image_id)
-            JOIN prompts USING (prompt_id)
+            JOIN prompts ON prompts.prompt_id = images.prompt_id
             JOIN dataset_items AS items USING (item_id)
-            LEFT JOIN verifications USING (image_id)
+            {verification_joins}
             """
         ).fetchall()
     finally:
@@ -325,16 +468,110 @@ def read_route_accuracies(
     return {
         kind: RouteAccuracy(
             correct=sum(
-                row["passed"] == 1
+                ("strict" not in image_policies or row["strict_passed"] == 1)
+                and (not prompt_configured or row["prompt_passed"] == 1)
                 and title_exact_match(row["expected_title"], row["predicted_title"])
                 for row in rows
                 if row["input_kind"] == kind
+            ),
+            title_aware_correct=(
+                None
+                if "title_aware" not in image_policies
+                else sum(
+                    row["title_aware_passed"] == 1
+                    and (not prompt_configured or row["prompt_passed"] == 1)
+                    and title_exact_match(row["expected_title"], row["predicted_title"])
+                    for row in rows
+                    if row["input_kind"] == kind
+                )
             ),
             expected=expected_output_count(config, stage),
             predictions=sum(row["input_kind"] == kind for row in rows),
         )
         for kind, stage in routes.items()
     }
+
+
+def read_verification_summary(
+    database_path: Path,
+    config: ResolvedAppConfig,
+) -> tuple[VerificationCheckSummary, ...]:
+    """Summarize persisted decisions without recomputing historical runs."""
+    connection = connect_run_database(database_path, read_only=True)
+    try:
+        require_run_schema(connection)
+        prompt_configured, image_policies = _configured_verification_checks(
+            connection, config
+        )
+        prompt_row = connection.execute(
+            """
+            SELECT
+                COUNT(*) AS decided,
+                COALESCE(SUM(passed), 0) AS passed,
+                GROUP_CONCAT(DISTINCT method) AS methods
+            FROM prompt_verifications
+            WHERE policy = 'reference_title_absent'
+            """
+        ).fetchone()
+        image_rows = {
+            row["policy"]: row
+            for row in connection.execute(
+                """
+                SELECT
+                    policy,
+                    COUNT(*) AS decided,
+                    COALESCE(SUM(passed), 0) AS passed,
+                    GROUP_CONCAT(DISTINCT method) AS methods
+                FROM image_verifications
+                GROUP BY policy
+                """
+            )
+        }
+        expected_prompts = len(config.dataset.items) * len(
+            config.experiment.prompt_seeds
+        )
+        expected_images = expected_prompts * len(config.experiment.image_seeds)
+        checks: list[VerificationCheckSummary] = []
+        if prompt_configured:
+            checks.append(
+                VerificationCheckSummary(
+                    key="prompt",
+                    label="Prompt title-absence check",
+                    expected=expected_prompts,
+                    decided=int(prompt_row["decided"]),
+                    passed=int(prompt_row["passed"]),
+                    method=prompt_row["methods"] or PROMPT_TITLE_MATCH_METHOD,
+                )
+            )
+        if "strict" in image_policies:
+            row = image_rows.get("strict")
+            checks.append(
+                VerificationCheckSummary(
+                    key="strict_image",
+                    label="Strict image text check",
+                    expected=expected_images,
+                    decided=0 if row is None else int(row["decided"]),
+                    passed=0 if row is None else int(row["passed"]),
+                    method=(None if row is None else row["methods"])
+                    or STRICT_IMAGE_VERIFICATION_METHOD,
+                )
+            )
+        if "title_aware" in image_policies:
+            row = image_rows.get("title_aware")
+            checks.append(
+                VerificationCheckSummary(
+                    key="title_aware_image",
+                    label="Title-aware image text check",
+                    expected=expected_images,
+                    decided=0 if row is None else int(row["decided"]),
+                    passed=0 if row is None else int(row["passed"]),
+                    method=(None if row is None else row["methods"])
+                    or TITLE_AWARE_IMAGE_VERIFICATION_METHOD,
+                )
+            )
+    finally:
+        connection.close()
+    return tuple(checks)
 
 
 def read_image_artifact_path(database_path: Path, image_id: int) -> Path | None:

@@ -31,8 +31,15 @@ from semantic_roundtrip.adapters.openai_compatible import (
     build_openai_compatible_prompt_generator,
     build_openai_compatible_text_title_guesser,
 )
-from semantic_roundtrip.config import ResolvedAppConfig, StageAdapterConfig
-from semantic_roundtrip.config_resolution import resolve_stage_adapter
+from semantic_roundtrip.config import (
+    ImageVerificationPolicy,
+    ResolvedAppConfig,
+    StageAdapterConfig,
+)
+from semantic_roundtrip.config_resolution import (
+    configured_image_verification_policies,
+    resolve_stage_adapter,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,7 +49,7 @@ class AdapterBundle:
     illustratability_rater: IllustratabilityRater | None
     prompt_generator: PromptGenerator | None
     image_generator: ImageGenerator | None
-    image_verifier: ImageVerifier | None
+    image_verifiers: dict[ImageVerificationPolicy, ImageVerifier]
     image_describer: ImageDescriber | None
     image_title_guesser: ImageTitleGuesser | None
     text_title_guesser: TextTitleGuesser | None
@@ -51,7 +58,9 @@ class AdapterBundle:
 IllustratabilityRaterBuilder = Callable[[dict[str, Any]], IllustratabilityRater]
 PromptGeneratorBuilder = Callable[[dict[str, Any]], PromptGenerator]
 ImageGeneratorBuilder = Callable[[dict[str, Any]], ImageGenerator]
-ImageVerifierBuilder = Callable[[dict[str, Any]], ImageVerifier]
+ImageVerifierBuilder = Callable[
+    [dict[str, Any], ImageVerificationPolicy], ImageVerifier
+]
 ImageDescriberBuilder = Callable[[dict[str, Any]], ImageDescriber]
 ImageTitleGuesserBuilder = Callable[[dict[str, Any]], ImageTitleGuesser]
 TextTitleGuesserBuilder = Callable[[dict[str, Any]], TextTitleGuesser]
@@ -147,6 +156,7 @@ def create_image_generator(
 
 def create_image_verifier(
     selection: StageAdapterConfig,
+    policy: ImageVerificationPolicy,
 ) -> ImageVerifier:
     builder = IMAGE_VERIFIERS.get(selection.adapter)
     if builder is None:
@@ -155,7 +165,7 @@ def create_image_verifier(
             adapter=selection.adapter,
             registry=IMAGE_VERIFIERS,
         )
-    return builder(selection.settings)
+    return builder(selection.settings, policy)
 
 
 def create_image_title_guesser(
@@ -221,11 +231,17 @@ def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
                 resolve_stage_adapter(config, "image_generation")
             )
         ),
-        image_verifier=(
-            None
-            if config.stages.verification is None
-            else create_image_verifier(resolve_stage_adapter(config, "verification"))
-        ),
+        image_verifiers={
+            policy: create_image_verifier(
+                resolve_stage_adapter(
+                    config,
+                    "verification",
+                    image_verification_policy=policy,
+                ),
+                policy,
+            )
+            for policy in configured_image_verification_policies(config)
+        },
         image_describer=(
             None
             if config.stages.image_description is None

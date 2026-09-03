@@ -29,7 +29,7 @@ class ImageContent:
 
 
 ChatContentPart = TextContent | ImageContent
-ReasoningFormat = Literal["auto", "none", "deepseek", "deepseek-legacy"]
+ReasoningFormat = Literal["auto", "none", "deepseek"]
 
 
 @dataclass(frozen=True, slots=True)

@@ -9,6 +9,7 @@ from semantic_roundtrip.domain import (
     BenchmarkItem,
     GeneratedPrompt,
 )
+from semantic_roundtrip.evaluation import verify_prompt_title_absence
 from semantic_roundtrip.persistence.run.database import RunDatabase
 from semantic_roundtrip.persistence.run.results import ImageWorkItem
 from semantic_roundtrip.pipeline.tasks import (
@@ -242,30 +243,64 @@ def execute_verification_stage(
     database: RunDatabase,
     adapters: AdapterBundle,
 ) -> None:
-    """Verify every persisted image before title guessing starts."""
-    if adapters.image_verifier is None:
-        raise RuntimeError("Verification has no image-verifier adapter.")
-    for image in database.results.list_images():
-        load_or_run_single(
-            database=database,
-            stage="verification",
-            task_suffix=_image_task_suffix(image),
-            existing=database.results.get_verification(image.image_id),
-            operation=lambda image=image: adapters.image_verifier.verify_image(
-                image_path=image.image.path
-            ),
-            save=lambda result, image_id=image.image_id: (
-                database.results.add_verification(
-                    image_id,
-                    result,
-                )
-            ),
-            retry_limit=config.experiment.retry_limit,
-            item_id=image.item_id,
-            prompt_id=image.prompt_id,
-            seed=image.image.seed,
-            image_id=image.image_id,
-        )
+    """Persist the prompt decision and every configured image-policy decision."""
+    verification = config.stages.verification
+    if verification is None:
+        return
+
+    if verification.prompt is not None:
+        for prompt in database.results.list_prompts():
+            load_or_run_single(
+                database=database,
+                stage="verification",
+                task_suffix=(
+                    "prompt:reference_title_absent:"
+                    f"{prompt.item.item_key}:{prompt.prompt.index}"
+                ),
+                existing=database.results.get_prompt_verification(prompt.prompt_id),
+                operation=lambda prompt=prompt: verify_prompt_title_absence(
+                    prompt.item.title,
+                    prompt.prompt.text,
+                ),
+                save=lambda decision, prompt_id=prompt.prompt_id: (
+                    database.results.add_prompt_verification(prompt_id, decision)
+                ),
+                retry_limit=config.experiment.retry_limit,
+                item_id=prompt.item_id,
+                prompt_id=prompt.prompt_id,
+                seed=config.experiment.prompt_seeds[prompt.prompt.index],
+            )
+
+    for policy, verifier in adapters.image_verifiers.items():
+        for image in database.results.list_images():
+            reference_title = image.item.title if policy == "title_aware" else None
+            load_or_run_single(
+                database=database,
+                stage="verification",
+                task_suffix=f"image:{policy}:{_image_task_suffix(image)}",
+                existing=database.results.get_image_verification(
+                    image.image_id,
+                    policy,
+                ),
+                operation=lambda image=image, verifier=verifier, reference_title=(
+                    reference_title
+                ): verifier.verify_image(
+                    image_path=image.image.path,
+                    reference_title=reference_title,
+                ),
+                save=lambda decision, image_id=image.image_id, policy=policy: (
+                    database.results.add_image_verification(
+                        image_id,
+                        policy,
+                        decision,
+                    )
+                ),
+                retry_limit=config.experiment.retry_limit,
+                item_id=image.item_id,
+                prompt_id=image.prompt_id,
+                seed=image.image.seed,
+                image_id=image.image_id,
+            )
 
 
 def execute_image_description_stage(

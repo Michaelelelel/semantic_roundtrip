@@ -1,17 +1,14 @@
 """Top-level lifecycle and stage ordering for one experiment run."""
 
-import json
-import logging
 from collections.abc import Callable
 from contextlib import suppress
 from pathlib import Path
 
 from semantic_roundtrip.adapters.factory import AdapterBundle
 from semantic_roundtrip.config import ResolvedAppConfig, StageName
-from semantic_roundtrip.config_resolution import get_stage_config
-from semantic_roundtrip.evaluation import (
-    PROMPT_TITLE_MATCH_METHOD,
-    title_occurs_in_text,
+from semantic_roundtrip.config_resolution import (
+    configured_image_verification_policies,
+    get_stage_config,
 )
 from semantic_roundtrip.inheritance.materialize import materialize_inheritance
 from semantic_roundtrip.persistence.run.database import RunDatabase
@@ -31,56 +28,6 @@ from semantic_roundtrip.prompting import PromptProfile
 from semantic_roundtrip.runtime import RuntimeSession
 
 StageOperation = Callable[[], None]
-PROMPT_TITLE_CHECK_FILENAME = "prompt_title_check.json"
-
-
-def _write_prompt_title_check_report(
-    config: ResolvedAppConfig,
-    database: RunDatabase,
-    path: Path,
-) -> None:
-    """Recompute from persisted prompts, including on resume; never affect tasks.
-
-    This sidecar belongs to a locally configured PG stage. Inherited runs omit
-    that stage and retain raw prompts for independent report-only reanalysis.
-    """
-    prompts = [
-        {
-            "item_key": work.item.item_key,
-            "domain": work.item.domain,
-            "expected_title": work.item.title,
-            "prompt_id": work.prompt_id,
-            "prompt_index": work.prompt.index,
-            "prompt_seed": config.experiment.prompt_seeds[work.prompt.index],
-            "prompt_text": work.prompt.text,
-            "title_occurs": title_occurs_in_text(work.item.title, work.prompt.text),
-        }
-        for work in database.results.list_prompts()
-    ]
-    expected = len(config.dataset.items) * len(config.experiment.prompt_seeds)
-    report = {
-        "method": PROMPT_TITLE_MATCH_METHOD,
-        "report_only": True,
-        "run_name": config.run.name,
-        "dataset_id": config.dataset.dataset_id,
-        "expected_prompts": expected,
-        "checked_prompts": len(prompts),
-        "missing_prompts": expected - len(prompts),
-        "matched_prompts": sum(row["title_occurs"] for row in prompts),
-        "prompts": prompts,
-    }
-    temporary = path.with_suffix(".json.tmp")
-    try:
-        temporary.write_text(
-            json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-        )
-        temporary.replace(path)
-    except OSError as error:
-        with suppress(OSError):
-            temporary.unlink(missing_ok=True)
-        logging.getLogger(__name__).warning(
-            "Could not write report-only prompt title check %s: %s", path, error
-        )
 
 
 def _summary(database: RunDatabase, status: str) -> PipelineSummary:
@@ -91,7 +38,9 @@ def _summary(database: RunDatabase, status: str) -> PipelineSummary:
         illustratability_ratings=counts.illustratability_ratings,
         prompts=counts.prompts,
         images=counts.images,
-        verifications=counts.verifications,
+        prompt_verifications=counts.prompt_verifications,
+        strict_image_verifications=counts.strict_image_verifications,
+        title_aware_image_verifications=counts.title_aware_image_verifications,
         image_descriptions=counts.image_descriptions,
         predictions=counts.predictions,
         failed_tasks=database.tasks.count_failed(),
@@ -116,6 +65,12 @@ def _execute_runtime_stage(
         work_items = counts.prompts * len(config.experiment.image_seeds)
     elif stage == "title_guessing_from_description":
         work_items = counts.image_descriptions
+    elif stage == "verification":
+        verification = config.stages.verification
+        assert verification is not None
+        work_items = (
+            counts.prompts if verification.prompt is not None else 0
+        ) + counts.images * len(configured_image_verification_policies(config))
     else:
         work_items = counts.images
 
@@ -172,10 +127,6 @@ def execute_stages(
                 prompt_profile=prompt_profile,
             ),
         )
-        if config.stages.prompt_generation.title_check_report:
-            _write_prompt_title_check_report(
-                config, database, images_directory.parent / PROMPT_TITLE_CHECK_FILENAME
-            )
     if get_stage_config(config, "image_generation") is not None:
         _execute_runtime_stage(
             config=config,
@@ -190,17 +141,24 @@ def execute_stages(
             ),
         )
     if get_stage_config(config, "verification") is not None:
-        _execute_runtime_stage(
-            config=config,
-            database=database,
-            runtime_session=runtime_session,
-            stage="verification",
-            operation=lambda: execute_verification_stage(
+        if configured_image_verification_policies(config):
+            _execute_runtime_stage(
+                config=config,
+                database=database,
+                runtime_session=runtime_session,
+                stage="verification",
+                operation=lambda: execute_verification_stage(
+                    config=config,
+                    database=database,
+                    adapters=adapters,
+                ),
+            )
+        else:
+            execute_verification_stage(
                 config=config,
                 database=database,
                 adapters=adapters,
-            ),
-        )
+            )
     if get_stage_config(config, "title_guessing_direct") is not None:
         _execute_runtime_stage(
             config=config,

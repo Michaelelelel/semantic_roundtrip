@@ -11,7 +11,7 @@ from semantic_roundtrip.persistence.sqlite import (
 )
 
 DATABASE_FILENAME = "pipeline_state.sqlite"
-DATABASE_SCHEMA_VERSION = 10
+DATABASE_SCHEMA_VERSION = 11
 
 
 def database_path_for_run(run_directory: Path) -> Path:
@@ -35,11 +35,11 @@ def connect_run_database(
 
 
 def require_run_schema(connection: sqlite3.Connection) -> None:
-    """Require the current run-database schema."""
+    """Require the single run-database schema used by this revision."""
     require_schema(
         connection,
         expected_version=DATABASE_SCHEMA_VERSION,
-        label="Database",
+        label="Run database",
     )
 
 
@@ -144,15 +144,34 @@ def initialize_database(
                 UNIQUE (prompt_id, seed)
             );
 
-            CREATE TABLE verifications (
-                verification_id INTEGER PRIMARY KEY,
-                image_id INTEGER NOT NULL UNIQUE REFERENCES images(image_id)
+            CREATE TABLE prompt_verifications (
+                prompt_verification_id INTEGER PRIMARY KEY,
+                prompt_id INTEGER NOT NULL REFERENCES prompts(prompt_id)
                     ON DELETE CASCADE,
+                policy TEXT NOT NULL CHECK (policy = 'reference_title_absent'),
                 passed INTEGER NOT NULL CHECK (passed IN (0, 1)),
                 reason TEXT,
+                method TEXT NOT NULL CHECK (length(method) > 0),
                 raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
+                created_at TEXT NOT NULL,
                 origin_run_id TEXT,
-                origin_verification_id INTEGER
+                origin_prompt_verification_id INTEGER,
+                UNIQUE (prompt_id, policy)
+            );
+
+            CREATE TABLE image_verifications (
+                image_verification_id INTEGER PRIMARY KEY,
+                image_id INTEGER NOT NULL REFERENCES images(image_id)
+                    ON DELETE CASCADE,
+                policy TEXT NOT NULL CHECK (policy IN ('strict', 'title_aware')),
+                passed INTEGER NOT NULL CHECK (passed IN (0, 1)),
+                reason TEXT,
+                method TEXT NOT NULL CHECK (length(method) > 0),
+                raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
+                created_at TEXT NOT NULL,
+                origin_run_id TEXT,
+                origin_image_verification_id INTEGER,
+                UNIQUE (image_id, policy)
             );
 
             CREATE TABLE image_descriptions (
@@ -288,6 +307,10 @@ def initialize_database(
             CREATE INDEX illustratability_ratings_item_id_idx
                 ON illustratability_ratings(item_id);
             CREATE INDEX images_prompt_id_idx ON images(prompt_id);
+            CREATE INDEX prompt_verifications_prompt_id_idx
+                ON prompt_verifications(prompt_id);
+            CREATE INDEX image_verifications_image_id_idx
+                ON image_verifications(image_id);
             CREATE INDEX predictions_image_id_idx ON predictions(image_id);
             CREATE INDEX stage_tasks_run_stage_status_idx
                 ON stage_tasks(run_id, stage, status);

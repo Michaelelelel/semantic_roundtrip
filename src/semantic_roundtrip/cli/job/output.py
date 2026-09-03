@@ -36,7 +36,7 @@ def print_job_plan(plan: JobPlan) -> bool:
         f"ratings={plan.expected_outputs['illustratability_rating']}, "
         f"prompts={plan.expected_outputs['prompt_generation']}, "
         f"images={plan.expected_outputs['image_generation']}, "
-        f"verifications={plan.expected_outputs['verification']}, "
+        f"verification decisions={plan.expected_outputs['verification']}, "
         f"direct guesses={plan.expected_outputs['title_guessing_direct']}, "
         f"descriptions={plan.expected_outputs['image_description']}, "
         "description guesses="

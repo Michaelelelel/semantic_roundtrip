@@ -1,4 +1,4 @@
-schema_version: 8
+schema_version: 9
 run:
   name: direct_pg_q38_bi_g4
   output_directory: runs
