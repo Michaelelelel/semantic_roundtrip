@@ -1,0 +1,46 @@
+---
+config:
+  theme: neutral
+  fontFamily: Arial, sans-serif
+  flowchart:
+    curve: linear
+    nodeSpacing: 30
+    rankSpacing: 50
+    htmlLabels: false
+  themeVariables:
+    fontFamily: Arial, sans-serif
+---
+flowchart TB
+    %% Edit in any Mermaid editor; render to SVG before using it outside Markdown.
+    subgraph MAIN["Main study · 30 randomly sampled titles per domain"]
+        DIRECT["direct_core<br/>4×4 PG/BI<br/>RQ1: model combinations<br/>RQ3: paired reconstruction routes"]
+        LOCAL["indirect_local<br/>2×4×2 PG/BB/BI"]
+        AQUEDUCT["aqueduct_v4_extension<br/>20 additional conditions"]
+        INDIRECT(["Combined indirect analysis<br/>3×4×3 PG/BB/BI<br/>RQ2: model-role choices"])
+    end
+
+    subgraph SUPPLEMENTS["Complete style comparison and direct supplements"]
+        PHOTO["direct_photorealistic<br/>SQ1: photorealistic style"]
+        SKETCH["direct_sketch<br/>SQ1: outline-sketch style"]
+        COMIC["direct_comic<br/>SQ1: comic style"]
+        THINKING["direct_thinking<br/>12 new cells + 4 baseline cells<br/>SQ2: native thinking"]
+        SELECTED["direct_illustratable<br/>SQ3: high-illustratability titles"]
+    end
+
+    subgraph SELECTION["Independent dataset selection"]
+        RATINGS["candidate_illustratability<br/>900 candidates · 4 rating models"]
+        DATASET["Equal-weight mean rating<br/>Top 30 titles per domain"]
+    end
+
+    LOCAL -->|matching source job| AQUEDUCT
+    LOCAL --> INDIRECT
+    AQUEDUCT --> INDIRECT
+    RATINGS --> DATASET
+    DIRECT -. style comparison .-> PHOTO
+    DIRECT -. style comparison .-> SKETCH
+    DIRECT -. style comparison .-> COMIC
+    DIRECT -->|matching source + baseline| THINKING
+    DIRECT -. dataset comparison .-> SELECTED
+    DATASET --> SELECTED
+    DIRECT --> CROSS(["Cross-design analysis<br/>RQ4: songs · movies · bands<br/>SQ3: illustratability and reconstruction"])
+    INDIRECT --> CROSS

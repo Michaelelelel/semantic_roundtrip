@@ -1,0 +1,89 @@
+{
+  "analysis": {
+    "purpose": "candidate_distribution",
+    "population": "all eligible candidates",
+    "aggregation": "equal Q25/G3/Q38/G4 mean; four valid integer ratings required; no imputation",
+    "histogram_bins": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100
+    ],
+    "bin_convention": "[left, right), last bin includes 100"
+  },
+  "created_at_utc": "2026-09-03T17:22:11.954925+00:00",
+  "python": "3.14.3",
+  "packages": {
+    "semantic-roundtrip": "0.4.0",
+    "pandas": "2.3.3",
+    "numpy": "2.5.2",
+    "matplotlib": "3.11.1",
+    "seaborn": "0.13.2"
+  },
+  "methods": {
+    "strict": "strict_trimmed_exact_v1",
+    "normalized": "nfc_casefold_whitespace_middot_dashes_outer_quotes_exact_v3",
+    "prompt_hits": "nfc_casefold_whitespace_middot_dashes_word_boundaries_v1"
+  },
+  "analysis_sha256": {
+    "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/notebooks/illustratability_distribution.ipynb": "379b52a223bb23b25dc5d33ba542476cd98f8e2aebd9603b8b580bfabfe40ee5",
+    "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/src/semantic_roundtrip/evaluation.py": "df1837622249de2cf4f039f2ba2a1911f989808a216616a417adf34935f114ab",
+    "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/src/semantic_roundtrip/analysis/__init__.py": "e91664ac4b28a45bd865026d7c20672afc1c4eb0de65bd58c7278ac684f0405d",
+    "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/src/semantic_roundtrip/analysis/loader.py": "bef19f220b146fb6bb32e50644fef8fd0b6afd6f9d8d16acca8788bf45079daf",
+    "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/src/semantic_roundtrip/analysis/plotting.py": "e768e3b48b0e3fd86af02b55e419f310e6f560d0f74c0da45282d83af8488c8a",
+    "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/src/semantic_roundtrip/analysis/reporting.py": "05c38e22b32e8c3b759bfa639194b1d46fbee35c32bf0704e4c195fe4ee3a583",
+    "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/src/semantic_roundtrip/analysis/statistics.py": "7114b062c013c2b619cb7cc1d32e3b60ef303925e6836b47c6e4017445a6cc41"
+  },
+  "sources": [
+    {
+      "label": "Candidate pool",
+      "directory": "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2",
+      "job_id": "20260902T162529Z_candidate-illustratability_a1cfe5f2",
+      "job_name": "candidate_illustratability",
+      "status": "completed",
+      "entries": {
+        "rating_q25": "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-q25_1b2b4333",
+        "rating_g3": "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-g3_ed04acf2",
+        "rating_q38": "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-q38_0b892e18",
+        "rating_g4": "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-g4_9d2eaaa8"
+      },
+      "sha256": {
+        "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/job_snapshot.yaml": "350f0414a1fe493a85e9a77b0de4e0e521fc751eac5d6285fdf0cc403e1b5b8b",
+        "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/job_state.sqlite": "c0dca7724ade1894dac4bdf2833f76d380f1b41b252d7d48019340f196370e0e",
+        "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-q25_1b2b4333/config_snapshot.yaml": "0af8701f082fa4bb9701dc3bcf652800037647193bfb662a93530582c5c24ec1",
+        "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-q25_1b2b4333/pipeline_state.sqlite": "d5e7e3f60761721dd32295b55b8fa212193fcbe8d391405b00a6fcd5b952b00e",
+        "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-g3_ed04acf2/config_snapshot.yaml": "66c9eadea7a686243aab4f77f0b721d2480843233c1611b33b519b66a7e92299",
+        "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-g3_ed04acf2/pipeline_state.sqlite": "3a00fa900667b6a33aaf40bc9994433c3e0c8ba799461933b9509b71a248a4f0",
+        "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-q38_0b892e18/config_snapshot.yaml": "d6a2f32291cc83914dc04e61ba1037d926547cdb53b9b34fe7ed6ddff2596257",
+        "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-q38_0b892e18/pipeline_state.sqlite": "4e82d2e0b49cf65c8270a3731ae7df7820dd95f1e819b5be2f2ab0d87be56baa",
+        "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-g4_9d2eaaa8/config_snapshot.yaml": "53528b32cb199fd2855d8787dabd98c0c6627d0661d4f8c2f973df25a630a77c",
+        "/Users/michaelhagmann/uni/Bachelor/semantic_roundtrip/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-g4_9d2eaaa8/pipeline_state.sqlite": "164a34de980a1cd4bdcb427192d0cb8af19d2101d6784ddf0ca43afd8aa18aaa"
+      }
+    }
+  ],
+  "exports_sha256": {
+    "candidate_pool_counts.csv": "ffc010600a847eee44ae5275e4dab56afd40f21a6c36c1b4e45c4ab25ad6defe",
+    "candidate_pool_distribution.pdf": "b03efbfbb6740a232cee83accf135f49d454b93a033193cad46889d1f62cf793",
+    "candidate_pool_distribution.png": "b036f1c48b45c5d80e465fc89d2da31088db837babacc6bb5c9784aa369b7f61",
+    "candidate_pool_histogram.csv": "d5d25f7afc401a702ceca4772dfd463a5b18c4161e90b677fd7b95f1eb558e5f",
+    "candidate_pool_model_counts.csv": "d045ff88c964113b5470a8c1a3bcbb6f59971d876a0ad731586f78ce04549469",
+    "candidate_pool_scores.csv": "5a01918b5a28599a563a4c9f004c9aa354ee9c09775e1b838aea7993cc8f0b81"
+  }
+}

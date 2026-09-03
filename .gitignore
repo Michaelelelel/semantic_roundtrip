@@ -58,6 +58,8 @@ chat_templates/*
 runs/
 /runtime/
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
 *.db
 
 # Notebook outputs are generated locally; the source notebook is tracked.
@@ -66,3 +68,7 @@ notebooks/.ipynb_checkpoints/
 
 # Large or licensed source snapshots used to build the title benchmark stay local.
 /data/title_sources/
+
+# Published rating evidence; generated runtime jobs remain ignored.
+!/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/
+!/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/**/*.sqlite

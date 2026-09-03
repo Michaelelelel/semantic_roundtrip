@@ -1,0 +1,901 @@
+dataset_id,domain,item_key,title,q25,g3,q38,g4,valid_model_ratings,mean_score
+eligible_top300_v1,songs,songs_fake_love,FAKE LOVE,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_run,RUN,80,85,95,10,4,67.5
+eligible_top300_v1,songs,songs_dna,DNA,70,85,95,90,4,85.0
+eligible_top300_v1,songs,songs_boy_with_luv,Boy With Luv,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_in_the_end,In the End,50,85,10,15,4,40.0
+eligible_top300_v1,songs,songs_mr_brightside,Mr. Brightside,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_creep,Creep,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_smells_like_teen_spirit,Smells Like Teen Spirit,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_chop_suey,Chop Suey!,50,85,10,30,4,43.75
+eligible_top300_v1,songs,songs_idol,IDOL,70,85,95,30,4,70.0
+eligible_top300_v1,songs,songs_numb,Numb,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_the_less_i_know_the_better,The Less I Know the Better,30,85,10,15,4,35.0
+eligible_top300_v1,songs,songs_karma_police,Karma Police,50,85,90,40,4,66.25
+eligible_top300_v1,songs,songs_airplane_pt_2,Airplane pt.2,50,75,95,20,4,60.0
+eligible_top300_v1,songs,songs_no_surprises,No Surprises,50,75,10,15,4,37.5
+eligible_top300_v1,songs,songs_feel_good_inc,Feel Good Inc.,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_seven_nation_army,Seven Nation Army,70,90,10,20,4,47.5
+eligible_top300_v1,songs,songs_mic_drop,Mic Drop,80,90,95,90,4,88.75
+eligible_top300_v1,songs,songs_come_as_you_are,Come as You Are,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_do_i_wanna_know,Do I Wanna Know?,50,85,15,15,4,41.25
+eligible_top300_v1,songs,songs_bohemian_rhapsody,Bohemian Rhapsody,50,85,95,30,4,65.0
+eligible_top300_v1,songs,songs_everlong,Everlong,50,85,10,10,4,38.75
+eligible_top300_v1,songs,songs_running,Running,80,85,95,20,4,70.0
+eligible_top300_v1,songs,songs_viva_la_vida,Viva la vida,50,85,90,30,4,63.75
+eligible_top300_v1,songs,songs_toxicity,Toxicity,70,85,10,30,4,48.75
+eligible_top300_v1,songs,songs_take_me_out,Take Me Out,70,85,95,20,4,67.5
+eligible_top300_v1,songs,songs_wonderwall,Wonderwall,50,75,10,30,4,41.25
+eligible_top300_v1,songs,songs_where_is_my_mind,Where Is My Mind?,50,85,90,30,4,63.75
+eligible_top300_v1,songs,songs_killing_in_the_name,Killing in the Name,50,85,90,20,4,61.25
+eligible_top300_v1,songs,songs_paranoid,Paranoid,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_pumped_up_kicks,Pumped Up Kicks,70,85,15,30,4,50.0
+eligible_top300_v1,songs,songs_get_lucky,Get Lucky,50,85,90,20,4,61.25
+eligible_top300_v1,songs,songs_paranoid_android,Paranoid Android,50,85,15,70,4,55.0
+eligible_top300_v1,songs,songs_song_2,Song 2,0,85,0,5,4,22.5
+eligible_top300_v1,songs,songs_take_on_me,Take On Me,50,90,90,85,4,78.75
+eligible_top300_v1,songs,songs_enter_sandman,Enter Sandman,70,90,95,40,4,73.75
+eligible_top300_v1,songs,songs_truth_untold,Truth Untold,50,75,15,20,4,40.0
+eligible_top300_v1,songs,songs_let_go,Let Go,50,75,90,20,4,58.75
+eligible_top300_v1,songs,songs_stairway_to_heaven,Stairway to Heaven,80,90,95,85,4,87.5
+eligible_top300_v1,songs,songs_africa,Africa,80,85,95,70,4,82.5
+eligible_top300_v1,songs,songs_bring_me_to_life,Bring Me to Life,50,85,15,20,4,42.5
+eligible_top300_v1,songs,songs_harder_better_faster_stronger,"Harder, Better, Faster, Stronger",70,85,10,20,4,46.25
+eligible_top300_v1,songs,songs_everybody_wants_to_rule_the_world,Everybody Wants to Rule the World,50,85,90,30,4,63.75
+eligible_top300_v1,songs,songs_no_more_dream,No More Dream,70,75,90,20,4,63.75
+eligible_top300_v1,songs,songs_sultans_of_swing,Sultans of Swing,70,85,10,30,4,48.75
+eligible_top300_v1,songs,songs_midnight_city,Midnight City,80,85,95,40,4,75.0
+eligible_top300_v1,songs,songs_faint,Faint,50,60,90,15,4,53.75
+eligible_top300_v1,songs,songs_agust_d,Agust D,0,85,10,10,4,26.25
+eligible_top300_v1,songs,songs_dreams,Dreams,70,85,95,15,4,66.25
+eligible_top300_v1,songs,songs_stressed_out,Stressed Out,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_everything_in_its_right_place,Everything in Its Right Place,50,85,10,30,4,43.75
+eligible_top300_v1,songs,songs_losing_my_religion,Losing My Religion,50,85,15,20,4,42.5
+eligible_top300_v1,songs,songs_blue_side_outro,Blue Side (outro),30,75,15,10,4,32.5
+eligible_top300_v1,songs,songs_intro_dt_suga,Intro ; Dt sugA,0,60,10,5,4,18.75
+eligible_top300_v1,songs,songs_californication,Californication,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_radioactive,Radioactive,70,85,95,70,4,80.0
+eligible_top300_v1,songs,songs_kids,Kids,50,85,95,20,4,62.5
+eligible_top300_v1,songs,songs_misery_business,Misery Business,50,85,15,20,4,42.5
+eligible_top300_v1,songs,songs_enjoy_the_silence,Enjoy the Silence,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_one_step_closer,One Step Closer,50,85,90,30,4,63.75
+eligible_top300_v1,songs,songs_sweater_weather,Sweater Weather,75,85,95,70,4,81.25
+eligible_top300_v1,songs,songs_danger,Danger,70,85,95,10,4,65.0
+eligible_top300_v1,songs,songs_no_one_knows,No One Knows,50,60,15,15,4,35.0
+eligible_top300_v1,songs,songs_hotel_california,Hotel California,70,85,95,85,4,83.75
+eligible_top300_v1,songs,songs_euphoria,Euphoria,70,85,90,15,4,65.0
+eligible_top300_v1,songs,songs_the_chain,The Chain,70,85,95,40,4,72.5
+eligible_top300_v1,songs,songs_under_the_bridge,Under the Bridge,70,90,95,70,4,81.25
+eligible_top300_v1,songs,songs_teardrop,Teardrop,80,85,95,85,4,86.25
+eligible_top300_v1,songs,songs_time,Time,50,85,95,20,4,62.5
+eligible_top300_v1,songs,songs_humble,HUMBLE.,50,85,90,15,4,60.0
+eligible_top300_v1,songs,songs_wish_you_were_here,Wish You Were Here,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_i_need_u_japanese_ver,I NEED U (Japanese ver.),50,60,10,5,4,31.25
+eligible_top300_v1,songs,songs_money,Money,80,90,95,80,4,86.25
+eligible_top300_v1,songs,songs_supermassive_black_hole,Supermassive Black Hole,80,85,95,85,4,86.25
+eligible_top300_v1,songs,songs_basket_case,Basket Case,70,75,90,30,4,66.25
+eligible_top300_v1,songs,songs_stigma,Stigma,50,75,15,20,4,40.0
+eligible_top300_v1,songs,songs_american_idiot,American Idiot,50,85,90,40,4,66.25
+eligible_top300_v1,songs,songs_on_melancholy_hill,On Melancholy Hill,70,75,95,30,4,67.5
+eligible_top300_v1,songs,songs_cant_stop,Can’t Stop,70,85,90,15,4,65.0
+eligible_top300_v1,songs,songs_welcome_to_the_black_parade,Welcome to the Black Parade,70,85,95,70,4,80.0
+eligible_top300_v1,songs,songs_comfortably_numb,Comfortably Numb,70,85,15,30,4,50.0
+eligible_top300_v1,songs,songs_one_more_time,One More Time,50,85,10,15,4,40.0
+eligible_top300_v1,songs,songs_sweet_child_o_mine,Sweet Child o’ Mine,50,90,10,30,4,45.0
+eligible_top300_v1,songs,songs_somebody_told_me,Somebody Told Me,30,75,10,15,4,32.5
+eligible_top300_v1,songs,songs_jigsaw_falling_into_place,Jigsaw Falling Into Place,70,85,90,40,4,71.25
+eligible_top300_v1,songs,songs_another_one_bites_the_dust,Another One Bites the Dust,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_505,505,0,90,10,10,4,27.5
+eligible_top300_v1,songs,songs_outro_wings,Outro : Wings,70,75,90,30,4,66.25
+eligible_top300_v1,songs,songs_weird_fishes_arpeggi,Weird Fishes/Arpeggi,30,75,10,15,4,32.5
+eligible_top300_v1,songs,songs_billie_jean,Billie Jean,70,85,10,20,4,46.25
+eligible_top300_v1,songs,songs_black_hole_sun,Black Hole Sun,70,90,95,85,4,85.0
+eligible_top300_v1,songs,songs_whalien_52,Whalien 52,30,85,95,30,4,60.0
+eligible_top300_v1,songs,songs_pied_piper,Pied Piper,70,90,95,90,4,86.25
+eligible_top300_v1,songs,songs_the_middle,The Middle,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_save_me,Save ME,70,75,90,15,4,62.5
+eligible_top300_v1,songs,songs_somewhere_i_belong,Somewhere I Belong,50,75,15,20,4,40.0
+eligible_top300_v1,songs,songs_heartshaped_box,Heart‐Shaped Box,70,85,95,90,4,85.0
+eligible_top300_v1,songs,songs_let_down,Let Down,50,75,15,20,4,40.0
+eligible_top300_v1,songs,songs_instant_crush,Instant Crush,70,85,15,30,4,50.0
+eligible_top300_v1,songs,songs_mama,MAMA,70,90,10,10,4,45.0
+eligible_top300_v1,songs,songs_paint_it_black,Paint It Black,70,90,95,85,4,85.0
+eligible_top300_v1,songs,songs_anpanman,Anpanman,80,95,95,100,4,92.5
+eligible_top300_v1,songs,songs_magic_shop,Magic Shop,70,85,95,40,4,72.5
+eligible_top300_v1,songs,songs_the_pretender,The Pretender,50,85,10,30,4,43.75
+eligible_top300_v1,songs,songs_neva,Neva,0,70,10,5,4,21.25
+eligible_top300_v1,songs,songs_yellow,Yellow,80,90,95,100,4,91.25
+eligible_top300_v1,songs,songs_master_of_puppets,Master of Puppets,80,90,95,85,4,87.5
+eligible_top300_v1,songs,songs_what_you_know,What You Know,30,65,15,10,4,30.0
+eligible_top300_v1,songs,songs_best_of_me,Best of Me,50,75,15,15,4,38.75
+eligible_top300_v1,songs,songs_lithium,Lithium,50,75,95,20,4,60.0
+eligible_top300_v1,songs,songs_papercut,Papercut,70,85,95,85,4,83.75
+eligible_top300_v1,songs,songs_there_is_a_light_that_never_goes_out,There Is a Light That Never Goes Out,50,85,90,20,4,61.25
+eligible_top300_v1,songs,songs_exit_music_for_a_film,Exit Music (for a Film),30,75,90,15,4,52.5
+eligible_top300_v1,songs,songs_take_me_to_church,Take Me to Church,70,85,90,40,4,71.25
+eligible_top300_v1,songs,songs_love_maze,Love Maze,70,75,85,40,4,67.5
+eligible_top300_v1,songs,songs_love_will_tear_us_apart,Love Will Tear Us Apart,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_the_kids_arent_alright,The Kids Aren’t Alright,60,75,90,20,4,61.25
+eligible_top300_v1,songs,songs_dont_stop_believin,Don’t Stop Believin’,70,85,95,15,4,66.25
+eligible_top300_v1,songs,songs_what_ive_done,What I’ve Done,30,75,15,15,4,33.75
+eligible_top300_v1,songs,songs_electric_feel,Electric Feel,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_youre_gonna_go_far_kid,"You’re Gonna Go Far, Kid",50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_summertime_sadness,Summertime Sadness,70,85,90,40,4,71.25
+eligible_top300_v1,songs,songs_zombie,Zombie,80,90,95,90,4,88.75
+eligible_top300_v1,songs,songs_here_comes_the_sun,Here Comes the Sun,80,95,95,85,4,88.75
+eligible_top300_v1,songs,songs_september,September,70,85,95,30,4,70.0
+eligible_top300_v1,songs,songs_nothing_else_matters,Nothing Else Matters,70,85,10,15,4,45.0
+eligible_top300_v1,songs,songs_r_u_mine,R U Mine?,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_give_it_to_me,give it to me,50,75,90,10,4,56.25
+eligible_top300_v1,songs,songs_let_it_happen,Let It Happen,50,75,10,15,4,37.5
+eligible_top300_v1,songs,songs_all_i_need,All I Need,50,75,10,10,4,36.25
+eligible_top300_v1,songs,songs_duvet,Duvet,50,85,95,30,4,65.0
+eligible_top300_v1,songs,songs_reptilia,Reptilia,50,85,95,30,4,65.0
+eligible_top300_v1,songs,songs_crawling,Crawling,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_back_in_black,Back in Black,70,90,95,30,4,71.25
+eligible_top300_v1,songs,songs_scar_tissue,Scar Tissue,70,85,95,30,4,70.0
+eligible_top300_v1,songs,songs_teenagers,Teenagers,70,75,90,30,4,66.25
+eligible_top300_v1,songs,songs_breezeblocks,Breezeblocks,50,85,95,20,4,62.5
+eligible_top300_v1,songs,songs_mr_blue_sky,Mr. Blue Sky,70,90,95,40,4,73.75
+eligible_top300_v1,songs,songs_whyd_you_only_call_me_when_youre_high,Why’d You Only Call Me When You’re High?,50,85,15,20,4,42.5
+eligible_top300_v1,songs,songs_boulevard_of_broken_dreams,Boulevard of Broken Dreams,70,85,95,40,4,72.5
+eligible_top300_v1,songs,songs_riptide,Riptide,70,85,95,40,4,72.5
+eligible_top300_v1,songs,songs_skit,skit,50,60,10,5,4,31.25
+eligible_top300_v1,songs,songs_counting_stars,Counting Stars,70,85,90,70,4,78.75
+eligible_top300_v1,songs,songs_bitter_sweet_symphony,Bitter Sweet Symphony,50,85,15,30,4,45.0
+eligible_top300_v1,songs,songs_breaking_the_habit,Breaking the Habit,70,75,90,30,4,66.25
+eligible_top300_v1,songs,songs_immigrant_song,Immigrant Song,70,85,90,40,4,71.25
+eligible_top300_v1,songs,songs_hysteria,Hysteria,70,75,90,20,4,63.75
+eligible_top300_v1,songs,songs_n_o,N.O,0,85,10,10,4,26.25
+eligible_top300_v1,songs,songs_fake_plastic_trees,Fake Plastic Trees,70,85,90,85,4,82.5
+eligible_top300_v1,songs,songs_intro,Intro,0,30,10,0,4,10.0
+eligible_top300_v1,songs,songs_otherside,Otherside,50,75,10,20,4,38.75
+eligible_top300_v1,songs,songs_fluorescent_adolescent,Fluorescent Adolescent,50,85,15,20,4,42.5
+eligible_top300_v1,songs,songs_believer,Believer,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_fortunate_son,Fortunate Son,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_awake,Awake,70,85,95,20,4,67.5
+eligible_top300_v1,songs,songs_nude,Nude,70,30,95,100,4,73.75
+eligible_top300_v1,songs,songs_redbone,Redbone,50,85,95,20,4,62.5
+eligible_top300_v1,songs,songs_time_to_pretend,Time to Pretend,50,85,15,15,4,41.25
+eligible_top300_v1,songs,songs_uprising,Uprising,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_the_great_gig_in_the_sky,The Great Gig in the Sky,50,75,90,20,4,58.75
+eligible_top300_v1,songs,songs_dna_898059a0_753,DNA.,70,85,95,90,4,85.0
+eligible_top300_v1,songs,songs_high_and_dry,High and Dry,50,85,90,30,4,63.75
+eligible_top300_v1,songs,songs_b_y_o_b,B.Y.O.B.,50,90,10,10,4,40.0
+eligible_top300_v1,songs,songs_duality,Duality,70,75,90,30,4,66.25
+eligible_top300_v1,songs,songs_140503_at_dawn,140503 at dawn,0,60,10,10,4,20.0
+eligible_top300_v1,songs,songs_starlight,Starlight,80,85,95,40,4,75.0
+eligible_top300_v1,songs,songs_epiphany,Epiphany,50,75,90,15,4,57.5
+eligible_top300_v1,songs,songs_poker_face,Poker Face,70,90,95,85,4,85.0
+eligible_top300_v1,songs,songs_dream_on,Dream On,70,85,90,20,4,66.25
+eligible_top300_v1,songs,songs_alright,Alright,50,75,10,5,4,35.0
+eligible_top300_v1,songs,songs_not_today,Not Today,70,85,10,15,4,45.0
+eligible_top300_v1,songs,songs_see_you_again,See You Again,50,85,90,20,4,61.25
+eligible_top300_v1,songs,songs_dog_days_are_over,Dog Days Are Over,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_buddy_holly,Buddy Holly,70,90,95,30,4,71.25
+eligible_top300_v1,songs,songs_pink_white,Pink + White,70,85,95,30,4,70.0
+eligible_top300_v1,songs,songs_demons,Demons,70,85,95,30,4,70.0
+eligible_top300_v1,songs,songs_old_town_road,Old Town Road,75,90,95,70,4,82.5
+eligible_top300_v1,songs,songs_highway_to_hell,Highway to Hell,75,90,95,85,4,86.25
+eligible_top300_v1,songs,songs_without_me,Without Me,50,85,10,10,4,38.75
+eligible_top300_v1,songs,songs_hey_ya,Hey Ya!,50,90,10,10,4,40.0
+eligible_top300_v1,songs,songs_welcome_to_the_jungle,Welcome to the Jungle,70,90,95,85,4,85.0
+eligible_top300_v1,songs,songs_sex_on_fire,Sex on Fire,50,85,95,30,4,65.0
+eligible_top300_v1,songs,songs_starboy,Starboy,70,85,95,30,4,70.0
+eligible_top300_v1,songs,songs_space_oddity,Space Oddity,70,85,95,85,4,83.75
+eligible_top300_v1,songs,songs_interlude_dream_reality,"Interlude ; Dream, Reality",50,65,15,15,4,36.25
+eligible_top300_v1,songs,songs_bts_cypher_pt_3_killer,BTS Cypher PT.3 : KILLER,70,75,10,15,4,42.5
+eligible_top300_v1,songs,songs_royals,Royals,70,90,10,40,4,52.5
+eligible_top300_v1,songs,songs_savior,Savior,70,85,90,20,4,66.25
+eligible_top300_v1,songs,songs_so_far_away,so far away,50,75,90,20,4,58.75
+eligible_top300_v1,songs,songs_pompeii,Pompeii,80,90,95,85,4,87.5
+eligible_top300_v1,songs,songs_money_trees,Money Trees,80,85,95,85,4,86.25
+eligible_top300_v1,songs,songs_livin_on_a_prayer,Livin’ on a Prayer,70,90,95,30,4,71.25
+eligible_top300_v1,songs,songs_dont_look_back_in_anger,Don’t Look Back in Anger,60,85,90,20,4,63.75
+eligible_top300_v1,songs,songs_knights_of_cydonia,Knights of Cydonia,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_i_bet_you_look_good_on_the_dancefloor,I Bet You Look Good on the Dancefloor,70,85,15,20,4,47.5
+eligible_top300_v1,songs,songs_last_nite,Last Nite,50,85,10,15,4,40.0
+eligible_top300_v1,songs,songs_last_resort,Last Resort,70,85,15,30,4,50.0
+eligible_top300_v1,songs,songs_little_talks,Little Talks,50,75,15,20,4,40.0
+eligible_top300_v1,songs,songs_float_on,Float On,70,85,95,30,4,70.0
+eligible_top300_v1,songs,songs_friday_im_in_love,Friday I’m in Love,50,85,90,30,4,63.75
+eligible_top300_v1,songs,songs_say_it_aint_so,Say It Ain’t So,50,85,10,15,4,40.0
+eligible_top300_v1,songs,songs_this_charming_man,This Charming Man,50,85,90,20,4,61.25
+eligible_top300_v1,songs,songs_am_i_wrong,Am I Wrong,30,75,10,15,4,32.5
+eligible_top300_v1,songs,songs_slow_dancing_in_the_dark,SLOW DANCING IN THE DARK,75,85,95,40,4,73.75
+eligible_top300_v1,songs,songs_how_to_disappear_completely,How to Disappear Completely,50,85,90,30,4,63.75
+eligible_top300_v1,songs,songs_aint_no_rest_for_the_wicked,Ain’t No Rest for the Wicked,50,85,15,30,4,45.0
+eligible_top300_v1,songs,songs_thunderstruck,Thunderstruck,70,90,95,70,4,81.25
+eligible_top300_v1,songs,songs_ride,Ride,70,85,95,20,4,67.5
+eligible_top300_v1,songs,songs_15_step,15 Step,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_iris,Iris,50,90,95,30,4,66.25
+eligible_top300_v1,songs,songs_about_a_girl,About a Girl,50,75,10,20,4,38.75
+eligible_top300_v1,songs,songs_intro_2_cool_4_skool,Intro : 2 COOL 4 SKOOL,70,75,10,15,4,42.5
+eligible_top300_v1,songs,songs_feel_it_still,Feel It Still,30,85,15,15,4,36.25
+eligible_top300_v1,songs,songs_xtal,Xtal,50,75,95,10,4,57.5
+eligible_top300_v1,songs,songs_i_miss_you,I Miss You,70,75,95,10,4,62.5
+eligible_top300_v1,songs,songs_little_dark_age,Little Dark Age,50,75,15,30,4,42.5
+eligible_top300_v1,songs,songs_stronger,Stronger,70,85,10,15,4,45.0
+eligible_top300_v1,songs,songs_outro,Outro,50,60,10,5,4,31.25
+eligible_top300_v1,songs,songs_seoul,seoul,70,85,95,40,4,72.5
+eligible_top300_v1,songs,songs_reckoner,Reckoner,50,65,10,20,4,36.25
+eligible_top300_v1,songs,songs_go_with_the_flow,Go With the Flow,70,75,90,30,4,66.25
+eligible_top300_v1,songs,songs_paper_planes,Paper Planes,70,90,95,90,4,86.25
+eligible_top300_v1,songs,songs_hurt,Hurt,70,85,90,15,4,65.0
+eligible_top300_v1,songs,songs_power,Power,70,85,90,15,4,65.0
+eligible_top300_v1,songs,songs_bleed_it_out,Bleed It Out,50,85,90,30,4,63.75
+eligible_top300_v1,songs,songs_moonchild,moonchild,70,85,95,40,4,72.5
+eligible_top300_v1,songs,songs_even_flow,Even Flow,50,85,10,15,4,40.0
+eligible_top300_v1,songs,songs_rolling_in_the_deep,Rolling in the Deep,50,85,15,30,4,45.0
+eligible_top300_v1,songs,songs_heroes,“Heroes”,70,90,95,20,4,68.75
+eligible_top300_v1,songs,songs_tokyo,tokyo,70,85,95,70,4,80.0
+eligible_top300_v1,songs,songs_every_breath_you_take,Every Breath You Take,50,90,90,20,4,62.5
+eligible_top300_v1,songs,songs_space_song,Space Song,70,85,95,40,4,72.5
+eligible_top300_v1,songs,songs_lonely_day,Lonely Day,70,75,90,30,4,66.25
+eligible_top300_v1,songs,songs_lie,Lie,50,75,95,10,4,57.5
+eligible_top300_v1,songs,songs_helena,Helena,50,75,10,10,4,36.25
+eligible_top300_v1,songs,songs_heathens,Heathens,50,85,90,30,4,63.75
+eligible_top300_v1,songs,songs_baba_oriley,Baba O’Riley,30,65,10,10,4,28.75
+eligible_top300_v1,songs,songs_silver_spoon,Silver Spoon,75,85,95,85,4,85.0
+eligible_top300_v1,songs,songs_thnks_fr_th_mmrs,Thnks fr th Mmrs,50,75,10,15,4,37.5
+eligible_top300_v1,songs,songs_lonely_boy,Lonely Boy,75,85,95,40,4,73.75
+eligible_top300_v1,songs,songs_all_the_small_things,All the Small Things,50,85,10,20,4,41.25
+eligible_top300_v1,songs,songs_toxic,Toxic,70,85,90,40,4,71.25
+eligible_top300_v1,songs,songs_in_bloom,In Bloom,70,85,95,40,4,72.5
+eligible_top300_v1,songs,songs_the_scientist,The Scientist,50,85,10,30,4,43.75
+eligible_top300_v1,songs,songs_island_in_the_sun,Island in the Sun,70,85,95,70,4,80.0
+eligible_top300_v1,songs,songs_should_i_stay_or_should_i_go,Should I Stay or Should I Go,50,90,95,30,4,66.25
+eligible_top300_v1,songs,songs_intro_boy_meets_evil,Intro : Boy Meets Evil,70,85,10,30,4,48.75
+eligible_top300_v1,songs,songs_du_hast,Du hast,50,90,10,10,4,40.0
+eligible_top300_v1,songs,songs_interlude,Interlude,50,40,10,5,4,26.25
+eligible_top300_v1,songs,songs_snow_hey_oh,Snow ((Hey Oh)),50,75,90,20,4,58.75
+eligible_top300_v1,songs,songs_dance_dance,"Dance, Dance",80,85,95,20,4,70.0
+eligible_top300_v1,songs,songs_im_not_okay_i_promise,I’m Not Okay (I Promise),30,85,15,20,4,37.5
+eligible_top300_v1,songs,songs_someday,Someday,50,60,10,5,4,31.25
+eligible_top300_v1,songs,songs_something_about_us,Something About Us,50,75,15,10,4,37.5
+eligible_top300_v1,songs,songs_let_me_know,Let Me Know,30,60,10,10,4,27.5
+eligible_top300_v1,songs,songs_bodysnatchers,Bodysnatchers,70,75,95,40,4,70.0
+eligible_top300_v1,songs,songs_more_than_a_feeling,More Than a Feeling,50,75,15,15,4,38.75
+eligible_top300_v1,songs,songs_for_whom_the_bell_tolls,For Whom the Bell Tolls,30,85,95,70,4,70.0
+eligible_top300_v1,songs,songs_running_up_that_hill_a_deal_with_god,Running Up That Hill (A Deal With God),30,85,95,30,4,60.0
+eligible_top300_v1,songs,songs_under_pressure,Under Pressure,70,85,95,30,4,70.0
+eligible_top300_v1,songs,songs_king_kunta,King Kunta,50,90,90,20,4,62.5
+eligible_top300_v1,songs,songs_fix_you,Fix You,50,85,90,20,4,61.25
+eligible_top300_v1,songs,songs_begin,Begin,50,75,10,10,4,36.25
+eligible_top300_v1,songs,songs_airbag,Airbag,70,85,95,85,4,83.75
+eligible_top300_v1,songs,songs_in_the_aeroplane_over_the_sea,In the Aeroplane Over the Sea,70,85,95,40,4,72.5
+eligible_top300_v1,songs,songs_whats_my_age_again,What’s My Age Again?,50,90,10,15,4,41.25
+eligible_top300_v1,songs,songs_paradise_city,Paradise City,70,85,95,40,4,72.5
+eligible_top300_v1,songs,songs_just_like_heaven,Just Like Heaven,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_butterfly,Butterfly,80,90,100,100,4,92.5
+eligible_top300_v1,songs,songs_my_own_summer_shove_it,My Own Summer (Shove It),50,75,15,20,4,40.0
+eligible_top300_v1,songs,songs_the_diary_of_jane,The Diary of Jane,50,85,90,30,4,63.75
+eligible_top300_v1,songs,songs_i_hate_everything_about_you,(I Hate) Everything About You,30,75,90,15,4,52.5
+eligible_top300_v1,songs,songs_would,Would?,0,30,10,10,4,12.5
+eligible_top300_v1,songs,songs_bts_cypher_4,BTS Cypher 4,70,75,10,10,4,41.25
+eligible_top300_v1,songs,songs_the_real_slim_shady,The Real Slim Shady,70,85,10,30,4,48.75
+eligible_top300_v1,songs,songs_bad_romance,Bad Romance,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_safe_and_sound,Safe and Sound,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_walking_on_a_dream,Walking on a Dream,70,85,95,40,4,72.5
+eligible_top300_v1,songs,songs_dani_california,Dani California,50,75,10,20,4,38.75
+eligible_top300_v1,songs,songs_hope_world,Hope World,70,85,10,20,4,46.25
+eligible_top300_v1,songs,songs_when_you_were_young,When You Were Young,50,75,15,20,4,40.0
+eligible_top300_v1,songs,songs_epilogue_young_forever,EPILOGUE : Young Forever,60,75,15,20,4,42.5
+eligible_top300_v1,songs,songs_blank_space,Blank Space,70,85,90,30,4,68.75
+eligible_top300_v1,songs,songs_shape_of_you,Shape of You,70,85,95,20,4,67.5
+eligible_top300_v1,songs,songs_killer_queen,Killer Queen,70,90,90,70,4,80.0
+eligible_top300_v1,songs,songs_kryptonite,Kryptonite,70,85,90,85,4,82.5
+eligible_top300_v1,songs,songs_dancing_queen,Dancing Queen,80,90,95,70,4,83.75
+eligible_top300_v1,songs,songs_the_last,The Last,50,75,10,10,4,36.25
+eligible_top300_v1,songs,songs_beat_it,Beat It,70,90,95,30,4,71.25
+eligible_top300_v1,songs,songs_call_me_maybe,Call Me Maybe,50,85,95,20,4,62.5
+eligible_top300_v1,songs,songs_aerials,Aerials,50,75,95,30,4,62.5
+eligible_top300_v1,songs,songs_brain_damage,Brain Damage,70,75,90,30,4,66.25
+eligible_top300_v1,songs,songs_idioteque,Idioteque,30,75,10,10,4,31.25
+eligible_top300_v1,songs,songs_digital_love,Digital Love,70,85,85,30,4,67.5
+eligible_top300_v1,songs,songs_somewhere_only_we_know,Somewhere Only We Know,50,85,15,20,4,42.5
+eligible_top300_v1,songs,songs_crazy,Crazy,50,75,90,10,4,56.25
+eligible_top300_v1,songs,songs_the_sound_of_silence,The Sound of Silence,70,85,95,30,4,70.0
+eligible_top300_v1,songs,songs_ace_of_spades,Ace of Spades,80,90,95,95,4,90.0
+eligible_top300_v1,songs,songs_iron_man,Iron Man,80,90,95,95,4,90.0
+eligible_top300_v1,songs,songs_money_for_nothing,Money for Nothing,50,85,90,30,4,63.75
+eligible_top300_v1,movies,movies_the_shawshank_redemption,The Shawshank Redemption,70,85,95,30,4,70.0
+eligible_top300_v1,movies,movies_the_dark_knight,The Dark Knight,85,90,95,85,4,88.75
+eligible_top300_v1,movies,movies_inception,Inception,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_fight_club,Fight Club,70,90,95,70,4,81.25
+eligible_top300_v1,movies,movies_interstellar,Interstellar,75,90,95,70,4,82.5
+eligible_top300_v1,movies,movies_forrest_gump,Forrest Gump,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_pulp_fiction,Pulp Fiction,70,90,95,30,4,71.25
+eligible_top300_v1,movies,movies_the_godfather,The Godfather,80,95,95,90,4,90.0
+eligible_top300_v1,movies,movies_the_lord_of_the_rings_the_fellowship_of_the_ring,The Lord of the Rings: The Fellowship of the Ring,80,85,95,90,4,87.5
+eligible_top300_v1,movies,movies_the_lord_of_the_rings_the_return_of_the_king,The Lord of the Rings: The Return of the King,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_seven,Seven,50,90,95,20,4,63.75
+eligible_top300_v1,movies,movies_the_dark_knight_rises,The Dark Knight Rises,75,90,95,40,4,75.0
+eligible_top300_v1,movies,movies_the_lord_of_the_rings_the_two_towers,The Lord of the Rings: The Two Towers,80,85,95,75,4,83.75
+eligible_top300_v1,movies,movies_django_unchained,Django Unchained,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_gladiator,Gladiator,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_the_wolf_of_wall_street,The Wolf of Wall Street,70,90,95,85,4,85.0
+eligible_top300_v1,movies,movies_inglourious_basterds,Inglourious Basterds,70,75,10,30,4,46.25
+eligible_top300_v1,movies,movies_the_silence_of_the_lambs,The Silence of the Lambs,70,90,90,70,4,80.0
+eligible_top300_v1,movies,movies_batman_begins,Batman Begins,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_shutter_island,Shutter Island,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_saving_private_ryan,Saving Private Ryan,75,90,95,40,4,75.0
+eligible_top300_v1,movies,movies_the_prestige,The Prestige,50,85,95,30,4,65.0
+eligible_top300_v1,movies,movies_schindler_s_list,Schindler's List,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_star_wars_episode_iv_a_new_hope,Star Wars: Episode IV - A New Hope,85,90,95,95,4,91.25
+eligible_top300_v1,movies,movies_the_green_mile,The Green Mile,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_the_avengers,The Avengers,85,90,95,90,4,90.0
+eligible_top300_v1,movies,movies_the_departed,The Departed,50,85,90,20,4,61.25
+eligible_top300_v1,movies,movies_star_wars_episode_v_the_empire_strikes_back,Star Wars: Episode V - The Empire Strikes Back,85,85,95,90,4,88.75
+eligible_top300_v1,movies,movies_avatar,Avatar,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_the_godfather_part_ii,The Godfather Part II,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_back_to_the_future,Back to the Future,80,90,95,95,4,90.0
+eligible_top300_v1,movies,movies_memento,Memento,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_titanic,Titanic,90,95,100,100,4,96.25
+eligible_top300_v1,movies,movies_goodfellas,GoodFellas,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_avengers_infinity_war,Avengers: Infinity War,85,85,95,85,4,87.5
+eligible_top300_v1,movies,movies_the_truman_show,The Truman Show,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_guardians_of_the_galaxy,Guardians of the Galaxy,80,85,95,75,4,83.75
+eligible_top300_v1,movies,movies_leon_the_professional,Léon: The Professional,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_pirates_of_the_caribbean_the_curse_of_the_black_pearl,Pirates of the Caribbean: The Curse of the Black Pearl,85,85,95,85,4,87.5
+eligible_top300_v1,movies,movies_walle,WALL·E,80,95,95,100,4,92.5
+eligible_top300_v1,movies,movies_kill_bill_vol_1,Kill Bill: Vol. 1,70,85,95,85,4,83.75
+eligible_top300_v1,movies,movies_terminator_2_judgment_day,Terminator 2: Judgment Day,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_american_beauty,American Beauty,70,85,95,30,4,70.0
+eligible_top300_v1,movies,movies_american_history_x,American History X,50,85,90,30,4,63.75
+eligible_top300_v1,movies,movies_the_lion_king,The Lion King,90,95,100,100,4,96.25
+eligible_top300_v1,movies,movies_deadpool,Deadpool,80,90,95,95,4,90.0
+eligible_top300_v1,movies,movies_catch_me_if_you_can,Catch Me If You Can,60,85,95,40,4,70.0
+eligible_top300_v1,movies,movies_v_for_vendetta,V for Vendetta,80,90,95,100,4,91.25
+eligible_top300_v1,movies,movies_up,Up,80,95,95,100,4,92.5
+eligible_top300_v1,movies,movies_the_usual_suspects,The Usual Suspects,50,85,90,20,4,61.25
+eligible_top300_v1,movies,movies_the_shining,The Shining,70,90,95,85,4,85.0
+eligible_top300_v1,movies,movies_good_will_hunting,Good Will Hunting,50,85,10,20,4,41.25
+eligible_top300_v1,movies,movies_finding_nemo,Finding Nemo,85,95,95,95,4,92.5
+eligible_top300_v1,movies,movies_star_wars_episode_vi_return_of_the_jedi,Star Wars: Episode VI - Return of the Jedi,85,90,95,90,4,90.0
+eligible_top300_v1,movies,movies_mad_max_fury_road,Mad Max: Fury Road,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_no_country_for_old_men,No Country for Old Men,50,85,90,30,4,63.75
+eligible_top300_v1,movies,movies_jurassic_park,Jurassic Park,85,95,100,95,4,93.75
+eligible_top300_v1,movies,movies_toy_story,Toy Story,85,95,95,90,4,91.25
+eligible_top300_v1,movies,movies_eternal_sunshine_of_the_spotless_mind,Eternal Sunshine of the Spotless Mind,70,85,90,20,4,66.25
+eligible_top300_v1,movies,movies_gone_girl,Gone Girl,50,85,90,30,4,63.75
+eligible_top300_v1,movies,movies_reservoir_dogs,Reservoir Dogs,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_whiplash,Whiplash,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_braveheart,Braveheart,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_one_flew_over_the_cuckoo_s_nest,One Flew Over the Cuckoo's Nest,70,90,95,30,4,71.25
+eligible_top300_v1,movies,movies_the_sixth_sense,The Sixth Sense,70,85,95,30,4,70.0
+eligible_top300_v1,movies,movies_raiders_of_the_lost_ark,Raiders of the Lost Ark,85,90,95,90,4,90.0
+eligible_top300_v1,movies,movies_the_hunger_games,The Hunger Games,70,90,95,85,4,85.0
+eligible_top300_v1,movies,movies_monsters_inc,"Monsters, Inc.",80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_alien,Alien,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_a_beautiful_mind,A Beautiful Mind,50,85,90,30,4,63.75
+eligible_top300_v1,movies,movies_harry_potter_and_the_deathly_hallows_part_2,Harry Potter and the Deathly Hallows: Part 2,75,85,95,85,4,85.0
+eligible_top300_v1,movies,movies_the_intouchables,The Intouchables,50,85,90,30,4,63.75
+eligible_top300_v1,movies,movies_taxi_driver,Taxi Driver,75,90,95,85,4,86.25
+eligible_top300_v1,movies,movies_die_hard,Die Hard,70,90,95,30,4,71.25
+eligible_top300_v1,movies,movies_star_wars_episode_vii_the_force_awakens,Star Wars: Episode VII - The Force Awakens,85,85,95,90,4,88.75
+eligible_top300_v1,movies,movies_scarface,Scarface,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_the_martian,The Martian,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_the_pianist,The Pianist,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_avengers_age_of_ultron,Avengers: Age of Ultron,80,85,95,40,4,75.0
+eligible_top300_v1,movies,movies_the_terminator,The Terminator,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_12_angry_men,12 Angry Men,75,85,95,70,4,81.25
+eligible_top300_v1,movies,movies_spider_man,Spider-Man,90,95,100,100,4,96.25
+eligible_top300_v1,movies,movies_toy_story_3,Toy Story 3,85,90,95,70,4,85.0
+eligible_top300_v1,movies,movies_captain_america_the_winter_soldier,Captain America: The Winter Soldier,80,85,95,85,4,86.25
+eligible_top300_v1,movies,movies_the_grand_budapest_hotel,The Grand Budapest Hotel,75,85,95,85,4,85.0
+eligible_top300_v1,movies,movies_snatch,Snatch,50,85,90,20,4,61.25
+eligible_top300_v1,movies,movies_requiem_for_a_dream,Requiem for a Dream,50,75,10,30,4,41.25
+eligible_top300_v1,movies,movies_captain_america_the_first_avenger,Captain America: The First Avenger,85,90,95,85,4,88.75
+eligible_top300_v1,movies,movies_spirited_away,Spirited Away,70,90,95,75,4,82.5
+eligible_top300_v1,movies,movies_iron_man_3,Iron Man 3,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_thor,Thor,80,95,95,95,4,91.25
+eligible_top300_v1,movies,movies_harry_potter_and_the_sorcerer_s_stone,Harry Potter and the Sorcerer's Stone,80,90,95,95,4,90.0
+eligible_top300_v1,movies,movies_ratatouille,Ratatouille,80,90,95,95,4,90.0
+eligible_top300_v1,movies,movies_the_revenant,The Revenant,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_prisoners,Prisoners,70,85,95,30,4,70.0
+eligible_top300_v1,movies,movies_iron_man_2,Iron Man 2,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_captain_america_civil_war,Captain America: Civil War,75,90,95,75,4,83.75
+eligible_top300_v1,movies,movies_a_clockwork_orange,A Clockwork Orange,70,90,95,70,4,81.25
+eligible_top300_v1,movies,movies_the_hangover,The Hangover,70,90,95,30,4,71.25
+eligible_top300_v1,movies,movies_logan,Logan,70,90,90,20,4,67.5
+eligible_top300_v1,movies,movies_star_wars_episode_i_the_phantom_menace,Star Wars: Episode I - The Phantom Menace,75,85,95,85,4,85.0
+eligible_top300_v1,movies,movies_the_hobbit_an_unexpected_journey,The Hobbit: An Unexpected Journey,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_star_wars_episode_iii_revenge_of_the_sith,Star Wars: Episode III - Revenge of the Sith,80,85,95,85,4,86.25
+eligible_top300_v1,movies,movies_inside_out,Inside Out,80,90,95,40,4,76.25
+eligible_top300_v1,movies,movies_the_big_lebowski,The Big Lebowski,70,90,95,70,4,81.25
+eligible_top300_v1,movies,movies_black_panther,Black Panther,90,95,95,95,4,93.75
+eligible_top300_v1,movies,movies_300,300,70,90,95,90,4,86.25
+eligible_top300_v1,movies,movies_donnie_darko,Donnie Darko,50,85,90,85,4,77.5
+eligible_top300_v1,movies,movies_slumdog_millionaire,Slumdog Millionaire,70,85,90,40,4,71.25
+eligible_top300_v1,movies,movies_the_incredibles,The Incredibles,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_thor_ragnarok,Thor: Ragnarok,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_how_to_train_your_dragon,How to Train Your Dragon,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_gravity,Gravity,80,90,95,40,4,76.25
+eligible_top300_v1,movies,movies_the_good_the_bad_and_the_ugly,"The Good, the Bad and the Ugly",80,90,95,70,4,83.75
+eligible_top300_v1,movies,movies_black_swan,Black Swan,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_doctor_strange,Doctor Strange,80,85,95,85,4,86.25
+eligible_top300_v1,movies,movies_blade_runner,Blade Runner,75,85,95,70,4,81.25
+eligible_top300_v1,movies,movies_i_am_legend,I Am Legend,50,85,95,40,4,67.5
+eligible_top300_v1,movies,movies_the_imitation_game,The Imitation Game,50,85,90,30,4,63.75
+eligible_top300_v1,movies,movies_city_of_god,City of God,70,85,95,30,4,70.0
+eligible_top300_v1,movies,movies_kill_bill_vol_2,Kill Bill: Vol. 2,70,75,90,30,4,66.25
+eligible_top300_v1,movies,movies_arrival,Arrival,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_man_of_steel,Man of Steel,80,90,95,70,4,83.75
+eligible_top300_v1,movies,movies_indiana_jones_and_the_last_crusade,Indiana Jones and the Last Crusade,75,90,95,85,4,86.25
+eligible_top300_v1,movies,movies_gran_torino,Gran Torino,70,90,90,85,4,83.75
+eligible_top300_v1,movies,movies_full_metal_jacket,Full Metal Jacket,70,90,95,40,4,73.75
+eligible_top300_v1,movies,movies_american_psycho,American Psycho,70,85,90,85,4,82.5
+eligible_top300_v1,movies,movies_aliens,Aliens,80,90,95,70,4,83.75
+eligible_top300_v1,movies,movies_amelie,Amélie,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_guardians_of_the_galaxy_vol_2,Guardians of the Galaxy: Vol. 2,75,85,95,30,4,71.25
+eligible_top300_v1,movies,movies_john_wick,John Wick,70,90,95,70,4,81.25
+eligible_top300_v1,movies,movies_pirates_of_the_caribbean_dead_man_s_chest,Pirates of the Caribbean: Dead Man's Chest,80,85,95,75,4,83.75
+eligible_top300_v1,movies,movies_get_out,Get Out,70,90,95,30,4,71.25
+eligible_top300_v1,movies,movies_star_wars_episode_ii_attack_of_the_clones,Star Wars: Episode II - Attack of the Clones,75,75,95,85,4,82.5
+eligible_top300_v1,movies,movies_spider_man_homecoming,Spider-Man: Homecoming,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_the_social_network,The Social Network,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_sin_city,Sin City,80,90,95,70,4,83.75
+eligible_top300_v1,movies,movies_dunkirk,Dunkirk,80,90,95,70,4,83.75
+eligible_top300_v1,movies,movies_life_is_beautiful,Life Is Beautiful,50,85,90,20,4,61.25
+eligible_top300_v1,movies,movies_shrek,Shrek,90,95,95,100,4,95.0
+eligible_top300_v1,movies,movies_heat,Heat,70,90,95,20,4,68.75
+eligible_top300_v1,movies,movies_edge_of_tomorrow,Edge of Tomorrow,50,85,90,30,4,63.75
+eligible_top300_v1,movies,movies_spider_man_into_the_spider_verse,Spider-Man: Into the Spider-Verse,85,90,95,95,4,91.25
+eligible_top300_v1,movies,movies_spider_man_2,Spider-Man 2,85,90,95,95,4,91.25
+eligible_top300_v1,movies,movies_batman_v_superman_dawn_of_justice,Batman v Superman: Dawn of Justice,85,90,95,85,4,88.75
+eligible_top300_v1,movies,movies_x_men_days_of_future_past,X-Men: Days of Future Past,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_fargo,Fargo,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_12_years_a_slave,12 Years a Slave,50,85,90,40,4,66.25
+eligible_top300_v1,movies,movies_psycho,Psycho,70,90,95,85,4,85.0
+eligible_top300_v1,movies,movies_world_war_z,World War Z,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_ant_man,Ant-Man,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_2001_a_space_odyssey,2001: A Space Odyssey,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_thor_the_dark_world,Thor: The Dark World,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_the_amazing_spider_man,The Amazing Spider-Man,80,90,95,95,4,90.0
+eligible_top300_v1,movies,movies_kingsman_the_secret_service,Kingsman: The Secret Service,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_the_hunger_games_catching_fire,The Hunger Games: Catching Fire,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_skyfall,Skyfall,70,90,90,30,4,70.0
+eligible_top300_v1,movies,movies_silver_linings_playbook,Silver Linings Playbook,50,75,15,20,4,40.0
+eligible_top300_v1,movies,movies_now_you_see_me,Now You See Me,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_apocalypse_now,Apocalypse Now,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_harry_potter_and_the_prisoner_of_azkaban,Harry Potter and the Prisoner of Azkaban,70,85,95,85,4,83.75
+eligible_top300_v1,movies,movies_la_la_land,La La Land,70,90,95,40,4,73.75
+eligible_top300_v1,movies,movies_harry_potter_and_the_chamber_of_secrets,Harry Potter and the Chamber of Secrets,75,85,95,85,4,85.0
+eligible_top300_v1,movies,movies_trainspotting,Trainspotting,70,85,95,30,4,70.0
+eligible_top300_v1,movies,movies_million_dollar_baby,Million Dollar Baby,70,85,90,40,4,71.25
+eligible_top300_v1,movies,movies_drive,Drive,70,85,95,30,4,70.0
+eligible_top300_v1,movies,movies_x_men_first_class,X-Men: First Class,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_blade_runner_2049,Blade Runner 2049,75,85,95,70,4,81.25
+eligible_top300_v1,movies,movies_suicide_squad,Suicide Squad,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_rogue_one_a_star_wars_story,Rogue One: A Star Wars Story,80,85,95,40,4,75.0
+eligible_top300_v1,movies,movies_harry_potter_and_the_goblet_of_fire,Harry Potter and the Goblet of Fire,80,85,95,85,4,86.25
+eligible_top300_v1,movies,movies_the_hobbit_the_desolation_of_smaug,The Hobbit: The Desolation of Smaug,75,85,95,75,4,82.5
+eligible_top300_v1,movies,movies_district_9,District 9,70,85,95,30,4,70.0
+eligible_top300_v1,movies,movies_deadpool_2,Deadpool 2,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_home_alone,Home Alone,70,90,95,90,4,86.25
+eligible_top300_v1,movies,movies_the_curious_case_of_benjamin_button,The Curious Case of Benjamin Button,50,85,95,40,4,67.5
+eligible_top300_v1,movies,movies_casino_royale,Casino Royale,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_pan_s_labyrinth,Pan's Labyrinth,80,85,95,85,4,86.25
+eligible_top300_v1,movies,movies_pirates_of_the_caribbean_at_world_s_end,Pirates of the Caribbean: At World's End,75,85,95,40,4,73.75
+eligible_top300_v1,movies,movies_jaws,Jaws,90,95,100,95,4,95.0
+eligible_top300_v1,movies,movies_wonder_woman,Wonder Woman,85,95,95,95,4,92.5
+eligible_top300_v1,movies,movies_groundhog_day,Groundhog Day,80,90,95,70,4,83.75
+eligible_top300_v1,movies,movies_jurassic_world,Jurassic World,85,90,95,90,4,90.0
+eligible_top300_v1,movies,movies_the_king_s_speech,The King's Speech,70,85,90,40,4,71.25
+eligible_top300_v1,movies,movies_her,Her,70,85,90,10,4,63.75
+eligible_top300_v1,movies,movies_oldboy,Oldboy,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_the_hateful_eight,The Hateful Eight,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_star_wars_episode_viii_the_last_jedi,Star Wars: Episode VIII - The Last Jedi,75,85,95,70,4,81.25
+eligible_top300_v1,movies,movies_transformers,Transformers,85,90,95,90,4,90.0
+eligible_top300_v1,movies,movies_coco,Coco,80,90,95,40,4,76.25
+eligible_top300_v1,movies,movies_frozen,Frozen,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_there_will_be_blood,There Will Be Blood,50,85,95,40,4,67.5
+eligible_top300_v1,movies,movies_ted,Ted,80,90,95,30,4,73.75
+eligible_top300_v1,movies,movies_spider_man_3,Spider-Man 3,80,90,95,95,4,90.0
+eligible_top300_v1,movies,movies_sherlock_holmes,Sherlock Holmes,80,90,95,95,4,90.0
+eligible_top300_v1,movies,movies_harry_potter_and_the_order_of_the_phoenix,Harry Potter and the Order of the Phoenix,70,85,95,75,4,81.25
+eligible_top300_v1,movies,movies_it,It,50,90,95,85,4,80.0
+eligible_top300_v1,movies,movies_prometheus,Prometheus,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_life_of_pi,Life of Pi,70,90,95,90,4,86.25
+eligible_top300_v1,movies,movies_birdman_or_the_unexpected_virtue_of_ignorance,Birdman or (The Unexpected Virtue of Ignorance),50,75,15,20,4,40.0
+eligible_top300_v1,movies,movies_superbad,Superbad,70,85,90,20,4,66.25
+eligible_top300_v1,movies,movies_green_book,Green Book,70,85,90,40,4,71.25
+eligible_top300_v1,movies,movies_x_men,X-Men,80,85,95,85,4,86.25
+eligible_top300_v1,movies,movies_the_notebook,The Notebook,70,85,95,30,4,70.0
+eligible_top300_v1,movies,movies_rocky,Rocky,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_into_the_wild,Into the Wild,70,90,95,40,4,73.75
+eligible_top300_v1,movies,movies_cast_away,Cast Away,70,90,95,85,4,85.0
+eligible_top300_v1,movies,movies_hacksaw_ridge,Hacksaw Ridge,75,85,90,30,4,70.0
+eligible_top300_v1,movies,movies_baby_driver,Baby Driver,70,90,90,40,4,72.5
+eligible_top300_v1,movies,movies_the_bourne_ultimatum,The Bourne Ultimatum,70,85,15,20,4,47.5
+eligible_top300_v1,movies,movies_zodiac,Zodiac,70,85,95,85,4,83.75
+eligible_top300_v1,movies,movies_12_monkeys,12 Monkeys,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_toy_story_2,Toy Story 2,80,90,95,70,4,83.75
+eligible_top300_v1,movies,movies_ocean_s_eleven,Ocean's Eleven,70,85,90,40,4,71.25
+eligible_top300_v1,movies,movies_nightcrawler,Nightcrawler,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_taken,Taken,70,90,90,20,4,67.5
+eligible_top300_v1,movies,movies_the_matrix_reloaded,The Matrix Reloaded,70,85,90,40,4,71.25
+eligible_top300_v1,movies,movies_zombieland,Zombieland,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_harry_potter_and_the_deathly_hallows_part_1,Harry Potter and the Deathly Hallows: Part 1,75,75,95,85,4,82.5
+eligible_top300_v1,movies,movies_argo,Argo,70,85,90,20,4,66.25
+eligible_top300_v1,movies,movies_men_in_black,Men in Black,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_harry_potter_and_the_half_blood_prince,Harry Potter and the Half-Blood Prince,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_a_quiet_place,A Quiet Place,70,85,95,70,4,80.0
+eligible_top300_v1,movies,movies_dead_poets_society,Dead Poets Society,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_l_a_confidential,L.A. Confidential,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_casablanca,Casablanca,80,90,95,40,4,76.25
+eligible_top300_v1,movies,movies_independence_day,Independence Day,75,90,95,40,4,75.0
+eligible_top300_v1,movies,movies_21_jump_street,21 Jump Street,70,85,90,20,4,66.25
+eligible_top300_v1,movies,movies_limitless,Limitless,50,85,90,20,4,61.25
+eligible_top300_v1,movies,movies_lock_stock_and_two_smoking_barrels,"Lock, Stock and Two Smoking Barrels",70,85,90,40,4,71.25
+eligible_top300_v1,movies,movies_bohemian_rhapsody,Bohemian Rhapsody,70,85,95,30,4,70.0
+eligible_top300_v1,movies,movies_the_great_gatsby,The Great Gatsby,70,90,95,40,4,73.75
+eligible_top300_v1,movies,movies_zootopia,Zootopia,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_ex_machina,Ex Machina,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_troy,Troy,80,90,95,70,4,83.75
+eligible_top300_v1,movies,movies_shaun_of_the_dead,Shaun of the Dead,70,90,95,85,4,85.0
+eligible_top300_v1,movies,movies_star_trek,Star Trek,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_despicable_me,Despicable Me,70,85,95,85,4,83.75
+eligible_top300_v1,movies,movies_looper,Looper,50,85,90,20,4,61.25
+eligible_top300_v1,movies,movies_the_conjuring,The Conjuring,80,85,95,30,4,72.5
+eligible_top300_v1,movies,movies_blood_diamond,Blood Diamond,70,85,95,85,4,83.75
+eligible_top300_v1,movies,movies_the_pursuit_of_happyness,The Pursuit of Happyness,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_split,Split,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_back_to_the_future_part_ii,Back to the Future Part II,70,85,95,85,4,83.75
+eligible_top300_v1,movies,movies_crazy_stupid_love,"Crazy, Stupid, Love.",50,85,90,20,4,61.25
+eligible_top300_v1,movies,movies_casino,Casino,80,90,95,70,4,83.75
+eligible_top300_v1,movies,movies_minority_report,Minority Report,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_500_days_of_summer,500 Days of Summer,50,85,90,20,4,61.25
+eligible_top300_v1,movies,movies_the_hobbit_the_battle_of_the_five_armies,The Hobbit: The Battle of the Five Armies,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_kick_ass,Kick-Ass,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_i_robot,"I, Robot",70,90,95,85,4,85.0
+eligible_top300_v1,movies,movies_the_bourne_identity,The Bourne Identity,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_fury,Fury,70,90,90,20,4,67.5
+eligible_top300_v1,movies,movies_x2_x_men_united,X2: X-Men United,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_watchmen,Watchmen,70,85,95,85,4,83.75
+eligible_top300_v1,movies,movies_venom,Venom,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_three_billboards_outside_ebbing_missouri,"Three Billboards Outside Ebbing, Missouri",75,90,95,70,4,82.5
+eligible_top300_v1,movies,movies_pirates_of_the_caribbean_on_stranger_tides,Pirates of the Caribbean: On Stranger Tides,75,75,95,30,4,68.75
+eligible_top300_v1,movies,movies_rise_of_the_planet_of_the_apes,Rise of the Planet of the Apes,85,85,95,75,4,85.0
+eligible_top300_v1,movies,movies_monty_python_and_the_holy_grail,Monty Python and the Holy Grail,75,85,95,85,4,85.0
+eligible_top300_v1,movies,movies_the_amazing_spider_man_2,The Amazing Spider-Man 2,80,85,95,90,4,87.5
+eligible_top300_v1,movies,movies_the_perks_of_being_a_wallflower,The Perks of Being a Wallflower,50,75,10,20,4,38.75
+eligible_top300_v1,movies,movies_mr_mrs_smith,Mr. & Mrs. Smith,70,90,95,40,4,73.75
+eligible_top300_v1,movies,movies_oblivion,Oblivion,70,85,90,20,4,66.25
+eligible_top300_v1,movies,movies_rain_man,Rain Man,70,85,95,30,4,70.0
+eligible_top300_v1,movies,movies_kung_fu_panda,Kung Fu Panda,85,90,95,100,4,92.5
+eligible_top300_v1,movies,movies_source_code,Source Code,70,85,10,30,4,48.75
+eligible_top300_v1,movies,movies_lucy,Lucy,50,85,10,10,4,38.75
+eligible_top300_v1,movies,movies_the_hangover_part_ii,The Hangover Part II,70,75,90,20,4,63.75
+eligible_top300_v1,movies,movies_love_actually,Love Actually,50,85,95,20,4,62.5
+eligible_top300_v1,movies,movies_the_matrix_revolutions,The Matrix Revolutions,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_x_men_the_last_stand,X-Men: The Last Stand,70,85,90,40,4,71.25
+eligible_top300_v1,movies,movies_john_wick_chapter_2,John Wick: Chapter 2,70,85,10,30,4,48.75
+eligible_top300_v1,movies,movies_charlie_and_the_chocolate_factory,Charlie and the Chocolate Factory,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_juno,Juno,70,85,10,10,4,43.75
+eligible_top300_v1,movies,movies_american_sniper,American Sniper,75,90,95,70,4,82.5
+eligible_top300_v1,movies,movies_the_incredible_hulk,The Incredible Hulk,85,90,95,95,4,91.25
+eligible_top300_v1,movies,movies_x_men_origins_wolverine,X-Men Origins: Wolverine,70,85,95,75,4,81.25
+eligible_top300_v1,movies,movies_indiana_jones_and_the_temple_of_doom,Indiana Jones and the Temple of Doom,75,85,95,85,4,85.0
+eligible_top300_v1,movies,movies_rear_window,Rear Window,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_hot_fuzz,Hot Fuzz,50,85,90,40,4,66.25
+eligible_top300_v1,movies,movies_ice_age,Ice Age,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_children_of_men,Children of Men,50,85,90,30,4,63.75
+eligible_top300_v1,movies,movies_the_maze_runner,The Maze Runner,70,85,95,85,4,83.75
+eligible_top300_v1,movies,movies_edward_scissorhands,Edward Scissorhands,75,90,95,100,4,90.0
+eligible_top300_v1,movies,movies_the_devil_wears_prada,The Devil Wears Prada,70,90,95,85,4,85.0
+eligible_top300_v1,movies,movies_mission_impossible_ghost_protocol,Mission: Impossible - Ghost Protocol,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_rush,Rush,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_little_miss_sunshine,Little Miss Sunshine,70,85,90,40,4,71.25
+eligible_top300_v1,movies,movies_pacific_rim,Pacific Rim,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_shrek_2,Shrek 2,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_big_hero_6,Big Hero 6,80,90,95,90,4,88.75
+eligible_top300_v1,movies,movies_top_gun,Top Gun,80,90,95,85,4,87.5
+eligible_top300_v1,movies,movies_the_butterfly_effect,The Butterfly Effect,70,85,95,40,4,72.5
+eligible_top300_v1,movies,movies_aquaman,Aquaman,85,90,95,90,4,90.0
+eligible_top300_v1,movies,movies_it_s_a_wonderful_life,It's a Wonderful Life,70,90,95,30,4,71.25
+eligible_top300_v1,movies,movies_28_days_later,28 Days Later,70,85,90,30,4,68.75
+eligible_top300_v1,movies,movies_dr_strangelove_or_how_i_learned_to_stop_worrying_and_love_the_bomb,Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb,50,85,95,30,4,65.0
+eligible_top300_v1,movies,movies_tangled,Tangled,80,90,95,70,4,83.75
+eligible_top300_v1,movies,movies_the_hunger_games_mockingjay_part_1,The Hunger Games: Mockingjay - Part 1,75,85,95,85,4,85.0
+eligible_top300_v1,bands,bands_radiohead,Radiohead,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_daft_punk,Daft Punk,80,95,95,100,4,92.5
+eligible_top300_v1,bands,bands_the_beatles,The Beatles,90,95,100,90,4,93.75
+eligible_top300_v1,bands,bands_linkin_park,Linkin Park,70,75,10,30,4,46.25
+eligible_top300_v1,bands,bands_pink_floyd,Pink Floyd,80,90,95,90,4,88.75
+eligible_top300_v1,bands,bands_gorillaz,Gorillaz,70,90,95,90,4,86.25
+eligible_top300_v1,bands,bands_coldplay,Coldplay,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_red_hot_chili_peppers,Red Hot Chili Peppers,75,90,10,85,4,65.0
+eligible_top300_v1,bands,bands_muse,Muse,50,85,10,15,4,40.0
+eligible_top300_v1,bands,bands_metallica,Metallica,80,90,95,80,4,86.25
+eligible_top300_v1,bands,bands_arctic_monkeys,Arctic Monkeys,50,85,90,70,4,73.75
+eligible_top300_v1,bands,bands_system_of_a_down,System of a Down,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_green_day,Green Day,80,85,10,30,4,51.25
+eligible_top300_v1,bands,bands_led_zeppelin,Led Zeppelin,70,85,95,70,4,80.0
+eligible_top300_v1,bands,bands_bts,BTS,80,90,10,80,4,65.0
+eligible_top300_v1,bands,bands_foo_fighters,Foo Fighters,70,85,10,20,4,46.25
+eligible_top300_v1,bands,bands_the_cure,The Cure,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_nine_inch_nails,Nine Inch Nails,70,85,95,85,4,83.75
+eligible_top300_v1,bands,bands_imagine_dragons,Imagine Dragons,70,85,10,40,4,51.25
+eligible_top300_v1,bands,bands_the_rolling_stones,The Rolling Stones,80,90,95,85,4,87.5
+eligible_top300_v1,bands,bands_the_strokes,The Strokes,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_weezer,Weezer,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_paramore,Paramore,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_depeche_mode,Depeche Mode,70,75,10,10,4,41.25
+eligible_top300_v1,bands,bands_the_smashing_pumpkins,The Smashing Pumpkins,50,85,10,70,4,53.75
+eligible_top300_v1,bands,bands_the_killers,The Killers,70,85,90,30,4,68.75
+eligible_top300_v1,bands,bands_deftones,Deftones,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_rammstein,Rammstein,70,90,95,85,4,85.0
+eligible_top300_v1,bands,bands_fleetwood_mac,Fleetwood Mac,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_my_chemical_romance,My Chemical Romance,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_queens_of_the_stone_age,Queens of the Stone Age,70,85,10,30,4,48.75
+eligible_top300_v1,bands,bands_twenty_one_pilots,twenty one pilots,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_tool,Tool,50,90,10,20,4,42.5
+eligible_top300_v1,bands,bands_black_sabbath,Black Sabbath,70,90,95,70,4,81.25
+eligible_top300_v1,bands,bands_ac_dc,AC/DC,80,90,95,80,4,86.25
+eligible_top300_v1,bands,bands_fall_out_boy,Fall Out Boy,70,85,10,30,4,48.75
+eligible_top300_v1,bands,bands_the_offspring,The Offspring,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_the_smiths,The Smiths,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_boards_of_canada,Boards of Canada,50,85,90,20,4,61.25
+eligible_top300_v1,bands,bands_massive_attack,Massive Attack,70,85,10,30,4,48.75
+eligible_top300_v1,bands,bands_blink182,blink‐182,70,85,10,10,4,43.75
+eligible_top300_v1,bands,bands_arcade_fire,Arcade Fire,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_slipknot,Slipknot,80,95,95,90,4,90.0
+eligible_top300_v1,bands,bands_iron_maiden,Iron Maiden,80,90,95,90,4,88.75
+eligible_top300_v1,bands,bands_rage_against_the_machine,Rage Against the Machine,70,90,95,40,4,73.75
+eligible_top300_v1,bands,bands_pixies,Pixies,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_the_white_stripes,The White Stripes,80,95,95,90,4,90.0
+eligible_top300_v1,bands,bands_mgmt,MGMT,50,75,10,5,4,35.0
+eligible_top300_v1,bands,bands_u2,U2,70,90,10,10,4,45.0
+eligible_top300_v1,bands,bands_pearl_jam,Pearl Jam,70,85,10,30,4,48.75
+eligible_top300_v1,bands,bands_r_e_m,R.E.M.,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_the_prodigy,The Prodigy,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_bring_me_the_horizon,Bring Me the Horizon,50,75,10,30,4,41.25
+eligible_top300_v1,bands,bands_the_black_keys,The Black Keys,70,90,10,70,4,60.0
+eligible_top300_v1,bands,bands_florence_the_machine,Florence + the Machine,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_guns_n_roses,Guns N’ Roses,70,90,95,90,4,86.25
+eligible_top300_v1,bands,bands_the_doors,The Doors,70,90,95,80,4,83.75
+eligible_top300_v1,bands,bands_korn,Korn,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_panic_at_the_disco,Panic! at the Disco,70,75,10,20,4,43.75
+eligible_top300_v1,bands,bands_oasis,Oasis,70,85,95,30,4,70.0
+eligible_top300_v1,bands,bands_maroon_5,Maroon 5,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_m83,M83,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_talking_heads,Talking Heads,70,85,95,30,4,70.0
+eligible_top300_v1,bands,bands_bon_iver,Bon Iver,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_blur,Blur,50,85,95,10,4,60.0
+eligible_top300_v1,bands,bands_portishead,Portishead,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_the_beach_boys,The Beach Boys,80,90,95,85,4,87.5
+eligible_top300_v1,bands,bands_alice_in_chains,Alice in Chains,70,85,95,70,4,80.0
+eligible_top300_v1,bands,bands_beastie_boys,Beastie Boys,70,85,10,20,4,46.25
+eligible_top300_v1,bands,bands_modest_mouse,Modest Mouse,50,75,95,20,4,60.0
+eligible_top300_v1,bands,bands_dire_straits,Dire Straits,70,85,10,30,4,48.75
+eligible_top300_v1,bands,bands_the_xx,The xx,0,90,10,10,4,27.5
+eligible_top300_v1,bands,bands_the_clash,The Clash,70,90,95,30,4,71.25
+eligible_top300_v1,bands,bands_abba,ABBA,80,90,10,20,4,50.0
+eligible_top300_v1,bands,bands_disturbed,Disturbed,70,85,10,20,4,46.25
+eligible_top300_v1,bands,bands_death_cab_for_cutie,Death Cab for Cutie,50,75,10,30,4,41.25
+eligible_top300_v1,bands,bands_joy_division,Joy Division,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_beach_house,Beach House,80,90,95,40,4,76.25
+eligible_top300_v1,bands,bands_franz_ferdinand,Franz Ferdinand,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_creedence_clearwater_revival,Creedence Clearwater Revival,50,75,10,15,4,37.5
+eligible_top300_v1,bands,bands_death_grips,Death Grips,70,85,10,20,4,46.25
+eligible_top300_v1,bands,bands_evanescence,Evanescence,50,85,10,15,4,40.0
+eligible_top300_v1,bands,bands_placebo,Placebo,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_marilyn_manson,Marilyn Manson,70,95,95,70,4,82.5
+eligible_top300_v1,bands,bands_king_gizzard_the_lizard_wizard,King Gizzard & the Lizard Wizard,70,85,10,70,4,58.75
+eligible_top300_v1,bands,bands_rise_against,Rise Against,70,85,90,20,4,66.25
+eligible_top300_v1,bands,bands_vampire_weekend,Vampire Weekend,70,85,90,30,4,68.75
+eligible_top300_v1,bands,bands_megadeth,Megadeth,70,90,10,20,4,47.5
+eligible_top300_v1,bands,bands_altj,alt‐J,0,75,10,10,4,23.75
+eligible_top300_v1,bands,bands_the_national,The National,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_outkast,OutKast,70,90,10,20,4,47.5
+eligible_top300_v1,bands,bands_justice,Justice,50,85,95,20,4,62.5
+eligible_top300_v1,bands,bands_the_chemical_brothers,The Chemical Brothers,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_air,Air,50,85,95,10,4,60.0
+eligible_top300_v1,bands,bands_bob_marley_the_wailers,Bob Marley & The Wailers,70,90,95,85,4,85.0
+eligible_top300_v1,bands,bands_new_order,New Order,50,85,90,15,4,60.0
+eligible_top300_v1,bands,bands_the_who,The Who,70,90,10,10,4,45.0
+eligible_top300_v1,bands,bands_sigur_ros,Sigur Rós,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_nightwish,Nightwish,50,85,90,30,4,63.75
+eligible_top300_v1,bands,bands_interpol,Interpol,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_crystal_castles,Crystal Castles,70,85,90,70,4,78.75
+eligible_top300_v1,bands,bands_limp_bizkit,Limp Bizkit,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_onerepublic,OneRepublic,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_kings_of_leon,Kings of Leon,50,85,10,15,4,40.0
+eligible_top300_v1,bands,bands_the_police,The Police,70,90,95,30,4,71.25
+eligible_top300_v1,bands,bands_aerosmith,Aerosmith,70,85,10,20,4,46.25
+eligible_top300_v1,bands,bands_simon_garfunkel,Simon & Garfunkel,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_the_cranberries,The Cranberries,50,85,10,40,4,46.25
+eligible_top300_v1,bands,bands_soundgarden,Soundgarden,50,85,10,40,4,46.25
+eligible_top300_v1,bands,bands_avenged_sevenfold,Avenged Sevenfold,70,75,10,20,4,43.75
+eligible_top300_v1,bands,bands_royksopp,Röyksopp,0,75,10,10,4,23.75
+eligible_top300_v1,bands,bands_sonic_youth,Sonic Youth,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_cage_the_elephant,Cage the Elephant,70,85,90,85,4,82.5
+eligible_top300_v1,bands,bands_three_days_grace,Three Days Grace,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_in_flames,In Flames,50,90,95,30,4,66.25
+eligible_top300_v1,bands,bands_sum_41,Sum 41,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_the_chainsmokers,The Chainsmokers,70,75,10,40,4,48.75
+eligible_top300_v1,bands,bands_a_tribe_called_quest,A Tribe Called Quest,70,85,10,30,4,48.75
+eligible_top300_v1,bands,bands_pendulum,Pendulum,70,90,95,85,4,85.0
+eligible_top300_v1,bands,bands_opeth,Opeth,0,75,10,10,4,23.75
+eligible_top300_v1,bands,bands_chvrches,CHVRCHES,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_incubus,Incubus,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_electric_light_orchestra,Electric Light Orchestra,70,85,10,40,4,51.25
+eligible_top300_v1,bands,bands_mogwai,Mogwai,50,75,10,100,4,58.75
+eligible_top300_v1,bands,bands_lcd_soundsystem,LCD Soundsystem,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_judas_priest,Judas Priest,70,85,10,30,4,48.75
+eligible_top300_v1,bands,bands_slayer,Slayer,70,90,10,20,4,47.5
+eligible_top300_v1,bands,bands_a_perfect_circle,A Perfect Circle,50,85,95,70,4,75.0
+eligible_top300_v1,bands,bands_ghost,Ghost,70,90,95,30,4,71.25
+eligible_top300_v1,bands,bands_dream_theater,Dream Theater,50,75,10,30,4,41.25
+eligible_top300_v1,bands,bands_bon_jovi,Bon Jovi,70,90,10,10,4,45.0
+eligible_top300_v1,bands,bands_the_velvet_underground,The Velvet Underground,50,85,95,30,4,65.0
+eligible_top300_v1,bands,bands_rush,Rush,50,85,10,15,4,40.0
+eligible_top300_v1,bands,bands_my_bloody_valentine,My Bloody Valentine,50,85,90,30,4,63.75
+eligible_top300_v1,bands,bands_cocteau_twins,Cocteau Twins,0,75,10,10,4,23.75
+eligible_top300_v1,bands,bands_slowdive,Slowdive,50,85,90,20,4,61.25
+eligible_top300_v1,bands,bands_glass_animals,Glass Animals,70,85,90,70,4,78.75
+eligible_top300_v1,bands,bands_run_the_jewels,Run the Jewels,70,90,10,40,4,52.5
+eligible_top300_v1,bands,bands_nick_cave_the_bad_seeds,Nick Cave & the Bad Seeds,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_foster_the_people,Foster the People,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_papa_roach,Papa Roach,70,85,10,20,4,46.25
+eligible_top300_v1,bands,bands_two_door_cinema_club,Two Door Cinema Club,50,75,10,40,4,43.75
+eligible_top300_v1,bands,bands_madvillain,Madvillain,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_mumford_sons,Mumford & Sons,50,75,10,15,4,37.5
+eligible_top300_v1,bands,bands_bloc_party,Bloc Party,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_yeah_yeah_yeahs,Yeah Yeah Yeahs,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_genesis,Genesis,70,85,10,20,4,46.25
+eligible_top300_v1,bands,bands_black_eyed_peas,Black Eyed Peas,80,85,10,30,4,51.25
+eligible_top300_v1,bands,bands_gojira,Gojira,50,90,10,85,4,58.75
+eligible_top300_v1,bands,bands_the_flaming_lips,The Flaming Lips,70,90,90,40,4,72.5
+eligible_top300_v1,bands,bands_jamiroquai,Jamiroquai,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_major_lazer,Major Lazer,70,85,90,30,4,68.75
+eligible_top300_v1,bands,bands_phoenix,Phoenix,70,90,95,30,4,71.25
+eligible_top300_v1,bands,bands_metric,Metric,50,85,10,15,4,40.0
+eligible_top300_v1,bands,bands_neutral_milk_hotel,Neutral Milk Hotel,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_deep_purple,Deep Purple,70,85,10,40,4,51.25
+eligible_top300_v1,bands,bands_the_neighbourhood,The Neighbourhood,70,85,90,20,4,66.25
+eligible_top300_v1,bands,bands_van_halen,Van Halen,70,90,10,70,4,60.0
+eligible_top300_v1,bands,bands_twice,TWICE,70,90,10,10,4,45.0
+eligible_top300_v1,bands,bands_pantera,Pantera,70,90,10,30,4,50.0
+eligible_top300_v1,bands,bands_fleet_foxes,Fleet Foxes,50,85,10,40,4,46.25
+eligible_top300_v1,bands,bands_porcupine_tree,Porcupine Tree,70,85,95,70,4,80.0
+eligible_top300_v1,bands,bands_eagles,Eagles,80,90,95,30,4,73.75
+eligible_top300_v1,bands,bands_tears_for_fears,Tears for Fears,50,85,90,30,4,63.75
+eligible_top300_v1,bands,bands_mastodon,Mastodon,70,90,10,85,4,63.75
+eligible_top300_v1,bands,bands_brockhampton,BROCKHAMPTON,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_motorhead,Motörhead,80,90,95,85,4,87.5
+eligible_top300_v1,bands,bands_wilco,Wilco,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_ramones,Ramones,70,90,95,70,4,81.25
+eligible_top300_v1,bands,bands_100_gecs,100 gecs,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_the_shins,The Shins,50,75,10,30,4,41.25
+eligible_top300_v1,bands,bands_breaking_benjamin,Breaking Benjamin,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_jimmy_eat_world,Jimmy Eat World,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_kiss,KISS,100,95,95,90,4,95.0
+eligible_top300_v1,bands,bands_animal_collective,Animal Collective,50,75,10,30,4,41.25
+eligible_top300_v1,bands,bands_the_kinks,The Kinks,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_audioslave,Audioslave,50,85,10,15,4,40.0
+eligible_top300_v1,bands,bands_belle_and_sebastian,Belle and Sebastian,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_nickelback,Nickelback,50,75,10,15,4,37.5
+eligible_top300_v1,bands,bands_blackpink,BLACKPINK,80,90,10,80,4,65.0
+eligible_top300_v1,bands,bands_king_crimson,King Crimson,70,85,90,40,4,71.25
+eligible_top300_v1,bands,bands_the_1975,The 1975,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_the_avalanches,The Avalanches,50,85,10,40,4,46.25
+eligible_top300_v1,bands,bands_foals,Foals,50,85,95,30,4,65.0
+eligible_top300_v1,bands,bands_sabaton,Sabaton,50,90,10,10,4,40.0
+eligible_top300_v1,bands,bands_faith_no_more,Faith No More,70,85,10,20,4,46.25
+eligible_top300_v1,bands,bands_bastille,Bastille,50,90,95,85,4,80.0
+eligible_top300_v1,bands,bands_scorpions,Scorpions,80,90,95,85,4,87.5
+eligible_top300_v1,bands,bands_bad_religion,Bad Religion,70,85,10,20,4,46.25
+eligible_top300_v1,bands,bands_thirty_seconds_to_mars,Thirty Seconds to Mars,70,85,10,30,4,48.75
+eligible_top300_v1,bands,bands_yes,Yes,50,85,10,5,4,37.5
+eligible_top300_v1,bands,bands_duran_duran,Duran Duran,70,85,10,10,4,43.75
+eligible_top300_v1,bands,bands_cake,CAKE,70,90,95,100,4,88.75
+eligible_top300_v1,bands,bands_magdalena_bay,Magdalena Bay,70,75,10,20,4,43.75
+eligible_top300_v1,bands,bands_babymetal,BABYMETAL,70,90,90,70,4,80.0
+eligible_top300_v1,bands,bands_steely_dan,Steely Dan,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_within_temptation,Within Temptation,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_garbage,Garbage,70,85,95,30,4,70.0
+eligible_top300_v1,bands,bands_car_seat_headrest,Car Seat Headrest,70,75,95,70,4,77.5
+eligible_top300_v1,bands,bands_ratatat,Ratatat,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_toto,Toto,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_bullet_for_my_valentine,Bullet for My Valentine,50,85,90,40,4,66.25
+eligible_top300_v1,bands,bands_portugal_the_man,Portugal. The Man,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_disclosure,Disclosure,50,85,95,15,4,61.25
+eligible_top300_v1,bands,bands_kraftwerk,Kraftwerk,70,85,95,30,4,70.0
+eligible_top300_v1,bands,bands_infected_mushroom,Infected Mushroom,70,85,90,70,4,78.75
+eligible_top300_v1,bands,bands_pavement,Pavement,50,85,95,20,4,62.5
+eligible_top300_v1,bands,bands_stone_temple_pilots,Stone Temple Pilots,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_five_finger_death_punch,Five Finger Death Punch,70,85,10,40,4,51.25
+eligible_top300_v1,bands,bands_blondie,Blondie,70,90,95,30,4,71.25
+eligible_top300_v1,bands,bands_of_monsters_and_men,Of Monsters and Men,50,75,90,40,4,63.75
+eligible_top300_v1,bands,bands_snow_patrol,Snow Patrol,50,85,95,30,4,65.0
+eligible_top300_v1,bands,bands_billy_talent,Billy Talent,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_tenacious_d,Tenacious D,70,90,10,20,4,47.5
+eligible_top300_v1,bands,bands_pet_shop_boys,Pet Shop Boys,70,85,10,40,4,51.25
+eligible_top300_v1,bands,bands_supertramp,Supertramp,50,85,10,15,4,40.0
+eligible_top300_v1,bands,bands_uicideboy,$uicideboy$,70,85,10,10,4,43.75
+eligible_top300_v1,bands,bands_wutang_clan,Wu‐Tang Clan,80,85,95,95,4,88.75
+eligible_top300_v1,bands,bands_spoon,Spoon,70,85,95,100,4,87.5
+eligible_top300_v1,bands,bands_men_i_trust,Men I Trust,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_kasabian,Kasabian,50,75,10,5,4,35.0
+eligible_top300_v1,bands,bands_lynyrd_skynyrd,Lynyrd Skynyrd,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_swans,Swans,70,90,95,70,4,81.25
+eligible_top300_v1,bands,bands_de_la_soul,De La Soul,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_a_day_to_remember,A Day to Remember,50,85,90,20,4,61.25
+eligible_top300_v1,bands,bands_khruangbin,Khruangbin,0,85,10,10,4,26.25
+eligible_top300_v1,bands,bands_eels,EELS,50,90,95,70,4,76.25
+eligible_top300_v1,bands,bands_cigarettes_after_sex,Cigarettes After Sex,70,85,95,40,4,72.5
+eligible_top300_v1,bands,bands_caravan_palace,Caravan Palace,50,85,90,40,4,66.25
+eligible_top300_v1,bands,bands_explosions_in_the_sky,Explosions in the Sky,50,85,95,40,4,67.5
+eligible_top300_v1,bands,bands_journey,Journey,70,85,95,20,4,67.5
+eligible_top300_v1,bands,bands_sepultura,Sepultura,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_autechre,Autechre,0,60,10,5,4,18.75
+eligible_top300_v1,bands,bands_the_mars_volta,The Mars Volta,50,85,90,40,4,66.25
+eligible_top300_v1,bands,bands_thievery_corporation,Thievery Corporation,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_sublime,Sublime,50,85,10,15,4,40.0
+eligible_top300_v1,bands,bands_amon_amarth,Amon Amarth,50,85,90,30,4,63.75
+eligible_top300_v1,bands,bands_big_thief,Big Thief,50,75,95,30,4,62.5
+eligible_top300_v1,bands,bands_yo_la_tengo,Yo La Tengo,0,75,10,5,4,22.5
+eligible_top300_v1,bands,bands_daryl_hall_john_oates,Daryl Hall & John Oates,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_the_kooks,The Kooks,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_the_decemberists,The Decemberists,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_tv_girl,TV Girl,70,85,95,40,4,72.5
+eligible_top300_v1,bands,bands_3_doors_down,3 Doors Down,70,85,90,30,4,68.75
+eligible_top300_v1,bands,bands_no_doubt,No Doubt,50,90,10,15,4,41.25
+eligible_top300_v1,bands,bands_fugazi,Fugazi,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_blind_guardian,Blind Guardian,70,85,10,30,4,48.75
+eligible_top300_v1,bands,bands_zz_top,ZZ Top,70,90,95,90,4,86.25
+eligible_top300_v1,bands,bands_haim,HAIM,50,85,10,5,4,37.5
+eligible_top300_v1,bands,bands_santana,Santana,70,90,95,20,4,68.75
+eligible_top300_v1,bands,bands_red_velvet,Red Velvet,80,90,95,40,4,76.25
+eligible_top300_v1,bands,bands_sleep_token,Sleep Token,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_jethro_tull,Jethro Tull,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_aha,a‐ha,0,85,10,10,4,26.25
+eligible_top300_v1,bands,bands_kero_kero_bonito,Kero Kero Bonito,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_keane,Keane,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_architects,Architects,50,85,95,15,4,61.25
+eligible_top300_v1,bands,bands_grizzly_bear,Grizzly Bear,70,90,95,70,4,81.25
+eligible_top300_v1,bands,bands_earth_wind_fire,"Earth, Wind & Fire",80,90,95,85,4,87.5
+eligible_top300_v1,bands,bands_katatonia,Katatonia,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_mother_mother,Mother Mother,50,85,10,15,4,40.0
+eligible_top300_v1,bands,bands_skillet,Skillet,50,90,95,30,4,66.25
+eligible_top300_v1,bands,bands_seether,Seether,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_apocalyptica,Apocalyptica,50,85,90,20,4,61.25
+eligible_top300_v1,bands,bands_they_might_be_giants,They Might Be Giants,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_beirut,Beirut,70,85,90,20,4,66.25
+eligible_top300_v1,bands,bands_brand_new,Brand New,50,85,10,15,4,40.0
+eligible_top300_v1,bands,bands_all_time_low,All Time Low,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_tv_on_the_radio,TV on the Radio,70,85,95,40,4,72.5
+eligible_top300_v1,bands,bands_machine_girl,Machine Girl,80,85,95,40,4,75.0
+eligible_top300_v1,bands,bands_bee_gees,Bee Gees,70,85,10,70,4,58.75
+eligible_top300_v1,bands,bands_passion_pit,Passion Pit,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_royal_blood,Royal Blood,70,90,90,30,4,70.0
+eligible_top300_v1,bands,bands_morcheeba,Morcheeba,0,75,10,5,4,22.5
+eligible_top300_v1,bands,bands_nofx,NOFX,50,85,10,5,4,37.5
+eligible_top300_v1,bands,bands_bright_eyes,Bright Eyes,50,90,95,40,4,68.75
+eligible_top300_v1,bands,bands_lamb_of_god,Lamb of God,70,90,95,70,4,81.25
+eligible_top300_v1,bands,bands_empire_of_the_sun,Empire of the Sun,70,90,90,40,4,72.5
+eligible_top300_v1,bands,bands_odesza,ODESZA,0,75,10,10,4,23.75
+eligible_top300_v1,bands,bands_afi,AFI,50,85,10,5,4,37.5
+eligible_top300_v1,bands,bands_death,Death,70,85,95,10,4,65.0
+eligible_top300_v1,bands,bands_stereolab,Stereolab,50,75,10,15,4,37.5
+eligible_top300_v1,bands,bands_ween,Ween,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_the_knife,The Knife,70,90,95,70,4,81.25
+eligible_top300_v1,bands,bands_clean_bandit,Clean Bandit,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_shinedown,Shinedown,50,85,10,20,4,41.25
+eligible_top300_v1,bands,bands_godspeed_you_black_emperor,Godspeed You! Black Emperor,50,75,10,15,4,37.5
+eligible_top300_v1,bands,bands_broken_social_scene,Broken Social Scene,50,75,10,30,4,41.25
+eligible_top300_v1,bands,bands_the_mountain_goats,The Mountain Goats,50,85,95,85,4,78.75
+eligible_top300_v1,bands,bands_killswitch_engage,Killswitch Engage,50,75,10,20,4,38.75
+eligible_top300_v1,bands,bands_the_lumineers,The Lumineers,50,75,10,15,4,37.5
+eligible_top300_v1,bands,bands_sade,Sade,50,85,10,10,4,38.75
+eligible_top300_v1,bands,bands_trivium,Trivium,50,75,10,10,4,36.25
+eligible_top300_v1,bands,bands_arch_enemy,Arch Enemy,70,85,90,30,4,68.75
+eligible_top300_v1,bands,bands_the_cardigans,The Cardigans,50,85,10,30,4,43.75
+eligible_top300_v1,bands,bands_ajr,AJR,0,75,10,5,4,22.5
+eligible_top300_v1,bands,bands_metronomy,Metronomy,50,85,90,20,4,61.25
+eligible_top300_v1,bands,bands_hot_chip,Hot Chip,70,85,90,30,4,68.75
+eligible_top300_v1,bands,bands_siouxsie_and_the_banshees,Siouxsie and the Banshees,70,85,10,30,4,48.75
+eligible_top300_v1,bands,bands_migos,Migos,70,85,10,10,4,43.75

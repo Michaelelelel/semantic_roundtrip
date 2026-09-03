@@ -1,0 +1,56 @@
+---
+config:
+  theme: neutral
+  fontFamily: Arial, sans-serif
+  flowchart:
+    curve: linear
+    nodeSpacing: 30
+    rankSpacing: 45
+    htmlLabels: false
+  themeVariables:
+    fontFamily: Arial, sans-serif
+    fontSize: 16px
+---
+flowchart LR
+    %% Editable source for the thesis pipeline figure.
+    title(["Original title<br/>and domain"])
+    pg["PG<br/>Prompt generation"]
+    image["Image generation<br/>SD3.5 Large"]
+
+    subgraph reconstruction["Title reconstruction"]
+        direct["Direct BI<br/>Image → title"]
+        bb["BB<br/>Image → description"]
+        indirect["Indirect BI<br/>Description → title"]
+        bb --> indirect
+    end
+
+    subgraph verification["Verification"]
+        promptverifier["Prompt verifier<br/>Reference-title absence<br/>Deterministic"]
+        strictverifier["Strict image verifier · Q38<br/>Any meaningful text"]
+        awareverifier["Title-aware image verifier · Q38<br/>Reference-title text only"]
+    end
+
+    rating["Illustratability rating<br/>PG model · 0–100"]
+    evaluation["Evaluation<br/>Strict primary · title-aware sensitivity"]
+    analysis(["Analysis<br/>Accuracy · effects · correlations"])
+
+    title --> pg
+    pg -->|visual prompt| image
+    image -->|direct route| direct
+    image -->|description-mediated route| bb
+    direct -->|predicted title| evaluation
+    indirect -->|predicted title| evaluation
+
+    pg -->|generated prompt| promptverifier
+    title -->|reference title| promptverifier
+    image --> strictverifier
+    image --> awareverifier
+    title -->|reference title| awareverifier
+    promptverifier -->|pass / reject| evaluation
+    strictverifier -->|pass / reject| evaluation
+    awareverifier -->|pass / reject| evaluation
+    title -.->|reference title| evaluation
+
+    title --> rating
+    rating --> analysis
+    evaluation --> analysis

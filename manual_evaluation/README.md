@@ -4,22 +4,27 @@ Use [`manual_checks_template.xlsx`](manual_checks_template.xlsx) with the
 completed development-validation jobs. Work on a copy and keep the blank
 template in Git.
 
-## Verifier: 168 images
+## Image verifiers: 168 images
 
 This is the complete unrestricted development-image census: seven PG models,
 six titles and four seed combinations.
 
 1. Open each image listed in `Verifier_168`.
-2. Without seeing the stored verifier decision, enter `manual_accept` using the
-   exact rule in `prompts/verification/json_v3.txt`.
+2. Without seeing either stored verifier decision, enter
+   `manual_strict_accept` using the exact rule in
+   `prompts/verification/json_v3.txt` and `manual_title_aware_accept` using
+   `prompts/verification/title_aware_json_v1.txt`.
 3. Classify text as `none`, `ambiguous_or_pseudo` or `clear_meaningful`.
-4. Finish all manual labels before entering `verifier_accept` as `yes`, `no` or
-   `invalid`.
-5. Review agreement, false accepts, false rejects and invalid decisions in
-   `Summary`, overall and by PG model/domain.
+4. Finish both manual labels before entering `strict_verifier_accept` and
+   `title_aware_verifier_accept` as `yes`, `no` or `invalid`.
+5. Review agreement, false accepts, false rejects and invalid decisions for
+   each policy in `Summary`.
 
-Invalid verifier responses are incorrect decisions and are also counted
-separately. Reconstruction accuracy must not influence these labels.
+The strict policy rejects any unambiguously readable meaningful writing. The
+title-aware policy rejects only readable writing that communicates the supplied
+reference title; unrelated writing is allowed. Invalid verifier responses are
+incorrect decisions and are also counted separately. Reconstruction accuracy
+must not influence these labels.
 
 ## Sketch: prompt and image checks
 
