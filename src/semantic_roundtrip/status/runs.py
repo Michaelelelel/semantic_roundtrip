@@ -112,9 +112,13 @@ def get_run_status(run_directory: Path) -> RunStatus:
         if config.inherit is None
         else set(dependency_closure(config.inherit.stages))
     )
-    for stage_name in imported_stages:
-        expected.setdefault(stage_name, expected_output_count(config, stage_name))
     progress = {stage.stage: stage for stage in read_stage_progress(database_path)}
+    for stage_name in imported_stages:
+        expected[stage_name] = (
+            progress[stage_name].expected_outputs
+            if stage_name in progress
+            else expected_output_count(config, stage_name)
+        )
 
     stages = tuple(
         StageStatus(

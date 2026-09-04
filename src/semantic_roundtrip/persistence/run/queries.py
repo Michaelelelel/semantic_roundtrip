@@ -35,6 +35,7 @@ class StageProgress:
     completed: int
     failed: int
     produced_outputs: int
+    expected_outputs: int
     imported_tasks: int
 
 
@@ -74,6 +75,7 @@ def read_stage_progress(database_path: Path) -> list[StageProgress]:
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed,
                 SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed,
                 SUM(completed_outputs) AS produced_outputs,
+                SUM(expected_outputs) AS expected_outputs,
                 SUM(CASE WHEN execution_origin = 'imported' THEN 1 ELSE 0 END)
                     AS imported_tasks
             FROM stage_tasks
@@ -92,6 +94,7 @@ def read_stage_progress(database_path: Path) -> list[StageProgress]:
             completed=int(row["completed"]),
             failed=int(row["failed"]),
             produced_outputs=int(row["produced_outputs"]),
+            expected_outputs=int(row["expected_outputs"]),
             imported_tasks=int(row["imported_tasks"]),
         )
         for row in rows
