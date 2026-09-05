@@ -18,6 +18,7 @@ from semantic_roundtrip.evaluation import (
     title_exact_match,
 )
 from semantic_roundtrip.inheritance.dependencies import dependency_closure
+from semantic_roundtrip.inheritance.source import resolve_stage_provenance
 from semantic_roundtrip.persistence.run.schema import (
     connect_run_database,
     require_run_schema,
@@ -36,20 +37,22 @@ class PredictionTrace:
 
 @dataclass(frozen=True, slots=True)
 class RouteAccuracy:
-    """Strict-title accuracy under both image policies."""
+    """Full-denominator strict-title accuracy; image sensitivity when applicable."""
 
     correct: int
     title_aware_correct: int | None
     expected: int
     predictions: int
+    prompt_verification_configured: bool = False
+    image_verification_configured: bool = False
 
     @property
-    def percent(self) -> float:
-        return 100 * self.correct / self.expected
+    def percent(self) -> float | None:
+        return None if self.expected == 0 else 100 * self.correct / self.expected
 
     @property
     def title_aware_percent(self) -> float | None:
-        if self.title_aware_correct is None:
+        if self.title_aware_correct is None or self.expected == 0:
             return None
         return 100 * self.title_aware_correct / self.expected
 
@@ -126,6 +129,51 @@ class ResultTracePage:
         return self.page < self.total_pages
 
 
+@dataclass(frozen=True, slots=True)
+class PromptResultTrace:
+    """One planned prompt observation, never multiplied by generated images."""
+
+    item_key: str
+    domain: str
+    expected_title: str
+    prompt_index: int
+    prompt_sampling_seed: int
+    prompt_id: int | None
+    prompt_text: str | None
+    prompt_origin_run_id: str | None
+    prompt_origin_id: int | None
+    prompt_verification_configured: bool
+    prompt_verification_passed: bool | None
+    prompt_verification_reason: str | None
+    result: PredictionTrace | None
+    prediction_origin_run_id: str | None
+    prediction_origin_id: int | None
+    task_statuses: dict[str, str]
+    task_errors: dict[str, str]
+
+
+@dataclass(frozen=True, slots=True)
+class PromptResultTracePage:
+    """A page of planned prompt coordinates, including missing outputs."""
+
+    traces: tuple[PromptResultTrace, ...]
+    page: int
+    page_size: int
+    total_traces: int
+
+    @property
+    def total_pages(self) -> int:
+        return max(1, (self.total_traces + self.page_size - 1) // self.page_size)
+
+    @property
+    def has_previous(self) -> bool:
+        return self.page > 1
+
+    @property
+    def has_next(self) -> bool:
+        return self.page < self.total_pages
+
+
 def _optional_bool(value: object | None) -> bool | None:
     return None if value is None else bool(value)
 
@@ -146,22 +194,161 @@ def _prediction_trace(row: sqlite3.Row, prefix: str) -> PredictionTrace | None:
 def _configured_verification_checks(
     connection: sqlite3.Connection,
     config: ResolvedAppConfig,
+    run_directory: Path,
 ) -> tuple[bool, frozenset[str]]:
     """Read local configuration and persisted tasks for inherited checks."""
-    verification = config.stages.verification
-    prompt = verification is not None and verification.prompt is not None
+    prompt = config.stages.verification_prompt is not None
+    if config.inherit is not None:
+        prompt |= "verification_prompt" in dependency_closure(config.inherit.stages)
     image = set(configured_image_verification_policies(config))
+    if config.inherit is not None and "verification_image" in dependency_closure(
+        config.inherit.stages
+    ):
+        source = resolve_stage_provenance(config, run_directory, "verification_image")
+        if source is None:
+            raise ValueError("Inherited image verification has no defining snapshot.")
+        image.update(configured_image_verification_policies(source[0]))
     for row in connection.execute(
-        "SELECT task_key FROM stage_tasks WHERE stage = 'verification'"
+        "SELECT stage, task_key FROM stage_tasks "
+        "WHERE stage IN ('verification_prompt', 'verification_image')"
     ):
         task_key = str(row["task_key"])
-        prompt |= task_key.startswith(
-            "verification:prompt:reference_title_absent:"
-        )
+        prompt |= row["stage"] == "verification_prompt"
         for policy in ("strict", "title_aware"):
-            if task_key.startswith(f"verification:image:{policy}:"):
+            if task_key.startswith(f"verification_image:{policy}:"):
                 image.add(policy)
     return prompt, frozenset(image)
+
+
+def read_prompt_result_trace_page(
+    database_path: Path,
+    config: ResolvedAppConfig,
+    *,
+    page: int,
+    page_size: int,
+) -> PromptResultTracePage:
+    """Read prompt results, provenance and only their own upstream task errors."""
+    if page < 1 or page_size < 1:
+        raise ValueError("Prompt result page and page size must be at least 1.")
+    observations = [
+        (item_index, item.id, item.domain, item.title, prompt_index, seed)
+        for item_index, item in enumerate(config.dataset.items)
+        for prompt_index, seed in enumerate(config.experiment.prompt_seeds)
+    ]
+    if not observations:
+        return PromptResultTracePage((), page, page_size, 0)
+    # Construct only the requested page, not a potentially enormous VALUES list.
+    selected = observations[(page - 1) * page_size : page * page_size]
+    if not selected:
+        return PromptResultTracePage((), page, page_size, len(observations))
+    placeholders = ", ".join("(?, ?, ?, ?, ?, ?)" for _ in selected)
+    connection = connect_run_database(database_path, read_only=True)
+    try:
+        require_run_schema(connection)
+        prompt_configured, _ = _configured_verification_checks(
+            connection, config, database_path.parent
+        )
+        rows = connection.execute(
+            f"""
+            WITH planned(item_index, item_key, domain, expected_title,
+                         prompt_index, prompt_sampling_seed) AS (
+                VALUES {placeholders}
+            )
+            SELECT planned.*, items.item_id,
+                prompts.prompt_id, prompts.text AS prompt_text,
+                COALESCE(prompts.origin_run_id, run_metadata.run_id)
+                    AS prompt_origin_run_id,
+                COALESCE(prompts.origin_prompt_id, prompts.prompt_id)
+                    AS prompt_origin_id,
+                prompt_verifications.passed AS prompt_verification_passed,
+                prompt_verifications.reason AS prompt_verification_reason,
+                predictions.prompt_prediction_id AS prompt_prediction_id,
+                predictions.title AS prompt_title,
+                predictions.confidence AS prompt_confidence,
+                predictions.confidence_type AS prompt_confidence_type,
+                COALESCE(predictions.origin_run_id, run_metadata.run_id)
+                    AS prediction_origin_run_id,
+                COALESCE(predictions.origin_prompt_prediction_id,
+                         predictions.prompt_prediction_id) AS prediction_origin_id
+            FROM planned
+            CROSS JOIN run_metadata
+            LEFT JOIN dataset_items AS items USING (item_index)
+            LEFT JOIN prompts ON prompts.item_id = items.item_id
+                AND prompts.prompt_index = planned.prompt_index
+            LEFT JOIN prompt_verifications ON
+                prompt_verifications.prompt_id = prompts.prompt_id
+                AND prompt_verifications.policy = 'reference_title_absent'
+            LEFT JOIN prompt_predictions AS predictions ON
+                predictions.prompt_id = prompts.prompt_id
+            ORDER BY planned.item_index, planned.prompt_index
+            """,
+            tuple(value for observation in selected for value in observation),
+        ).fetchall()
+        tasks = connection.execute(
+            """
+            SELECT tasks.stage, tasks.item_id, tasks.prompt_id, tasks.seed,
+                tasks.status,
+                (SELECT error_type || ': ' || message FROM stage_errors
+                 WHERE task_id = tasks.task_id
+                 ORDER BY error_id DESC LIMIT 1) AS error
+            FROM stage_tasks AS tasks
+            WHERE tasks.stage IN ('prompt_generation', 'verification_prompt',
+                                  'title_guessing_from_prompt')
+            """
+        ).fetchall()
+    finally:
+        connection.close()
+
+    traces = []
+    for row in rows:
+        matched_tasks = [
+            task
+            for task in tasks
+            if task["item_id"] == row["item_id"]
+            and (
+                task["stage"] == "prompt_generation"
+                and task["seed"] == row["prompt_sampling_seed"]
+                or task["stage"] != "prompt_generation"
+                and row["prompt_id"] is not None
+                and task["prompt_id"] == row["prompt_id"]
+            )
+        ]
+        traces.append(
+            PromptResultTrace(
+                item_key=row["item_key"],
+                domain=row["domain"],
+                expected_title=row["expected_title"],
+                prompt_index=row["prompt_index"],
+                prompt_sampling_seed=row["prompt_sampling_seed"],
+                prompt_id=row["prompt_id"],
+                prompt_text=row["prompt_text"],
+                prompt_origin_run_id=(
+                    row["prompt_origin_run_id"]
+                    if row["prompt_id"] is not None
+                    else None
+                ),
+                prompt_origin_id=row["prompt_origin_id"],
+                prompt_verification_configured=prompt_configured,
+                prompt_verification_passed=_optional_bool(
+                    row["prompt_verification_passed"]
+                ),
+                prompt_verification_reason=row["prompt_verification_reason"],
+                result=_prediction_trace(row, "prompt"),
+                prediction_origin_run_id=(
+                    row["prediction_origin_run_id"]
+                    if row["prompt_prediction_id"] is not None
+                    else None
+                ),
+                prediction_origin_id=row["prediction_origin_id"],
+                task_statuses={task["stage"]: task["status"] for task in matched_tasks},
+                task_errors={
+                    task["stage"]: task["error"]
+                    for task in matched_tasks
+                    if task["status"] == "failed" and task["error"]
+                },
+            )
+        )
+    return PromptResultTracePage(tuple(traces), page, page_size, len(observations))
 
 
 def read_result_trace_page(
@@ -198,7 +385,7 @@ def read_result_trace_page(
     try:
         require_run_schema(connection)
         prompt_verification_configured, image_policies = (
-            _configured_verification_checks(connection, config)
+            _configured_verification_checks(connection, config, database_path.parent)
         )
         total_traces = int(
             connection.execute(
@@ -323,9 +510,7 @@ def read_result_trace_page(
                 row["strict_image_verification_passed"]
             ),
             strict_image_verification_reason=row["strict_image_verification_reason"],
-            title_aware_image_verification_configured=(
-                "title_aware" in image_policies
-            ),
+            title_aware_image_verification_configured=("title_aware" in image_policies),
             title_aware_image_verification_passed=_optional_bool(
                 row["title_aware_image_verification_passed"]
             ),
@@ -371,7 +556,10 @@ def _terminal_stages(
                 and task["seed"] != row["prompt_sampling_seed"]
             ):
                 continue
-        elif stage == "verification":
+        elif stage in {"verification_prompt", "title_guessing_from_prompt"}:
+            if row["prompt_id"] is not None and task["prompt_id"] != row["prompt_id"]:
+                continue
+        elif stage == "verification_image":
             if row["prompt_id"] is not None and task["prompt_id"] != row["prompt_id"]:
                 continue
             if row["image_id"] is not None and task["image_id"] not in {
@@ -395,10 +583,9 @@ def _terminal_stages(
     expected = {
         "illustratability_rating": 1,
         "prompt_generation": prompts,
-        "verification": (
-            (prompts if prompt_verification_configured else 0)
-            + len(image_policies) * images
-        ),
+        "verification_prompt": prompts if prompt_verification_configured else 0,
+        "verification_image": len(image_policies) * images,
+        "title_guessing_from_prompt": prompts,
     }
     return frozenset(
         stage
@@ -412,7 +599,7 @@ def read_route_accuracies(
     database_path: Path,
     config: ResolvedAppConfig,
 ) -> dict[str, RouteAccuracy]:
-    """Summarize both routes without dropping failed or missing observations."""
+    """Summarize three routes without dropping failed or missing observations."""
     stages = set(configured_stage_names(config))
     if config.inherit is not None:
         stages.update(dependency_closure(config.inherit.stages))
@@ -421,6 +608,7 @@ def read_route_accuracies(
         for kind, stage in (
             ("image", "title_guessing_direct"),
             ("description", "title_guessing_from_description"),
+            ("prompt", "title_guessing_from_prompt"),
         )
         if stage in stages
     }
@@ -431,7 +619,7 @@ def read_route_accuracies(
     try:
         require_run_schema(connection)
         prompt_configured, image_policies = _configured_verification_checks(
-            connection, config
+            connection, config, database_path.parent
         )
         verification_columns = """
             strict_verifications.passed AS strict_passed,
@@ -463,9 +651,20 @@ def read_route_accuracies(
             {verification_joins}
             """
         ).fetchall()
+        prompt_rows = connection.execute(
+            """
+            SELECT prompt_predictions.title AS predicted_title,
+                items.title AS expected_title,
+                prompt_verifications.passed AS prompt_passed
+            FROM prompt_predictions
+            JOIN prompts USING (prompt_id)
+            JOIN dataset_items AS items USING (item_id)
+            LEFT JOIN prompt_verifications USING (prompt_id)
+            """
+        ).fetchall()
     finally:
         connection.close()
-    return {
+    accuracies = {
         kind: RouteAccuracy(
             correct=sum(
                 ("strict" not in image_policies or row["strict_passed"] == 1)
@@ -487,9 +686,25 @@ def read_route_accuracies(
             ),
             expected=expected_output_count(config, stage),
             predictions=sum(row["input_kind"] == kind for row in rows),
+            prompt_verification_configured=prompt_configured,
+            image_verification_configured="strict" in image_policies,
         )
         for kind, stage in routes.items()
+        if kind != "prompt"
     }
+    if "prompt" in routes:
+        accuracies["prompt"] = RouteAccuracy(
+            correct=sum(
+                (not prompt_configured or row["prompt_passed"] == 1)
+                and title_exact_match(row["expected_title"], row["predicted_title"])
+                for row in prompt_rows
+            ),
+            title_aware_correct=None,
+            expected=expected_output_count(config, routes["prompt"]),
+            predictions=len(prompt_rows),
+            prompt_verification_configured=prompt_configured,
+        )
+    return accuracies
 
 
 def read_verification_summary(
@@ -501,7 +716,7 @@ def read_verification_summary(
     try:
         require_run_schema(connection)
         prompt_configured, image_policies = _configured_verification_checks(
-            connection, config
+            connection, config, database_path.parent
         )
         prompt_row = connection.execute(
             """

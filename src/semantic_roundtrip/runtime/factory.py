@@ -18,6 +18,10 @@ def resolve_runtime_target(
     stage_config = get_stage_config(config, stage)
     if stage_config is None:
         raise ValueError(f"Optional stage '{stage}' is not configured.")
+    if stage == "verification_prompt":
+        raise ValueError(
+            "Prompt verification is deterministic and has no runtime target."
+        )
 
     backend_alias = stage_config.backend
     backend = config.backends[backend_alias]

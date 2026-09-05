@@ -1,13 +1,10 @@
-schema_version: 4
-
+schema_version: 5
 job:
   name: mock_pause_job
   output_directory: runs
   continue_on_error: false
-
 experiments:
-  - name: slow_mock
-    config: ../experiments/mock_pause.yaml
-
-  - name: regular_mock
-    config: ../experiments/mock.yaml
+- name: slow_mock
+  config: ../experiments/mock_pause.yaml
+- name: regular_mock
+  config: ../experiments/mock.yaml

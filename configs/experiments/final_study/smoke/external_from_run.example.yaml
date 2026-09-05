@@ -1,5 +1,4 @@
-# Replace inherit.from_run with a completed current-schema run.
-schema_version: 10
+schema_version: 11
 run:
   name: external_import_direct_smoke
   output_directory: runs
@@ -30,4 +29,5 @@ stages:
 inherit:
   from_run: /REPLACE/WITH/SOURCE/RUN
   stages:
-  - verification
+  - verification_prompt
+  - verification_image

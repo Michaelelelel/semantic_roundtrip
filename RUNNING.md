@@ -138,6 +138,9 @@ Rebuild after code/config changes: files are copied into the images.
 For a **website-only update while a job is running**, copy the updated code and
 run this in a second terminal. It rebuilds and recreates only `status_web`;
 the runner and model services keep running. Then reload the browser.
+This applies only to updates compatible with the active database/configuration
+format. The SQ5 format change below is not a website-only update and must wait
+until the original jobs finish.
 
 ```bash
 sudo docker compose --env-file .env \
@@ -156,6 +159,92 @@ sudo docker compose --env-file .env \
 Services start without preloading models. The runner loads/unloads models by
 stage. Once services are healthy, continue with
 [the thesis experiments](EXPERIMENTS.md).
+
+## SQ5 format migration and deployment
+
+The SQ5 package uses experiment/snapshot 11, Run DB 12 and Job YAML/snapshot 5;
+Job DB remains 4 and manifest remains 6. It intentionally has no normal-runtime
+legacy compatibility. Let both current jobs finish on their original software:
+
+- `20260903T230744Z_final-direct-core_faa7afcb`;
+- `20260903T230758Z_final-direct-photorealistic_0488e791`.
+
+Before deployment, archive their complete original directories and code
+revision. Do not resume or modify them with the new runner. The converter only
+accepts fully completed supported jobs and children; terminal failed individual
+observations are retained. Active, paused, incomplete or unexpected formats and
+existing destinations are refused. Earlier candidate-rating archives are out
+of scope and keep their original reproduction environment.
+
+After the user has personally committed and pushed the verified package, on an
+idle DGX checkout:
+
+```bash
+git status --short
+git pull --ff-only
+git rev-parse HEAD
+
+set -a
+. ./.env
+set +a
+
+ORIGINAL_RUN_ROOT="${RUN_ROOT:?Load the existing .env first}"
+read -r -p "Absolute separate directory for converted current runs: " CONVERTED_RUN_ROOT
+test -n "$CONVERTED_RUN_ROOT" || exit 1
+test "$CONVERTED_RUN_ROOT" != "$ORIGINAL_RUN_ROOT" || exit 1
+mkdir -p "$CONVERTED_RUN_ROOT"
+export RUN_ROOT="$CONVERTED_RUN_ROOT"
+
+sudo --preserve-env=RUN_ROOT docker compose --env-file .env \
+  -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
+  --profile runner --profile status build runner status_web
+
+sudo --preserve-env=RUN_ROOT docker compose --env-file .env \
+  -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
+  --profile runner --profile status run --rm --no-deps \
+  --volume "$ORIGINAL_RUN_ROOT:/migration-source:ro" runner \
+  python scripts/migrate_current_runs.py \
+  --source-job /migration-source/20260903T230744Z_final-direct-core_faa7afcb \
+  --source-job /migration-source/20260903T230758Z_final-direct-photorealistic_0488e791 \
+  --destination-root /app/runs --dry-run
+```
+
+Inspect the preflight output and available storage. Only after both jobs pass,
+repeat the last command with `--apply` instead of `--dry-run`. No model service or
+model inference is started by this converter command. Sources are mounted
+read-only and remain untouched; new copies retain the same Job/Run IDs.
+If the jobs are on separate hosts, copy their complete directories first or
+pass only the explicit locally available source job on each host. Never invent
+a path or substitute a child-run directory for a job directory.
+
+Each copy contains `migration/report.json`, original metadata and the exact
+converter. Checks cover SQLite integrity/foreign keys, unchanged result values,
+previous direct/indirect accuracy, file hashes and stage-task mapping. The new
+prompt-prediction table starts empty. WAL data is included through SQLite
+backup, not by copying a live main database file alone. Ambiguous mappings fail;
+an unsuccessful staging copy is retained for diagnosis and is never published
+as the converted job. Keep the script until real conversion is validated; any
+later removal from the application must retain its archived exact copy.
+
+After inspecting successful converted jobs, recreate only the web process:
+
+```bash
+sudo --preserve-env=RUN_ROOT docker compose --env-file .env \
+  -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
+  --profile status up -d --no-deps --force-recreate --wait status_web
+```
+
+Both images were already built above. Do not mix original and converted copies
+in the website root. This procedure changes only the shell's `RUN_ROOT`, not
+`.env`; subsequent terminals must explicitly select the converted root again
+and preserve it through `sudo`, or an intentionally updated local deployment
+configuration must be used. Record that non-secret path with the deployment.
+Never print `.env` values or credentials.
+
+The new runner is used for new jobs only. Run the remaining styles with the
+unchanged scientific settings, prepare the four-style report and obtain common
+style confirmation before starting SQ5 as described in `EXPERIMENTS.md`.
+Do not launch a smoke or new job against an occupied model stack.
 
 ## Monitor and resume
 

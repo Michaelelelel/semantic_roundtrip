@@ -104,3 +104,11 @@ class TextTitleGuesser(Protocol):
     ) -> TitlePrediction:
         """Return one best title guess without access to the image or source title."""
         ...
+
+
+class PromptTitleGuesser(Protocol):
+    """Guess a title from its generated image prompt, without the source title."""
+
+    def guess_title(self, *, prompt: str, domain: str | None) -> TitlePrediction:
+        """Return one title prediction for one prompt, independently of images."""
+        ...

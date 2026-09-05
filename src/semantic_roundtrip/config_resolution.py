@@ -11,6 +11,7 @@ from semantic_roundtrip.config import (
     ImageVerificationPolicy,
     InputAppConfig,
     PipelineStageName,
+    PromptVerificationPolicy,
     ResolvedAppConfig,
     ResolvedBackend,
     ResolvedDatasetConfig,
@@ -19,17 +20,9 @@ from semantic_roundtrip.config import (
     StageConfig,
     StageName,
 )
-from semantic_roundtrip.inheritance.dependencies import dependency_closure
+from semantic_roundtrip.inheritance.dependencies import STAGE_ORDER, dependency_closure
 
-STAGE_NAMES: tuple[StageName, ...] = (
-    "illustratability_rating",
-    "prompt_generation",
-    "image_generation",
-    "verification",
-    "title_guessing_direct",
-    "image_description",
-    "title_guessing_from_description",
-)
+STAGE_NAMES: tuple[StageName, ...] = STAGE_ORDER
 IMAGE_VERIFICATION_POLICIES: tuple[ImageVerificationPolicy, ...] = (
     "strict",
     "title_aware",
@@ -52,7 +45,7 @@ def _load_dataset_profile(path: Path) -> DatasetProfile:
 def get_stage_config(
     config: ResolvedAppConfig,
     stage_name: StageName,
-) -> StageConfig | None:
+) -> StageConfig | PromptVerificationPolicy | None:
     """Return the configuration represented by one executable stage name."""
     if stage_name == "title_guessing_direct":
         return (
@@ -65,6 +58,12 @@ def get_stage_config(
             None
             if config.stages.title_guessing is None
             else config.stages.title_guessing.from_description
+        )
+    if stage_name == "title_guessing_from_prompt":
+        return (
+            None
+            if config.stages.title_guessing is None
+            else config.stages.title_guessing.from_prompt
         )
     return getattr(config.stages, stage_name)
 
@@ -82,13 +81,13 @@ def configured_image_verification_policies(
     config: ResolvedAppConfig,
 ) -> tuple[ImageVerificationPolicy, ...]:
     """Return image checks configured for local execution, in stable order."""
-    verification = config.stages.verification
-    if verification is None or verification.image is None:
+    verification = config.stages.verification_image
+    if verification is None:
         return ()
     return tuple(
         policy
         for policy in IMAGE_VERIFICATION_POLICIES
-        if getattr(verification.image, policy) is not None
+        if getattr(verification.policies, policy) is not None
     )
 
 
@@ -100,10 +99,10 @@ def configured_prompt_profile_paths(config: ResolvedAppConfig) -> tuple[Path, ..
     if config.stages.prompt_generation is not None:
         paths.append(config.stages.prompt_generation.prompt_profile)
 
-    verification = config.stages.verification
-    if verification is not None and verification.image is not None:
+    verification = config.stages.verification_image
+    if verification is not None:
         for policy in configured_image_verification_policies(config):
-            check = getattr(verification.image, policy)
+            check = getattr(verification.policies, policy)
             assert check is not None
             paths.append(check.prompt_profile)
 
@@ -116,6 +115,8 @@ def configured_prompt_profile_paths(config: ResolvedAppConfig) -> tuple[Path, ..
             paths.append(title_guessing.direct.prompt_profile)
         if title_guessing.from_description is not None:
             paths.append(title_guessing.from_description.prompt_profile)
+        if title_guessing.from_prompt is not None:
+            paths.append(title_guessing.from_prompt.prompt_profile)
     return tuple(paths)
 
 
@@ -129,6 +130,10 @@ def resolve_stage_adapter(
     stage = get_stage_config(config, stage_name)
     if stage is None:
         raise ValueError(f"Optional stage '{stage_name}' is not configured.")
+    if stage_name == "verification_prompt":
+        raise ValueError(
+            "Prompt verification is deterministic and has no model adapter."
+        )
 
     backend = config.backends.get(stage.backend)
     if backend is None:
@@ -152,16 +157,21 @@ def resolve_stage_adapter(
             "image_description",
             "title_guessing_direct",
             "title_guessing_from_description",
+            "title_guessing_from_prompt",
         }
         else None
     )
-    if stage_name == "verification":
+    if stage_name == "verification_image":
         if image_verification_policy is None:
             raise ValueError(
                 "Resolving verification requires an explicit image policy."
             )
-        image = config.stages.verification.image
-        check = None if image is None else getattr(image, image_verification_policy)
+        image = config.stages.verification_image
+        check = (
+            None
+            if image is None
+            else getattr(image.policies, image_verification_policy)
+        )
         if check is None:
             raise ValueError(
                 f"Image-verification policy '{image_verification_policy}' is not "
@@ -190,13 +200,14 @@ def _validate_resolved_config(config: ResolvedAppConfig) -> None:
     for stage_name in STAGE_NAMES:
         if get_stage_config(config, stage_name) is None:
             continue
-        if stage_name == "verification":
-            verification = config.stages.verification
+        if stage_name == "verification_prompt":
+            continue
+        if stage_name == "verification_image":
+            verification = config.stages.verification_image
             assert verification is not None
             if verification.backend not in config.backends:
                 raise ValueError(
-                    "Verification references unknown backend "
-                    f"'{verification.backend}'."
+                    f"Verification references unknown backend '{verification.backend}'."
                 )
             for policy in configured_image_verification_policies(config):
                 resolve_stage_adapter(
@@ -236,7 +247,7 @@ def _validate_resolved_config(config: ResolvedAppConfig) -> None:
         )
     image_dependent = available & {
         "image_generation",
-        "verification",
+        "verification_image",
         "title_guessing_direct",
         "image_description",
         "title_guessing_from_description",
@@ -302,6 +313,15 @@ def _validate_source_compatibility(
     if config.inherit is None or source_config is None:
         return
     imported = set(dependency_closure(config.inherit.stages))
+    source_stages = set(configured_stage_names(source_config))
+    if source_config.inherit is not None:
+        source_stages.update(dependency_closure(source_config.inherit.stages))
+    missing = imported - source_stages
+    if missing:
+        raise ValueError(
+            "Inherited stages are not configured in the source: "
+            + ", ".join(sorted(missing))
+        )
     if "prompt_generation" in imported and (
         config.experiment.prompt_seeds != source_config.experiment.prompt_seeds
     ):
@@ -396,16 +416,14 @@ def expected_stage_outputs(config: ResolvedAppConfig) -> dict[PipelineStageName,
     counts: dict[StageName, int] = {
         "illustratability_rating": len(config.dataset.items),
         "prompt_generation": prompt_count,
+        "verification_prompt": prompt_count,
         "image_generation": image_count,
-        "verification": (
-            (prompt_count if config.stages.verification.prompt is not None else 0)
-            + image_count * len(configured_image_verification_policies(config))
-            if config.stages.verification is not None
-            else 0
-        ),
+        "verification_image": image_count
+        * len(configured_image_verification_policies(config)),
         "title_guessing_direct": image_count,
         "image_description": image_count,
         "title_guessing_from_description": image_count,
+        "title_guessing_from_prompt": prompt_count,
     }
     for stage_name in configured_stage_names(config):
         expected[stage_name] = counts[stage_name]
@@ -418,14 +436,12 @@ def expected_output_count(config: ResolvedAppConfig, stage_name: StageName) -> i
     image_count = prompt_count * len(config.experiment.image_seeds)
     if stage_name == "illustratability_rating":
         return len(config.dataset.items)
-    if stage_name == "prompt_generation":
+    if stage_name in {
+        "prompt_generation",
+        "verification_prompt",
+        "title_guessing_from_prompt",
+    }:
         return prompt_count
-    if stage_name == "verification":
-        verification = config.stages.verification
-        if verification is None:
-            return 0
-        return (
-            (prompt_count if verification.prompt is not None else 0)
-            + image_count * len(configured_image_verification_policies(config))
-        )
+    if stage_name == "verification_image":
+        return image_count * len(configured_image_verification_policies(config))
     return image_count

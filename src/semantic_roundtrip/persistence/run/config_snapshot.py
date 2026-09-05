@@ -21,6 +21,7 @@ DIRECT_TITLE_GUESSING_PROMPT_FILENAME = "title_guessing_direct_profile.yaml"
 DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME = (
     "title_guessing_from_description_profile.yaml"
 )
+PROMPT_TITLE_GUESSING_PROMPT_FILENAME = "title_guessing_from_prompt_profile.yaml"
 
 
 def create_input_config_snapshot(
@@ -115,17 +116,25 @@ def create_prompt_snapshots(
             ),
             DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME,
         ),
+        "title_guessing_from_prompt": (
+            (
+                None
+                if title_guessing is None or title_guessing.from_prompt is None
+                else title_guessing.from_prompt.prompt_profile
+            ),
+            PROMPT_TITLE_GUESSING_PROMPT_FILENAME,
+        ),
     }
-    verification = config.stages.verification
-    if verification is not None and verification.image is not None:
-        if verification.image.strict is not None:
+    verification = config.stages.verification_image
+    if verification is not None:
+        if verification.policies.strict is not None:
             configured_prompts["verification_image_strict"] = (
-                verification.image.strict.prompt_profile,
+                verification.policies.strict.prompt_profile,
                 STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME,
             )
-        if verification.image.title_aware is not None:
+        if verification.policies.title_aware is not None:
             configured_prompts["verification_image_title_aware"] = (
-                verification.image.title_aware.prompt_profile,
+                verification.policies.title_aware.prompt_profile,
                 TITLE_AWARE_IMAGE_VERIFICATION_PROMPT_FILENAME,
             )
     for name, (source_path, filename) in configured_prompts.items():
@@ -157,30 +166,25 @@ def use_prompt_snapshots(
             update={"prompt_profile": prompt_generation_path}
         )
 
-    verification = config.stages.verification
-    if verification is not None and verification.image is not None:
+    verification = config.stages.verification_image
+    if verification is not None:
         image_updates = {}
         strict_path = run_directory / STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME
-        if verification.image.strict is not None and strict_path.is_file():
-            image_updates["strict"] = verification.image.strict.model_copy(
+        if verification.policies.strict is not None and strict_path.is_file():
+            image_updates["strict"] = verification.policies.strict.model_copy(
                 update={"prompt_profile": strict_path}
             )
         title_aware_path = (
             run_directory / TITLE_AWARE_IMAGE_VERIFICATION_PROMPT_FILENAME
         )
-        if (
-            verification.image.title_aware is not None
-            and title_aware_path.is_file()
-        ):
-            image_updates["title_aware"] = (
-                verification.image.title_aware.model_copy(
-                    update={"prompt_profile": title_aware_path}
-                )
+        if verification.policies.title_aware is not None and title_aware_path.is_file():
+            image_updates["title_aware"] = verification.policies.title_aware.model_copy(
+                update={"prompt_profile": title_aware_path}
             )
         if image_updates:
             verification = verification.model_copy(
                 update={
-                    "image": verification.image.model_copy(update=image_updates)
+                    "policies": verification.policies.model_copy(update=image_updates)
                 }
             )
 
@@ -213,11 +217,21 @@ def use_prompt_snapshots(
             update={"prompt_profile": description_title_guessing_path}
         )
 
+    prompt_title_guessing = (
+        None if title_guessing is None else title_guessing.from_prompt
+    )
+    prompt_title_guessing_path = run_directory / PROMPT_TITLE_GUESSING_PROMPT_FILENAME
+    if prompt_title_guessing is not None and prompt_title_guessing_path.is_file():
+        prompt_title_guessing = prompt_title_guessing.model_copy(
+            update={"prompt_profile": prompt_title_guessing_path}
+        )
+
     if title_guessing is not None:
         title_guessing = title_guessing.model_copy(
             update={
                 "direct": direct_title_guessing,
                 "from_description": description_title_guessing,
+                "from_prompt": prompt_title_guessing,
             }
         )
 
@@ -225,7 +239,7 @@ def use_prompt_snapshots(
         update={
             "illustratability_rating": illustratability_rating,
             "prompt_generation": prompt_generation,
-            "verification": verification,
+            "verification_image": verification,
             "image_description": image_description,
             "title_guessing": title_guessing,
         }

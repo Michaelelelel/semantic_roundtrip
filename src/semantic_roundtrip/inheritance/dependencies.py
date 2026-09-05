@@ -8,20 +8,24 @@ STAGE_DEPENDENCIES: dict[StageName, tuple[StageName, ...]] = {
     "illustratability_rating": (),
     "prompt_generation": (),
     "image_generation": ("prompt_generation",),
-    "verification": ("image_generation",),
+    "verification_prompt": ("prompt_generation",),
+    "verification_image": ("image_generation",),
     "title_guessing_direct": ("image_generation",),
     "image_description": ("image_generation",),
     "title_guessing_from_description": ("image_description",),
+    "title_guessing_from_prompt": ("prompt_generation",),
 }
 
 STAGE_ORDER: tuple[StageName, ...] = (
     "illustratability_rating",
     "prompt_generation",
+    "verification_prompt",
     "image_generation",
-    "verification",
+    "verification_image",
     "title_guessing_direct",
     "image_description",
     "title_guessing_from_description",
+    "title_guessing_from_prompt",
 )
 
 

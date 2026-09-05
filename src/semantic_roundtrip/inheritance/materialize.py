@@ -1,16 +1,25 @@
 """Materialize one source run into a self-contained derived target run."""
 
+import hashlib
 import json
 import sqlite3
 from pathlib import Path
-from shutil import copy2
 
 from semantic_roundtrip.config import ResolvedAppConfig, StageName
 from semantic_roundtrip.config_resolution import (
     configured_image_verification_policies,
+    configured_stage_names,
 )
 from semantic_roundtrip.inheritance.dependencies import dependency_closure
-from semantic_roundtrip.inheritance.source import load_source_run
+from semantic_roundtrip.inheritance.files import (
+    copy_artifact,
+    native_path,
+    walk_artifact_paths,
+)
+from semantic_roundtrip.inheritance.source import (
+    load_source_run,
+    resolve_stage_provenance,
+)
 from semantic_roundtrip.persistence.run.config_snapshot import (
     DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME,
     DIRECT_TITLE_GUESSING_PROMPT_FILENAME,
@@ -19,6 +28,7 @@ from semantic_roundtrip.persistence.run.config_snapshot import (
     IMAGE_DESCRIPTION_PROMPT_FILENAME,
     INPUT_CONFIG_FILENAME,
     PROMPT_PROFILE_FILENAME,
+    PROMPT_TITLE_GUESSING_PROMPT_FILENAME,
     STRICT_IMAGE_VERIFICATION_PROMPT_FILENAME,
     TITLE_AWARE_IMAGE_VERIFICATION_PROMPT_FILENAME,
 )
@@ -85,7 +95,18 @@ def _validate_source(
     connection: sqlite3.Connection,
     config: ResolvedAppConfig,
     stages: tuple[StageName, ...],
+    run_directory: Path | None = None,
+    *,
+    image_policies: tuple[str, ...] = (),
 ) -> None:
+    available = set(configured_stage_names(config))
+    if config.inherit is not None:
+        available.update(dependency_closure(config.inherit.stages))
+    missing = set(stages) - available
+    if missing:
+        raise MaterializationError(
+            f"Source does not provide selected stages: {', '.join(sorted(missing))}."
+        )
     placeholders = ", ".join("?" for _ in stages)
     unfinished = connection.execute(
         f"""
@@ -126,6 +147,7 @@ def _validate_source(
     image_verifications = _rows(connection, "image_verifications")
     descriptions = _rows(connection, "image_descriptions")
     predictions = _rows(connection, "predictions")
+    prompt_predictions = _rows(connection, "prompt_predictions")
     tasks = _rows(connection, "stage_tasks")
 
     if len(items) != len(config.dataset.items):
@@ -165,6 +187,13 @@ def _validate_source(
         for item in items:
             for prompt_index, seed in enumerate(config.experiment.prompt_seeds):
                 key = (int(item["item_id"]), prompt_index)
+                if (
+                    key in prompt_lookup
+                    and int(prompt_lookup[key]["sampling_seed"]) != seed
+                ):
+                    raise MaterializationError(
+                        "Source prompt seed differs from its snapshot."
+                    )
                 if key not in prompt_lookup and not _failed_task(
                     tasks,
                     "prompt_generation",
@@ -192,30 +221,20 @@ def _validate_source(
 
     prompt_verification_ids = {int(row["prompt_id"]) for row in prompt_verifications}
     image_verification_keys = {
-        (int(row["image_id"]), str(row["policy"]))
-        for row in image_verifications
+        (int(row["image_id"]), str(row["policy"])) for row in image_verifications
     }
     description_ids = {int(row["image_id"]) for row in descriptions}
     prediction_keys = {
         (int(row["image_id"]), str(row["input_kind"])) for row in predictions
     }
-    local_verification = config.stages.verification
-    prompt_verification_required = (
-        local_verification is not None and local_verification.prompt is not None
-    ) or any(
-        str(task["task_key"]).startswith(
-            "verification:prompt:reference_title_absent:"
-        )
-        for task in tasks
-    )
-    if "verification" in stages and prompt_verification_required:
+    if "verification_prompt" in stages:
         for prompt in prompts:
             prompt_id = int(prompt["prompt_id"])
             if prompt_id not in prompt_verification_ids and not _failed_task(
                 tasks,
-                "verification",
+                "verification_prompt",
                 prompt_id=prompt_id,
-                task_key_prefix="verification:prompt:reference_title_absent:",
+                task_key_prefix="verification_prompt:reference_title_absent:",
             ):
                 raise MaterializationError(
                     "Source prompt verification is missing without a terminal "
@@ -223,23 +242,35 @@ def _validate_source(
                 )
 
     required_image_policies = set(configured_image_verification_policies(config))
+    required_image_policies.update(image_policies)
+    if "verification_image" in stages and run_directory is not None:
+        provider = resolve_stage_provenance(config, run_directory, "verification_image")
+        if provider is not None:
+            required_image_policies.update(
+                configured_image_verification_policies(provider[0])
+            )
     for task in tasks:
         task_key = str(task["task_key"])
         for policy in ("strict", "title_aware"):
-            if task_key.startswith(f"verification:image:{policy}:"):
+            if task_key.startswith(f"verification_image:{policy}:"):
                 required_image_policies.add(policy)
+    required_image_policies.update(str(row["policy"]) for row in image_verifications)
+    if "verification_image" in stages and images and not required_image_policies:
+        raise MaterializationError(
+            "Source has no identifiable image-verification policies."
+        )
     for image in images:
         image_id = int(image["image_id"])
-        if "verification" in stages:
+        if "verification_image" in stages:
             for policy in required_image_policies:
                 if (
                     image_id,
                     policy,
                 ) not in image_verification_keys and not _failed_task(
                     tasks,
-                    "verification",
+                    "verification_image",
                     image_id=image_id,
-                    task_key_prefix=f"verification:image:{policy}:",
+                    task_key_prefix=f"verification_image:{policy}:",
                 ):
                     raise MaterializationError(
                         f"Source {policy} image verification is missing without "
@@ -275,6 +306,17 @@ def _validate_source(
                     "task error."
                 )
 
+    if "title_guessing_from_prompt" in stages:
+        prediction_prompt_ids = {int(row["prompt_id"]) for row in prompt_predictions}
+        for prompt in prompts:
+            prompt_id = int(prompt["prompt_id"])
+            if prompt_id not in prediction_prompt_ids and not _failed_task(
+                tasks, "title_guessing_from_prompt", prompt_id=prompt_id
+            ):
+                raise MaterializationError(
+                    "Source prompt prediction is missing without a terminal task error."
+                )
+
 
 def _copy_images(
     source_directory: Path,
@@ -285,17 +327,21 @@ def _copy_images(
     relative_paths: dict[int, str] = {}
     copied: list[Path] = []
     destination_directory = target_directory / "images" / "imported" / source_run_id
-    destination_directory.mkdir(parents=True, exist_ok=True)
+    native_path(destination_directory).mkdir(parents=True, exist_ok=True)
     try:
         for row in image_rows:
             image_id = int(row["image_id"])
-            source_path = source_directory / str(row["path"])
-            if not source_path.is_file():
+            source_path = (source_directory / str(row["path"])).resolve()
+            if not source_path.is_relative_to(source_directory.resolve()):
+                raise MaterializationError(
+                    "Inherited image path escapes its source run."
+                )
+            if not native_path(source_path).is_file():
                 raise MaterializationError(
                     f"Inherited image file does not exist: {source_path}"
                 )
             try:
-                with source_path.open("rb"):
+                with native_path(source_path).open("rb"):
                     pass
             except OSError as error:
                 raise MaterializationError(
@@ -303,14 +349,22 @@ def _copy_images(
                 ) from error
             suffix = source_path.suffix or ".bin"
             destination = destination_directory / f"image_{image_id}{suffix}"
-            copy2(source_path, destination)
+            with native_path(source_path).open("rb") as file:
+                before = hashlib.file_digest(file, "sha256").hexdigest()
+            copy_artifact(source_path, destination)
             copied.append(destination)
+            with native_path(source_path).open("rb") as file:
+                after = hashlib.file_digest(file, "sha256").hexdigest()
+            with native_path(destination).open("rb") as file:
+                copied_hash = hashlib.file_digest(file, "sha256").hexdigest()
+            if before != after or before != copied_hash:
+                raise MaterializationError("Source image changed during inheritance.")
             relative_paths[image_id] = destination.relative_to(
                 target_directory
             ).as_posix()
     except Exception:
         for path in copied:
-            path.unlink(missing_ok=True)
+            native_path(path).unlink(missing_ok=True)
         raise
     return relative_paths, copied
 
@@ -320,7 +374,7 @@ def _copy_provenance(
 ) -> list[Path]:
     copied: list[Path] = []
     destination_root = target_directory / "provenance" / source_run_id
-    destination_root.mkdir(parents=True, exist_ok=True)
+    native_path(destination_root).mkdir(parents=True, exist_ok=True)
     candidates = [
         source_directory / INPUT_CONFIG_FILENAME,
         source_directory / EFFECTIVE_CONFIG_FILENAME,
@@ -332,16 +386,20 @@ def _copy_provenance(
         source_directory / IMAGE_DESCRIPTION_PROMPT_FILENAME,
         source_directory / DIRECT_TITLE_GUESSING_PROMPT_FILENAME,
         source_directory / DESCRIPTION_TITLE_GUESSING_PROMPT_FILENAME,
+        source_directory / PROMPT_TITLE_GUESSING_PROMPT_FILENAME,
         source_directory / IMAGE_GENERATION_WORKFLOW_FILENAME,
+        source_directory / "migration_record.json",
     ]
     source_provenance = source_directory / "provenance"
-    if source_provenance.is_dir():
+    if native_path(source_provenance).is_dir():
         candidates.extend(
-            path for path in source_provenance.rglob("*") if path.is_file()
+            path
+            for path in walk_artifact_paths(source_provenance)
+            if native_path(path).is_file()
         )
     try:
         for source_path in candidates:
-            if not source_path.is_file():
+            if not native_path(source_path).is_file():
                 if source_path.name == EFFECTIVE_CONFIG_FILENAME:
                     raise MaterializationError(
                         f"Inherited run is missing {source_path.name}."
@@ -352,12 +410,12 @@ def _copy_provenance(
             else:
                 relative = Path(source_path.name)
             destination = destination_root / relative
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            copy2(source_path, destination)
+            native_path(destination.parent).mkdir(parents=True, exist_ok=True)
+            copy_artifact(source_path, destination)
             copied.append(destination)
     except Exception:
         for path in reversed(copied):
-            path.unlink(missing_ok=True)
+            native_path(path).unlink(missing_ok=True)
         raise
     return copied
 
@@ -475,7 +533,7 @@ def _insert_materialized_rows(
             )
             image_map[int(row["image_id"])] = int(cursor.lastrowid)
 
-    if "verification" in stages:
+    if "verification_prompt" in stages:
         for row in _rows(source, "prompt_verifications"):
             origin_run_id, origin_id = _original(
                 row,
@@ -503,6 +561,7 @@ def _insert_materialized_rows(
                     origin_id,
                 ),
             )
+    if "verification_image" in stages:
         for row in _rows(source, "image_verifications"):
             origin_run_id, origin_id = _original(
                 row,
@@ -584,6 +643,29 @@ def _insert_materialized_rows(
                         else description_map[int(source_description_id)]
                     ),
                     row["input_kind"],
+                    row["title"],
+                    row["confidence"],
+                    row["confidence_type"],
+                    row["raw_response"],
+                    origin_run_id,
+                    origin_id,
+                ),
+            )
+
+    if "title_guessing_from_prompt" in stages:
+        for row in _rows(source, "prompt_predictions"):
+            origin_run_id, origin_id = _original(
+                row, "origin_run_id", "origin_prompt_prediction_id", source_run_id
+            )
+            target.execute(
+                """
+                INSERT INTO prompt_predictions (
+                    prompt_id, title, confidence, confidence_type, raw_response,
+                    origin_run_id, origin_prompt_prediction_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    prompt_map[int(row["prompt_id"])],
                     row["title"],
                     row["confidence"],
                     row["confidence_type"],
@@ -778,8 +860,16 @@ def materialize_inheritance(config: ResolvedAppConfig, target_directory: Path) -
     )
     copied_files: list[Path] = []
     try:
+        # Keep validation and every copied row in one WAL-compatible read snapshot.
+        # Unrelated later stages in the source run may continue writing normally.
+        source.execute("BEGIN")
         require_run_schema(source)
-        _validate_source(source, source_run.config, stages)
+        record = source.execute("SELECT run_id FROM run_metadata").fetchone()
+        if record is None or record["run_id"] != inheritance.source_run_id:
+            raise MaterializationError(
+                "Source identity changed before materialization."
+            )
+        _validate_source(source, source_run.config, stages, source_run.directory)
         image_rows = _rows(source, "images") if "image_generation" in stages else []
         image_paths, copied_images = _copy_images(
             source_run.directory,
@@ -819,7 +909,7 @@ def materialize_inheritance(config: ResolvedAppConfig, target_directory: Path) -
             target.close()
     except Exception:
         for path in reversed(copied_files):
-            path.unlink(missing_ok=True)
+            native_path(path).unlink(missing_ok=True)
         raise
     finally:
         source.close()

@@ -216,3 +216,8 @@ dd {
     justify-content: center;
     gap: 20px;
 }
+
+.job-run-id {
+    min-width: 160px;
+    overflow-wrap: anywhere;
+}

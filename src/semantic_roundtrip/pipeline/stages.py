@@ -241,56 +241,59 @@ def execute_image_generation_stage(
             )
 
 
-def execute_verification_stage(
+def execute_prompt_verification_stage(
     *,
     config: ResolvedAppConfig,
     database: RunDatabase,
     adapters: AdapterBundle,
 ) -> None:
-    """Persist the prompt decision and every configured image-policy decision."""
-    verification = config.stages.verification
-    if verification is None:
+    """Check every prompt without images, a verifier backend, or regeneration."""
+    if config.stages.verification_prompt is None:
         return
+    for prompt in database.results.list_prompts():
+        load_or_run_single(
+            database=database,
+            stage="verification_prompt",
+            task_suffix=f"reference_title_absent:{prompt.item.item_key}:{prompt.prompt.index}",
+            existing=database.results.get_prompt_verification(prompt.prompt_id),
+            operation=lambda prompt=prompt: verify_prompt_title_absence(
+                prompt.item.title, prompt.prompt.text
+            ),
+            save=lambda decision, prompt_id=prompt.prompt_id: (
+                database.results.add_prompt_verification(prompt_id, decision)
+            ),
+            retry_limit=config.experiment.retry_limit,
+            item_id=prompt.item_id,
+            prompt_id=prompt.prompt_id,
+            seed=config.experiment.prompt_seeds[prompt.prompt.index],
+        )
 
-    if verification.prompt is not None:
-        for prompt in database.results.list_prompts():
-            load_or_run_single(
-                database=database,
-                stage="verification",
-                task_suffix=(
-                    "prompt:reference_title_absent:"
-                    f"{prompt.item.item_key}:{prompt.prompt.index}"
-                ),
-                existing=database.results.get_prompt_verification(prompt.prompt_id),
-                operation=lambda prompt=prompt: verify_prompt_title_absence(
-                    prompt.item.title,
-                    prompt.prompt.text,
-                ),
-                save=lambda decision, prompt_id=prompt.prompt_id: (
-                    database.results.add_prompt_verification(prompt_id, decision)
-                ),
-                retry_limit=config.experiment.retry_limit,
-                item_id=prompt.item_id,
-                prompt_id=prompt.prompt_id,
-                seed=config.experiment.prompt_seeds[prompt.prompt.index],
-            )
 
+def execute_image_verification_stage(
+    *,
+    config: ResolvedAppConfig,
+    database: RunDatabase,
+    adapters: AdapterBundle,
+) -> None:
+    """Persist configured image-policy decisions independently of prompt checks."""
+    if config.stages.verification_image is None:
+        return
     for policy, verifier in adapters.image_verifiers.items():
         for image in database.results.list_images():
             reference_title = image.item.title if policy == "title_aware" else None
             load_or_run_single(
                 database=database,
-                stage="verification",
-                task_suffix=f"image:{policy}:{_image_task_suffix(image)}",
+                stage="verification_image",
+                task_suffix=f"{policy}:{_image_task_suffix(image)}",
                 existing=database.results.get_image_verification(
                     image.image_id,
                     policy,
                 ),
-                operation=lambda image=image, verifier=verifier, reference_title=(
-                    reference_title
-                ): verifier.verify_image(
-                    image_path=image.image.path,
-                    reference_title=reference_title,
+                operation=lambda image=image, verifier=verifier, reference_title=(reference_title): (
+                    verifier.verify_image(
+                        image_path=image.image.path,
+                        reference_title=reference_title,
+                    )
                 ),
                 save=lambda decision, image_id=image.image_id, policy=policy: (
                     database.results.add_image_verification(
@@ -305,6 +308,40 @@ def execute_verification_stage(
                 seed=image.image.seed,
                 image_id=image.image_id,
             )
+
+
+def execute_prompt_title_guessing_stage(
+    *,
+    config: ResolvedAppConfig,
+    database: RunDatabase,
+    adapters: AdapterBundle,
+) -> None:
+    """Reconstruct once per stored prompt, without any image dependency."""
+    if (
+        config.stages.title_guessing is None
+        or config.stages.title_guessing.from_prompt is None
+    ):
+        return
+    if adapters.prompt_title_guesser is None:
+        raise RuntimeError("Prompt title guessing has no prompt-title adapter.")
+    for prompt in database.results.list_prompts():
+        load_or_run_single(
+            database=database,
+            stage="title_guessing_from_prompt",
+            task_suffix=f"{prompt.item.item_key}:{prompt.prompt.index}",
+            existing=database.results.get_prompt_prediction(prompt.prompt_id),
+            operation=lambda prompt=prompt: adapters.prompt_title_guesser.guess_title(
+                prompt=prompt.prompt.text,
+                domain=prompt.item.domain,
+            ),
+            save=lambda prediction, prompt_id=prompt.prompt_id: (
+                database.results.add_prompt_prediction(prompt_id, prediction)
+            ),
+            retry_limit=config.experiment.retry_limit,
+            item_id=prompt.item_id,
+            prompt_id=prompt.prompt_id,
+            seed=config.experiment.prompt_seeds[prompt.prompt.index],
+        )
 
 
 def execute_image_description_stage(

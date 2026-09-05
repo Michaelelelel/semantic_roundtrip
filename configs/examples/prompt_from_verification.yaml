@@ -1,0 +1,21 @@
+schema_version: 11
+
+run:
+  name: example_prompt_from_verification
+  output_directory: runs
+
+# Prompts and deterministic checks are inherited; images are not required.
+experiment:
+  prompt_seeds: [1000, 1001]
+  image_seeds: []
+  retry_limit: 0
+
+backends:
+  reconstruction_model:
+    profile: ../backends/mock.yaml
+
+stages:
+  title_guessing:
+    from_prompt:
+      backend: reconstruction_model
+      prompt_profile: prompts/title_guessing/prompt_plain_v1.yaml

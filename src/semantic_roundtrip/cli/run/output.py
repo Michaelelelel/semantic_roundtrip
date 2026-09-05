@@ -44,6 +44,7 @@ def print_run_summary(summary: PipelineSummary) -> None:
     )
     typer.echo(f"Image descriptions: {summary.image_descriptions}")
     typer.echo(f"Predictions: {summary.predictions}")
+    typer.echo(f"Prompt predictions: {summary.prompt_predictions}")
     typer.echo(f"Failed tasks: {summary.failed_tasks}")
 
 

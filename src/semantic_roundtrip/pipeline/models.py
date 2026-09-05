@@ -17,4 +17,5 @@ class PipelineSummary:
     title_aware_image_verifications: int
     image_descriptions: int
     predictions: int
+    prompt_predictions: int
     failed_tasks: int

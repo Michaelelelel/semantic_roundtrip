@@ -200,9 +200,7 @@ class OpenAICompatibleImageDescriber:
             available={"domain"},
         )
         if self._prompt_profile.output_format != "plain_text":
-            raise ValueError(
-                "Image description requires a plain-text prompt profile."
-            )
+            raise ValueError("Image description requires a plain-text prompt profile.")
         self._client = OpenAICompatibleChatClient(
             endpoint=settings.endpoint,
             model_id=settings.model_id,

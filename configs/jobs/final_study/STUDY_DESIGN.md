@@ -3,6 +3,23 @@
 This file records the exact executable protocol. Scientific justification and
 interpretation belong in the thesis.
 
+## Study revision and scope (`final_v3`)
+
+The SQ5 extension adds prompt-based reconstruction and separates prompt and image
+verification into independently executable/importable stages. The original
+`final_v2` image/description conditions, model requests, seeds and decisions are
+unchanged. Original run snapshots keep their historical identity; a logged
+format conversion on copies does not retrospectively relabel their protocol.
+The software supports configurable models and predefined reconstruction routes,
+not arbitrary workflow composition.
+
+The preferred common-style recommendation is unrestricted generation: no added
+explicit rendering-style instruction, rather than the highest or lowest
+observed accuracy. It is not style-neutral. Complete the full four-style report,
+report contrary evidence and obtain supervisor confirmation before affected
+main jobs or SQ5 start. Existing direct/indirect artifacts are a practical reuse
+advantage. Descriptive style centrality is not an automatic selection rule.
+
 ## Four-style comparison (revision `final_v2`)
 
 The unrestricted `direct_core` job and the `direct_photorealistic`,
@@ -67,6 +84,8 @@ Commands are in [`../../../EXPERIMENTS.md`](../../../EXPERIMENTS.md).
 - BI: image to title on the direct route.
 - BB: image to neutral description; BI reconstructs the title from that
   description on the indirect route.
+- Prompt reconstruction: original generated prompt plus domain to title, without
+  an image, reference title, candidate list or verification metadata.
 
 ## Shared protocol
 
@@ -77,7 +96,8 @@ Commands are in [`../../../EXPERIMENTS.md`](../../../EXPERIMENTS.md).
   exclusions and at most one song per primary artist.
 - Prompt seeds: `1000`, `1001`.
 - Image seeds: `8566257`, `2875613`.
-- Observations: four per title and condition.
+- Observations: four per title and image-dependent condition; two per title for
+  prompt reconstruction, without multiplication by image seeds.
 - Retry: one technical retry with identical settings.
 - No retry because a reconstruction is wrong.
 - Run artifacts are never edited manually.
@@ -124,6 +144,7 @@ equal-compute comparison.
 | `direct_photorealistic.yaml` | 16 | 1,440 | paired photorealistic condition |
 | `direct_thinking.yaml` | 12 additions | 720 | native-thinking direct supplement |
 | `direct_illustratable.yaml` | 16 | 1,440 | high-illustratability direct supplement |
+| `direct_prompt_only.yaml` | 16 | 0 | SQ5 prompt reconstruction and four diagonal three-way comparisons |
 
 `candidate_illustratability.yaml` is a four-model rating prerequisite, not an
 additional reconstruction job. It must complete before the illustratability datasets
@@ -138,6 +159,14 @@ The thinking job imports the exact completed `direct_core` job with
 `--source-job direct_base=runs/JOB_DIRECTORY`. It computes only the 12 cells in
 which Q38 or G4 occupies PG or BI; the four Q25/G3-only cells come from the
 thinking-off direct job during analysis.
+
+The prompt job imports the exact completed unrestricted `direct_core` job via
+`--source-job direct_base=runs/JOB_DIRECTORY`, after style confirmation. Every
+cell imports prompt/image verification and direct predictions. The four diagonal
+cells additionally import `title_guessing_from_description` and its descriptions.
+No new image, description or indirect calls are made. If a different style is
+confirmed, revise this binding/design explicitly before starting SQ5; do not
+combine different-style direct and indirect inputs.
 
 ## Prompts
 
@@ -158,6 +187,7 @@ message is required.
 - BB: `prompts/image_description/plain_v1.yaml`.
 - Direct BI: `prompts/title_guessing/plain_v3.yaml`.
 - Indirect BI: `prompts/title_guessing/description_plain_v3.yaml`.
+- Prompt BI: `prompts/title_guessing/prompt_plain_v1.yaml`.
 - Illustratability: `prompts/illustratability/rating_v2.yaml`.
 
 The unrestricted PG prompt requests one concise concrete scene and prohibits
@@ -194,7 +224,7 @@ repeat penalty 1, presence penalty 0 and frequency penalty 0.
 | Scope | Reasoning | Output ceiling | Timeout |
 | --- | --- | ---: | ---: |
 | Q25/G3/Q38/G4 PG, rating and BB | none; explicitly off for Q38/G4 | 512 | backend profile |
-| Q25/G3/Q38/G4 direct/indirect BI | none; explicitly off for Q38/G4 | 128 | backend profile |
+| Q25/G3/Q38/G4 direct/indirect/prompt BI | none; explicitly off for Q38/G4 | 128 | backend profile |
 | D32 PG and BI | native DeepSeek | 16,384 | 7,200 s |
 | O120 PG and BI | Harmony medium | 16,384 | 7,200 s |
 | V4 PG and BI | Aqueduct high | 32,000 | 3,600 s |
@@ -230,8 +260,9 @@ optimum. Historical runs keep their own saved workflow.
 
 ## Outcomes and analysis
 
-Primary outcome: title-level end-to-end Strict Exact Match under the prompt and
-blind-strict image policies.
+Primary image/description outcome: title-level end-to-end Strict Exact Match
+under the prompt and blind-strict image policies. Prompt reconstruction uses
+the prompt policy only, with its own full planned prompt denominator.
 
 Every generated prompt is checked deterministically for a normalized literal
 occurrence of the reference title. Every generated image is independently
@@ -289,8 +320,10 @@ persisted per prompt. A title occurrence fails the prompt policy and therefore
 scores 0 in every end-to-end outcome, but it never triggers regeneration or
 prevents downstream work. The status website reports persisted prompt, strict
 image and title-aware image decisions separately. Current code reads and writes
-only experiment schema 10 and run-database schema 11; older jobs require their
-original checkout.
+only experiment schema 11 and run-database schema 12. Job YAML/snapshots use 5;
+Job DB remains 4 and manifest format remains 6. Completed experiment-10/DB-11
+job-4 sources have a one-time, copy-only conversion script; earlier archives
+retain their original checkout.
 
 Four seed observations are averaged per title before comparisons. Confidence
 intervals use 10,000 paired bootstrap resamples of complete titles, stratified
@@ -303,8 +336,8 @@ visible-answer likelihood when token alignment is valid. Answer likelihood is
 diagnostic, not calibrated confidence and not a cross-model ranking.
 
 `notebooks/final_study.ipynb` takes `DIRECT_JOB`, `INDIRECT_JOB`, `AQUEDUCT_JOB`,
-`SKETCH_JOB`, `COMIC_JOB`, `THINKING_JOB` and `ILLUSTRATABLE_JOB`. All seven
-completed jobs are required for Run All. It reports:
+`THINKING_JOB`, `ILLUSTRATABLE_JOB`, `PROMPT_BASELINE_JOB` and `STYLE_REPORT_DIR`.
+All six completed jobs and the validated style export are required. It reports:
 
 - direct 4 x 4 accuracy and predeclared PG, BI and same-minus-mixed contrasts;
 - complete indirect 3 x 4 x 3 accuracy and local/hosted role contrasts;
@@ -313,13 +346,14 @@ completed jobs are required for Run All. It reports:
 - domain subgroups for songs, movies and bands;
 - title-length distributions, domain-wise distributions of the four-model mean
   illustratability rating, and exploratory model-specific PG associations;
-- paired Sketch-minus-unrestricted, Comic-minus-unrestricted and
-  Sketch-minus-Comic matrices and effects, overall and by PG/BI model;
+- a compact imported four-style overview and descriptive centrality summary;
+  complete matrices and effects remain in the sole full style report;
 - native-minus-off matrices and paired effects for all 16 cells, the 12 changed
   cells and the PG-only, BI-only and both-role groups (four cells each);
 - descriptive random-versus-high-illustratability differences without causal
   or population-level interpretation;
 - technical validity and coverage.
+- SQ5 prompt/direct matrices and the four-diagonal three-way comparison below.
 
 Each title contributes one equally weighted Q25/G3/Q38/G4 mean to its domain's
 rating histogram. All four Direct-job ratings are required; missing means are
@@ -338,14 +372,76 @@ switches or embedded helper definitions. Shared table assembly and plotting are
 in `analysis/reporting.py` and `analysis/plotting.py`; the existing statistical
 calculations in `analysis/statistics.py` are unchanged.
 
-RQ1 compares selected direct Qwen/Gemma configurations. RQ2 compares PG, BB and
-BI choices on the indirect route. RQ3 compares both routes on identical images.
-RQ4 reports domain subgroups. SQ1 compares unrestricted, photorealistic, Sketch
+RQ1 compares selected direct Qwen/Gemma configurations through three
+aspects: earlier/later configurations within each family, families within each
+release cohort, and same-model versus crossed PG/BI assignments within the four
+planned model-pair comparisons. PG and BI differences are reported separately.
+The pairing contrasts describe interaction on end-to-end accuracy, not a
+mechanism of semantic preservation. Full-matrix relation-group means remain
+descriptive. The analysis does not include a pooled same-family contrast.
+RQ2 compares PG, BB and BI choices on the indirect route. RQ3 compares both
+routes on identical images. These three primary research questions address
+model configuration and reconstruction route.
+
+The five secondary research questions contextualise these comparisons.
+SQ1 compares unrestricted, photorealistic, Sketch
 and Comic direct reconstruction. SQ2 compares the thinking-off and
 native-thinking direct matrices. SQ3 reports the association with model-rated
 illustratability and the descriptive random-versus-high-illustratability
-comparison. SQ1--SQ3 are supplementary, not additional primary research
-questions.
+comparison. SQ4 reports domain subgroups for songs, movie titles and band names.
+SQ5 compares prompt-based reconstruction with the image and description routes.
+SQ means secondary research question. The distinction between main and
+supplementary jobs describes experimental conditions, not question priority.
+
+## SQ5: prompt reconstruction and three-way comparison
+
+SQ5 is an explicitly added secondary comparison, not a retrospectively
+predeclared original experiment. It uses Q25/Q38/G3/G4 in all 4x4 PG/BI cells,
+the same 90 titles, prompt seeds `1000`, `1001`, thinking off and the matching
+direct BI parameters (including seed `3003`). Its 180 prompt predictions per
+cell total 2,880 new model calls. Prompt generation and all image-related work
+are inherited. The 720 prompt predictions in the four diagonals are a subset
+of these 2,880, compared with 1,440 existing direct and 1,440 existing indirect
+predictions on those four same conditions.
+
+`verification_prompt` depends only on prompts; `verification_image` depends on
+images and retains both policies. `title_guessing_from_prompt` depends only on
+prompts. All are independently optional/importable, and prompt-only execution
+requires no image seeds or verifier model. Local and imported execution of the
+same stage is disallowed. Selected inherited work must be terminal and inactive;
+the parent source may still run unrelated stages in the new format. This is
+not permission to migrate active old-format jobs.
+
+The Prompt endpoint is passed prompt verification AND Strict Exact Match over
+every planned prompt. Missing decisions, predictions and terminal failures are
+zero. Normalized Exact Match is sensitivity only; there is no image-policy
+variant of prompt accuracy. The image/description endpoints do not change.
+Pairing averages both image seeds per prompt and both prompt seeds per title,
+then equally weights the matched cells. Confidence intervals use 10,000 paired,
+domain-stratified whole-title bootstrap draws with seed `20260829`.
+
+Report the complete 16-cell prompt/direct comparison separately from the
+four-diagonal prompt/direct/indirect comparison. The new contrasts are
+Prompt-minus-Direct and Prompt-minus-Indirect. The Direct/Indirect contrast
+references RQ3 and is not independent new evidence. A descriptive common-valid
+input table retains only passed prompt and Strict-image checks, uses the same
+accepted images across routes and still scores missing predictions as zero.
+It reports subset denominators and does not replace the primary estimate.
+Modality, representation and policy differences preclude interpreting SQ5 as
+an exact stage-wise semantic-loss decomposition or a guaranteed upper bound.
+
+The style report preserves domain strata in overall bootstrap intervals and
+deduplicates prompt checks by original Run/Prompt ID (local IDs when generated
+locally), never by text. A complete style has 720 logical prompts. It exports
+the complete four-style evidence, method IDs, file hashes and provenance;
+`STYLE_REPORT_DIR` imports only a validated compact summary into the final report.
+Missing or inconsistent exports fail explicitly.
+
+The copy-only migration preserves IDs, values, decisions, seeds, task attempts
+and provenance. It adds an empty prompt-prediction table and translates the
+verification stage labels/configuration. Only finished supported source jobs
+are accepted; ambiguous mappings fail. Preserve originals, exact converter and
+migration records outside the current website discovery root.
 
 ## Protocol validation and stability
 

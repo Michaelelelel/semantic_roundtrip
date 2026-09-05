@@ -40,7 +40,10 @@ def score_observations(observations: pd.DataFrame) -> pd.DataFrame:
     prompt_configured = result["prompt_verification_configured"].astype(bool)
     prompt_passed = result["prompt_verification_passed"].astype("boolean")
     prompt_gate = (~prompt_configured) | prompt_passed.fillna(False)
-    strict_configured = result["strict_image_verification_configured"].astype(bool)
+    image_route = ~result["route"].eq("prompt")
+    strict_configured = (
+        result["strict_image_verification_configured"].astype(bool) & image_route
+    )
     strict_passed = (
         result["strict_image_verification_passed"].astype("boolean").fillna(False)
     )
@@ -51,8 +54,8 @@ def score_observations(observations: pd.DataFrame) -> pd.DataFrame:
     result["end_to_end_normalized_score"] = (
         prompt_gate & strict_gate & result["normalized_exact_match"].fillna(False)
     ).astype(int)
-    title_aware_configured = result["title_aware_image_verification_configured"].astype(
-        bool
+    title_aware_configured = (
+        result["title_aware_image_verification_configured"].astype(bool) & image_route
     )
     title_aware_passed = (
         result["title_aware_image_verification_passed"].astype("boolean").fillna(False)

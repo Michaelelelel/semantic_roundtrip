@@ -1,4 +1,4 @@
-schema_version: 4
+schema_version: 5
 job:
   name: development_direct_comic_preview
   output_directory: runs
@@ -11,19 +11,22 @@ experiments:
   inherit:
     from_entry: direct_pg_q25_bi_q25
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: direct_pg_q25_bi_g3
   config: ../../experiments/final_study/direct/direct_pg_q25_bi_g3.yaml
   inherit:
     from_entry: direct_pg_q25_bi_q25
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: direct_pg_q25_bi_g4
   config: ../../experiments/final_study/direct/direct_pg_q25_bi_g4.yaml
   inherit:
     from_entry: direct_pg_q25_bi_q25
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: direct_pg_q38_bi_q38
   config: ../../experiments/final_study/development/direct_pg_q38_bi_q38_comic.yaml
 - name: direct_pg_q38_bi_q25
@@ -31,19 +34,22 @@ experiments:
   inherit:
     from_entry: direct_pg_q38_bi_q38
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: direct_pg_q38_bi_g4
   config: ../../experiments/final_study/direct/direct_pg_q38_bi_g4.yaml
   inherit:
     from_entry: direct_pg_q38_bi_q38
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: direct_pg_q38_bi_g3
   config: ../../experiments/final_study/direct/direct_pg_q38_bi_g3.yaml
   inherit:
     from_entry: direct_pg_q38_bi_q38
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: direct_pg_g3_bi_g3
   config: ../../experiments/final_study/development/direct_pg_g3_bi_g3_comic.yaml
 - name: direct_pg_g3_bi_g4
@@ -51,19 +57,22 @@ experiments:
   inherit:
     from_entry: direct_pg_g3_bi_g3
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: direct_pg_g3_bi_q25
   config: ../../experiments/final_study/direct/direct_pg_g3_bi_q25.yaml
   inherit:
     from_entry: direct_pg_g3_bi_g3
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: direct_pg_g3_bi_q38
   config: ../../experiments/final_study/direct/direct_pg_g3_bi_q38.yaml
   inherit:
     from_entry: direct_pg_g3_bi_g3
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: direct_pg_g4_bi_g4
   config: ../../experiments/final_study/development/direct_pg_g4_bi_g4_comic.yaml
 - name: direct_pg_g4_bi_g3
@@ -71,16 +80,19 @@ experiments:
   inherit:
     from_entry: direct_pg_g4_bi_g4
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: direct_pg_g4_bi_q38
   config: ../../experiments/final_study/direct/direct_pg_g4_bi_q38.yaml
   inherit:
     from_entry: direct_pg_g4_bi_g4
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: direct_pg_g4_bi_q25
   config: ../../experiments/final_study/direct/direct_pg_g4_bi_q25.yaml
   inherit:
     from_entry: direct_pg_g4_bi_g4
     stages:
-    - verification
+    - verification_prompt
+    - verification_image

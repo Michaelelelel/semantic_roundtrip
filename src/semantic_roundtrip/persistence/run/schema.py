@@ -11,7 +11,21 @@ from semantic_roundtrip.persistence.sqlite import (
 )
 
 DATABASE_FILENAME = "pipeline_state.sqlite"
-DATABASE_SCHEMA_VERSION = 11
+DATABASE_SCHEMA_VERSION = 12
+
+PROMPT_PREDICTIONS_SCHEMA = """
+CREATE TABLE prompt_predictions (
+    prompt_prediction_id INTEGER PRIMARY KEY,
+    prompt_id INTEGER NOT NULL UNIQUE REFERENCES prompts(prompt_id)
+        ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    confidence REAL,
+    confidence_type TEXT,
+    raw_response TEXT NOT NULL CHECK (length(raw_response) > 0),
+    origin_run_id TEXT,
+    origin_prompt_prediction_id INTEGER
+);
+"""
 
 
 def database_path_for_run(run_directory: Path) -> Path:
@@ -322,6 +336,7 @@ def initialize_database(
                 ON run_lineage(run_id, depth);
             """
         )
+        connection.executescript(PROMPT_PREDICTIONS_SCHEMA)
         now = utc_now()
         connection.execute(
             """

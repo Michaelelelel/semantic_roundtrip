@@ -5,12 +5,14 @@
     —
   {% else %}
     {% set value = accuracies[route] %}
-    {% if not value.predictions and status not in ("completed", "failed", "interrupted") %}
+    {% if value.percent is none %}
+      Unavailable (no planned observations)
+    {% elif not value.predictions and status not in ("completed", "failed", "interrupted") %}
       Pending
     {% else %}
       <strong>{{ "%.1f"|format(value.percent) }}%</strong>
       <small>({{ value.correct }} / {{ value.expected }})</small>
-      <small>strict image policy</small>
+      <small>{% if route == "prompt" %}{{ "prompt check" if value.prompt_verification_configured else "no verification configured" }}{% else %}{{ "strict image policy" if value.image_verification_configured else "no strict image policy configured" }}{% endif %}</small>
       {% if value.title_aware_percent is not none %}
         <br>
         <strong>{{ "%.1f"|format(value.title_aware_percent) }}%</strong>
@@ -26,14 +28,15 @@
 {% macro accuracy_summary(accuracies, status) %}
   {% if accuracies %}
     <dl class="metadata accuracy-summary">
-      {% for route, label in (("image", "Direct accuracy"), ("description", "Indirect accuracy")) %}
+      {% for route, label in (("image", "Direct accuracy"), ("description", "Indirect accuracy"), ("prompt", "Prompt accuracy")) %}
         {% if route in accuracies %}
           <div><dt>{{ label }}</dt><dd>{{ show_accuracy(accuracies, route, status) }}</dd></div>
         {% endif %}
       {% endfor %}
     </dl>
-    <p class="accuracy-note">End-to-end Strict Exact Match: passed prompt verification, passed image policy and correct title / all planned observations.
-      The strict image policy is primary; title-aware image verification is a sensitivity analysis.
+    <p class="accuracy-note">Strict Exact Match over all planned observations, requiring each configured verification decision to pass.
+      {% if "image" in accuracies or "description" in accuracies %}Image and description routes use their image policies; strict is primary and title-aware is a sensitivity analysis.{% endif %}
+      {% if "prompt" in accuracies %}The prompt route uses the prompt check only, once per prompt; image checks and image seeds do not affect its score.{% endif %}
       Missing configured decisions or predictions count as zero. Provisional values include unfinished work.</p>
   {% endif %}
 {% endmacro %}

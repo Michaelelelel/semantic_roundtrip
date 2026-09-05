@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from semantic_roundtrip.config import ResolvedAppConfig
+from semantic_roundtrip.config import ResolvedAppConfig, StageName
+from semantic_roundtrip.inheritance.files import native_path, walk_artifact_paths
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,3 +64,60 @@ def resolve_job_entry_run(job_directory: Path, entry_name: str) -> SourceRun:
             f"Job entry '{entry_name}' has no persisted child run."
         ) from error
     return load_source_run(record.run_directory)
+
+
+def resolve_stage_provenance(
+    config: ResolvedAppConfig,
+    run_directory: Path,
+    stage: StageName,
+) -> tuple[ResolvedAppConfig, Path] | None:
+    """Find the defining stage snapshot, including zero-output inherited stages.
+
+    Bundled provenance is authoritative and remains usable after moving a job.
+    The explicit source path is consulted only before provenance is materialized.
+    No model service is contacted and no source artifact is modified.
+    """
+    from semantic_roundtrip.config_resolution import (
+        get_stage_config,
+        load_effective_config,
+    )
+    from semantic_roundtrip.inheritance.dependencies import dependency_closure
+    from semantic_roundtrip.persistence.run.config_snapshot import (
+        EFFECTIVE_CONFIG_FILENAME,
+    )
+
+    provenance = run_directory / "provenance"
+    current, directory = config, run_directory
+    visited: set[str] = set()
+    while get_stage_config(current, stage) is None:
+        inheritance = current.inherit
+        if inheritance is None or stage not in dependency_closure(inheritance.stages):
+            return None
+        source_id = inheritance.source_run_id
+        if source_id in visited:
+            raise ValueError("Cyclic stage provenance.")
+        visited.add(source_id)
+        matches = (
+            sorted(
+                path
+                for path in walk_artifact_paths(provenance)
+                if path.name == EFFECTIVE_CONFIG_FILENAME
+                and path.parent.name == source_id
+            )
+            if native_path(provenance).is_dir()
+            else []
+        )
+        if matches:
+            contents = {native_path(path).read_bytes() for path in matches}
+            if len(contents) != 1:
+                raise ValueError(
+                    f"Conflicting bundled snapshots for source {source_id}."
+                )
+            directory = matches[0].parent
+            current = load_effective_config(native_path(matches[0]))
+        else:
+            source = load_source_run(inheritance.source_run)
+            if source.run_id != source_id:
+                raise ValueError("Stage provenance source identity mismatch.")
+            current, directory = source.config, source.directory
+    return current, directory

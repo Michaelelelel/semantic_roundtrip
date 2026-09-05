@@ -96,7 +96,7 @@ class JobEntryInheritance(ConfigModel):
 class InputJobConfig(ConfigModel):
     """Human-maintained job configuration."""
 
-    schema_version: Literal[4]
+    schema_version: Literal[5]
     job: JobDefinition
     source_jobs: dict[str, ExternalJobSource] = Field(default_factory=dict)
     experiments: list[JobExperimentReference] = Field(min_length=1)
@@ -125,7 +125,7 @@ class ResolvedJobEntry(ConfigModel):
 class ResolvedJobConfig(ConfigModel):
     """Frozen job policy and immutable entry metadata used for resume."""
 
-    schema_version: Literal[4]
+    schema_version: Literal[5]
     configuration_kind: Literal["effective"] = "effective"
     job: JobDefinition
     entries: list[ResolvedJobEntry] = Field(min_length=1)
@@ -413,10 +413,12 @@ def plan_job(
         "illustratability_rating": 0,
         "prompt_generation": 0,
         "image_generation": 0,
-        "verification": 0,
+        "verification_prompt": 0,
+        "verification_image": 0,
         "title_guessing_direct": 0,
         "image_description": 0,
         "title_guessing_from_description": 0,
+        "title_guessing_from_prompt": 0,
     }
     entries: list[JobPlanEntry] = []
     model_stacks: list[str] = []

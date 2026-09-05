@@ -1,0 +1,16 @@
+profile_id: title_guessing_from_prompt
+version: 1
+output_format: plain_text
+
+messages:
+  - role: user
+    content: |
+      Identify the exact title or name represented by this image-generation prompt.
+      Domain: ${domain}
+
+      Image-generation prompt:
+      ${prompt}
+
+      Make one best guess, even if uncertain. Do not repeat the prompt. Return
+      only that title or name on one line. No quotation marks, labels, explanations,
+      alternatives, or "by ..." attribution.

@@ -10,7 +10,8 @@ from semantic_roundtrip.config_resolution import (
     get_stage_config,
     load_effective_config,
 )
-from semantic_roundtrip.inheritance.dependencies import dependency_closure
+from semantic_roundtrip.inheritance.dependencies import STAGE_ORDER, dependency_closure
+from semantic_roundtrip.inheritance.source import resolve_stage_provenance
 from semantic_roundtrip.persistence.run.config_snapshot import (
     EFFECTIVE_CONFIG_FILENAME,
 )
@@ -26,15 +27,6 @@ from semantic_roundtrip.persistence.run.schema import database_path_for_run
 from semantic_roundtrip.status.common import elapsed_seconds
 from semantic_roundtrip.status.models import EtaState, RunStatus, StageStatus
 
-STAGE_ORDER = (
-    "illustratability_rating",
-    "prompt_generation",
-    "image_generation",
-    "verification",
-    "title_guessing_direct",
-    "image_description",
-    "title_guessing_from_description",
-)
 MINIMUM_ETA_SAMPLES = 3
 
 
@@ -46,6 +38,8 @@ def _stage_model(
     imported: bool,
 ) -> str | None:
     """Return the configured model ID for one executable pipeline stage."""
+    if stage_name == "verification_prompt":
+        return "Deterministic (no model)"
     if imported:
         return read_stage_runtime_model(database_path, stage_name)
 
@@ -114,11 +108,12 @@ def get_run_status(run_directory: Path) -> RunStatus:
     )
     progress = {stage.stage: stage for stage in read_stage_progress(database_path)}
     for stage_name in imported_stages:
-        expected[stage_name] = (
-            progress[stage_name].expected_outputs
-            if stage_name in progress
-            else expected_output_count(config, stage_name)
-        )
+        source = resolve_stage_provenance(config, run_directory, stage_name)
+        if source is None:
+            raise ValueError(
+                f"Inherited stage '{stage_name}' has no defining snapshot."
+            )
+        expected[stage_name] = expected_output_count(source[0], stage_name)
 
     stages = tuple(
         StageStatus(

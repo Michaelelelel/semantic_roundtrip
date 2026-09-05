@@ -62,17 +62,18 @@ belong in the experiment.
 
 ## Experiment
 
-Experiment schema 10 selects a dataset, seeds, backend aliases and locally run
-stages. The grouped verification stage is optional. It can enable the
-deterministic prompt-title check and either or both image policies. The blind
+Experiment schema 11 selects a dataset, seeds, backend aliases and locally run
+stages. Prompt and image verification are independently optional. The prompt
+check is deterministic and requires no backend; image checks select a backend
+and either or both policies. The blind
 strict policy rejects any meaningful readable writing; the title-aware policy
 receives the reference title and rejects only writing that communicates that
-title. Omit `verification` for no checks, or omit one image policy to run only
+title. Omit both verification stages for no checks, or omit one image policy to run only
 the other. The final-study configs enable all three decisions. Checks affect
 evaluation but do not stop later stages.
 
 ```yaml
-schema_version: 10
+schema_version: 11
 
 run:
   name: my_direct_run
@@ -96,11 +97,11 @@ stages:
     prompt_profile: prompts/prompt_generation/visual_single_v5.yaml
   image_generation:
     backend: model
-  verification:
+  verification_prompt:
+    policy: reference_title_absent
+  verification_image:
     backend: model
-    prompt:
-      policy: reference_title_absent
-    image:
+    policies:
       strict:
         prompt_profile: prompts/verification/json_v3.yaml
       title_aware:
@@ -109,6 +110,9 @@ stages:
     direct:
       backend: model
       prompt_profile: prompts/title_guessing/plain_v3.yaml
+    from_prompt:
+      backend: model
+      prompt_profile: prompts/title_guessing/prompt_plain_v1.yaml
 ```
 
 Every model instruction is a versioned YAML chat profile. A profile records its
@@ -136,11 +140,13 @@ Available local stages:
 ```text
 illustratability_rating
 prompt_generation
+verification_prompt
 image_generation
-verification
+verification_image
 title_guessing.direct
 image_description
 title_guessing.from_description
+title_guessing.from_prompt
 ```
 
 At least one must run locally. Paths inside an experiment are relative to that
@@ -148,12 +154,18 @@ file. A root experiment defines `dataset`; a derived experiment receives its
 dataset and upstream products through inheritance. Stage `parameters` are sent
 to the adapter and should be explicit for a fixed study.
 
+The listed execution order is fixed by the runner, not the YAML key order.
+Prompt-only can configure `prompt_generation`, `verification_prompt` and
+`title_guessing.from_prompt`, omitting images, image seeds and any verifier
+backend. Its guesser receives only the stored prompt and domain. Image and
+description routes remain independently optional.
+
 ## Job
 
-Job schema 4 lists experiments in execution order:
+Job schema 5 lists experiments in execution order:
 
 ```yaml
-schema_version: 4
+schema_version: 5
 
 job:
   name: my_job
@@ -167,7 +179,7 @@ experiments:
     config: direct_from_verification.yaml
     inherit:
       from_entry: source
-      stages: [verification]
+      stages: [verification_prompt, verification_image]
 ```
 
 `continue_on_error: true` lets later independent entries run after one child has
@@ -181,22 +193,24 @@ An inherited stage includes all required predecessors:
 | --- | --- |
 | `prompt_generation` | prompt |
 | `image_generation` | prompt, image |
-| `verification` | prompt, image, verification |
+| `verification_prompt` | prompt, prompt verification |
+| `verification_image` | prompt, image, image verification |
 | `title_guessing_direct` | prompt, image, direct prediction |
 | `image_description` | prompt, image, description |
 | `title_guessing_from_description` | prompt, image, description, indirect prediction |
+| `title_guessing_from_prompt` | prompt, prompt prediction |
 | `illustratability_rating` | rating only |
 
 Use the flattened title-stage names only inside `inherit.stages`.
-Verification is an independent evaluation branch. Request `verification`
-explicitly beside a reconstruction stage when a derived run must retain its
-persisted checks. Omit it only when the derived run executes the current
-verification stage again.
+Verification is an independent evaluation branch. Request each needed
+verification stage explicitly beside reconstruction when retaining its checks;
+guessing inheritance does not implicitly import verification. Prompt checks
+can be imported without images. A stage cannot be both imported and local.
 
 Exactly one source form is allowed:
 
 - `from_entry`: an earlier entry in the same job;
-- `from_run`: a specific completed standalone or child run;
+- `from_run`: a specific standalone or child run with terminal selected work;
 - `from_job_entry`: a named entry from another job.
 
 Cross-job reuse declares an alias:
@@ -212,7 +226,7 @@ experiments:
       from_job_entry:
         job: local_source
         entry: source_entry
-      stages: [verification]
+      stages: [verification_prompt, verification_image]
 ```
 
 Bind it explicitly when starting:
@@ -232,6 +246,16 @@ The child copies data and files into its own run. It does not depend on the
 source afterward. Imported successes and terminal failures keep their
 provenance. The importer validates stage structure and expected rows; it does
 not repair or silently regenerate mismatches.
+Selected stages and dependencies must be terminal and inactive; unrelated work
+may continue in a new-format source. Bundled snapshots preserve expected counts
+and policies even when upstream failures produced no verification tasks.
+
+Run DB 12 stores prompt predictions separately from image-linked predictions:
+`prompt_predictions` has an ID, unique required `prompt_id`, title, raw response,
+optional confidence and method, and origin Run/Prediction IDs. A run defines one
+model assignment, so each prompt has at most one prediction per route.
+Job DB remains 4 and manifest format remains 6. Old formats are accepted only
+by the explicit one-time converter on completed copies, not normal execution.
 
 ## Checklist
 

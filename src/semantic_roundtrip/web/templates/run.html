@@ -21,6 +21,9 @@
       ·
     {% endif %}
     <a href="{{ url_for('run_results', run_path=run_path) }}">View results</a>
+    {% if "prompt" in accuracies %}
+      · <a href="{{ url_for('run_prompt_results', run_path=run_path) }}">View prompt results</a>
+    {% endif %}
   </p>
 
   {% if run.last_error %}

@@ -5,11 +5,16 @@ translate it through an image.
 
 ![Pipeline and verification checks](diagrams/pipeline.svg)
 
-[Editable Mermaid source](diagrams/pipeline.mmd). Every current run persists
-three verification decisions: a deterministic prompt-title check, a blind image
+[Editable Mermaid source](diagrams/pipeline.mmd). Image-dependent study runs persist
+three verification decisions in independent prompt/image stages: a deterministic prompt-title check, a blind image
 check for any readable meaningful text, and a title-aware image check for the
 reference title only. They affect evaluation but never prevent image generation
 or reconstruction.
+
+An optional prompt route reconstructs the title from the original generated
+prompt plus domain, without an image. It has one prediction per prompt and its
+own accuracy, alongside the direct and description-mediated routes. Models are
+configurable; the supported reconstruction routes are deliberately predefined.
 
 The pipeline stores resolved configs, prompt and workflow snapshots, raw model
 responses, images, predictions, errors and timing evidence in each run. Jobs
@@ -52,7 +57,8 @@ Smokes and six-title previews are optional deployment checks, not final results.
   dataset construction and sources.
 - [`manual_evaluation/README.md`](manual_evaluation/README.md): manual verifier,
   sketch and comic checks.
-- [`notebooks/final_study.ipynb`](notebooks/final_study.ipynb): thesis figures (RQ1–RQ4, SQ1–SQ3).
+- [`notebooks/final_study.ipynb`](notebooks/final_study.ipynb): thesis figures for
+  primary research questions RQ1–RQ3 and secondary research questions SQ1–SQ5.
 - [`notebooks/style_decision.ipynb`](notebooks/style_decision.ipynb): complete four-style 4 x 4 comparison.
 - [`notebooks/illustratability_distribution.ipynb`](notebooks/illustratability_distribution.ipynb): 900-candidate rating distribution.
 - [`artifacts/candidate_illustratability/`](artifacts/candidate_illustratability/README.md):
@@ -77,3 +83,10 @@ versioned executable protocol.
 Python dependencies are locked in `uv.lock`. Container images, model revisions
 and model checksums are pinned. Existing run snapshots remain historical facts;
 editing a live config never changes an earlier run.
+
+The `final_v3` SQ5 extension preserves original `final_v2` outputs. Current
+formats are experiment 11, Run DB 12 and Job YAML 5 (Job DB 4, manifest 6).
+The one-time [migration script](scripts/migrate_current_runs.py) converts only
+completed experiment-10/DB-11/job-4 inputs on separate copies; see
+[migration and deployment](RUNNING.md#sq5-format-migration-and-deployment).
+Never migrate active jobs or scan original and converted copies together.

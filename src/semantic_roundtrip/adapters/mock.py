@@ -263,6 +263,31 @@ class MockTextTitleGuesser:
         )
 
 
+class MockPromptTitleGuesser:
+    """Return a deterministic prompt-level prediction without an image."""
+
+    def __init__(self, delay_seconds: float = 0.0) -> None:
+        self._delay_seconds = delay_seconds
+
+    def guess_title(self, *, prompt: str, domain: str | None) -> TitlePrediction:
+        time.sleep(self._delay_seconds)
+        return TitlePrediction(
+            title="Mock Title",
+            confidence=0.5,
+            confidence_type="mock_probability",
+            raw_response=json.dumps(
+                {"title": "Mock Title", "prompt": prompt, "domain": domain}
+            ),
+        )
+
+
+def build_mock_prompt_title_guesser(
+    raw_settings: dict[str, Any],
+) -> MockPromptTitleGuesser:
+    settings = _load_mock_settings(raw_settings)
+    return MockPromptTitleGuesser(settings.delay_seconds)
+
+
 def _load_mock_settings(raw_settings: dict[str, Any]) -> MockAdapterSettings:
     return MockAdapterSettings.model_validate(raw_settings)
 

@@ -1,4 +1,4 @@
-schema_version: 10
+schema_version: 11
 
 run:
   name: example_direct_from_verification

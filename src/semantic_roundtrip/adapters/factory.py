@@ -11,6 +11,7 @@ from semantic_roundtrip.adapters.base import (
     ImageTitleGuesser,
     ImageVerifier,
     PromptGenerator,
+    PromptTitleGuesser,
     TextTitleGuesser,
 )
 from semantic_roundtrip.adapters.comfyui import build_comfyui_image_generator
@@ -21,6 +22,7 @@ from semantic_roundtrip.adapters.mock import (
     build_mock_image_title_guesser,
     build_mock_image_verifier,
     build_mock_prompt_generator,
+    build_mock_prompt_title_guesser,
     build_mock_text_title_guesser,
 )
 from semantic_roundtrip.adapters.openai_compatible import (
@@ -29,6 +31,7 @@ from semantic_roundtrip.adapters.openai_compatible import (
     build_openai_compatible_image_title_guesser,
     build_openai_compatible_image_verifier,
     build_openai_compatible_prompt_generator,
+    build_openai_compatible_prompt_title_guesser,
     build_openai_compatible_text_title_guesser,
 )
 from semantic_roundtrip.config import (
@@ -53,6 +56,7 @@ class AdapterBundle:
     image_describer: ImageDescriber | None
     image_title_guesser: ImageTitleGuesser | None
     text_title_guesser: TextTitleGuesser | None
+    prompt_title_guesser: PromptTitleGuesser | None
 
 
 IllustratabilityRaterBuilder = Callable[[dict[str, Any]], IllustratabilityRater]
@@ -64,6 +68,7 @@ ImageVerifierBuilder = Callable[
 ImageDescriberBuilder = Callable[[dict[str, Any]], ImageDescriber]
 ImageTitleGuesserBuilder = Callable[[dict[str, Any]], ImageTitleGuesser]
 TextTitleGuesserBuilder = Callable[[dict[str, Any]], TextTitleGuesser]
+PromptTitleGuesserBuilder = Callable[[dict[str, Any]], PromptTitleGuesser]
 
 
 ILLUSTRATABILITY_RATERS: dict[str, IllustratabilityRaterBuilder] = {
@@ -100,6 +105,11 @@ IMAGE_TITLE_GUESSERS: dict[str, ImageTitleGuesserBuilder] = {
 TEXT_TITLE_GUESSERS: dict[str, TextTitleGuesserBuilder] = {
     "mock": build_mock_text_title_guesser,
     "openai_compatible": build_openai_compatible_text_title_guesser,
+}
+
+PROMPT_TITLE_GUESSERS: dict[str, PromptTitleGuesserBuilder] = {
+    "mock": build_mock_prompt_title_guesser,
+    "openai_compatible": build_openai_compatible_prompt_title_guesser,
 }
 
 
@@ -207,6 +217,17 @@ def create_text_title_guesser(
     return builder(selection.settings)
 
 
+def create_prompt_title_guesser(selection: StageAdapterConfig) -> PromptTitleGuesser:
+    builder = PROMPT_TITLE_GUESSERS.get(selection.adapter)
+    if builder is None:
+        raise _unsupported_adapter(
+            stage="prompt title-guessing",
+            adapter=selection.adapter,
+            registry=PROMPT_TITLE_GUESSERS,
+        )
+    return builder(selection.settings)
+
+
 def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
     """Create only the adapters required by the configured pipeline routes."""
     return AdapterBundle(
@@ -235,7 +256,7 @@ def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
             policy: create_image_verifier(
                 resolve_stage_adapter(
                     config,
-                    "verification",
+                    "verification_image",
                     image_verification_policy=policy,
                 ),
                 policy,
@@ -267,6 +288,14 @@ def create_adapters(config: ResolvedAppConfig) -> AdapterBundle:
             )
             else create_text_title_guesser(
                 resolve_stage_adapter(config, "title_guessing_from_description")
+            )
+        ),
+        prompt_title_guesser=(
+            None
+            if config.stages.title_guessing is None
+            or config.stages.title_guessing.from_prompt is None
+            else create_prompt_title_guesser(
+                resolve_stage_adapter(config, "title_guessing_from_prompt")
             )
         ),
     )

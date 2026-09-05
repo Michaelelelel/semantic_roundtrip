@@ -8,10 +8,12 @@ STAGE_LABELS = {
     "illustratability_rating": "Illustratability rating",
     "prompt_generation": "Prompt generation",
     "image_generation": "Image generation",
-    "verification": "Verification",
-    "title_guessing_direct": "Direct title guessing",
+    "verification_prompt": "Prompt verification",
+    "verification_image": "Image verification",
+    "title_guessing_direct": "Title guessing from image",
     "image_description": "Image description",
     "title_guessing_from_description": "Description title guessing",
+    "title_guessing_from_prompt": "Title guessing from prompt",
 }
 
 

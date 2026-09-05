@@ -36,11 +36,13 @@ def print_job_plan(plan: JobPlan) -> bool:
         f"ratings={plan.expected_outputs['illustratability_rating']}, "
         f"prompts={plan.expected_outputs['prompt_generation']}, "
         f"images={plan.expected_outputs['image_generation']}, "
-        f"verification decisions={plan.expected_outputs['verification']}, "
+        f"prompt checks={plan.expected_outputs['verification_prompt']}, "
+        f"image checks={plan.expected_outputs['verification_image']}, "
         f"direct guesses={plan.expected_outputs['title_guessing_direct']}, "
         f"descriptions={plan.expected_outputs['image_description']}, "
         "description guesses="
-        f"{plan.expected_outputs['title_guessing_from_description']}"
+        f"{plan.expected_outputs['title_guessing_from_description']}, "
+        f"prompt guesses={plan.expected_outputs['title_guessing_from_prompt']}"
     )
 
     table = Table()

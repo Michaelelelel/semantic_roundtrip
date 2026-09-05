@@ -18,34 +18,37 @@ flowchart LR
     image["Image generation<br/>SD3.5 Large"]
 
     subgraph reconstruction["Title reconstruction"]
-        direct["Direct BI<br/>Image → title"]
+        direct["Direct BI<br/>Image + domain → title"]
         bb["BB<br/>Image → description"]
-        indirect["Indirect BI<br/>Description → title"]
+        indirect["Indirect BI<br/>Description + domain → title"]
+        promptbi["Prompt BI · optional SQ5<br/>Generated prompt + domain → title"]
         bb --> indirect
     end
 
-    subgraph verification["Verification"]
-        promptverifier["Prompt verifier<br/>Reference-title absence<br/>Deterministic"]
+    subgraph verification["Independent prompt / image verification"]
         strictverifier["Strict image verifier · Q38<br/>Any meaningful text"]
         awareverifier["Title-aware image verifier · Q38<br/>Reference-title text only"]
+        promptverifier["Prompt verifier<br/>Reference-title absence<br/>Deterministic"]
     end
 
     rating["Illustratability rating<br/>PG model · 0–100"]
-    evaluation["Evaluation<br/>Strict primary · title-aware sensitivity"]
+    evaluation["Evaluation<br/>Prompt: prompt check only<br/>Image routes: prompt + image checks"]
     analysis(["Analysis<br/>Accuracy · effects · correlations"])
 
     title --> pg
     pg -->|visual prompt| image
+    pg -->|same stored prompt| promptbi
     image -->|direct route| direct
     image -->|description-mediated route| bb
     direct -->|predicted title| evaluation
     indirect -->|predicted title| evaluation
+    promptbi -->|predicted title| evaluation
 
-    pg -->|generated prompt| promptverifier
-    title -->|reference title| promptverifier
     image --> strictverifier
     image --> awareverifier
     title -->|reference title| awareverifier
+    pg -->|generated prompt| promptverifier
+    title -->|reference title| promptverifier
     promptverifier -->|pass / reject| evaluation
     strictverifier -->|pass / reject| evaluation
     awareverifier -->|pass / reject| evaluation

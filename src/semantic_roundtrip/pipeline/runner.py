@@ -20,8 +20,10 @@ from semantic_roundtrip.pipeline.stages import (
     execute_illustratability_rating_stage,
     execute_image_description_stage,
     execute_image_generation_stage,
+    execute_image_verification_stage,
     execute_prompt_generation_stage,
-    execute_verification_stage,
+    execute_prompt_title_guessing_stage,
+    execute_prompt_verification_stage,
 )
 from semantic_roundtrip.pipeline.tasks import PauseRequested, raise_if_pause_requested
 from semantic_roundtrip.prompting import PromptProfile
@@ -43,6 +45,7 @@ def _summary(database: RunDatabase, status: str) -> PipelineSummary:
         title_aware_image_verifications=counts.title_aware_image_verifications,
         image_descriptions=counts.image_descriptions,
         predictions=counts.predictions,
+        prompt_predictions=counts.prompt_predictions,
         failed_tasks=database.tasks.count_failed(),
     )
 
@@ -65,12 +68,10 @@ def _execute_runtime_stage(
         work_items = counts.prompts * len(config.experiment.image_seeds)
     elif stage == "title_guessing_from_description":
         work_items = counts.image_descriptions
-    elif stage == "verification":
-        verification = config.stages.verification
-        assert verification is not None
-        work_items = (
-            counts.prompts if verification.prompt is not None else 0
-        ) + counts.images * len(configured_image_verification_policies(config))
+    elif stage == "title_guessing_from_prompt":
+        work_items = counts.prompts
+    elif stage == "verification_image":
+        work_items = counts.images * len(configured_image_verification_policies(config))
     else:
         work_items = counts.images
 
@@ -127,6 +128,10 @@ def execute_stages(
                 prompt_profile=prompt_profile,
             ),
         )
+    if get_stage_config(config, "verification_prompt") is not None:
+        execute_prompt_verification_stage(
+            config=config, database=database, adapters=adapters
+        )
     if get_stage_config(config, "image_generation") is not None:
         _execute_runtime_stage(
             config=config,
@@ -140,25 +145,16 @@ def execute_stages(
                 adapters=adapters,
             ),
         )
-    if get_stage_config(config, "verification") is not None:
-        if configured_image_verification_policies(config):
-            _execute_runtime_stage(
-                config=config,
-                database=database,
-                runtime_session=runtime_session,
-                stage="verification",
-                operation=lambda: execute_verification_stage(
-                    config=config,
-                    database=database,
-                    adapters=adapters,
-                ),
-            )
-        else:
-            execute_verification_stage(
-                config=config,
-                database=database,
-                adapters=adapters,
-            )
+    if get_stage_config(config, "verification_image") is not None:
+        _execute_runtime_stage(
+            config=config,
+            database=database,
+            runtime_session=runtime_session,
+            stage="verification_image",
+            operation=lambda: execute_image_verification_stage(
+                config=config, database=database, adapters=adapters
+            ),
+        )
     if get_stage_config(config, "title_guessing_direct") is not None:
         _execute_runtime_stage(
             config=config,
@@ -193,6 +189,16 @@ def execute_stages(
                 config=config,
                 database=database,
                 adapters=adapters,
+            ),
+        )
+    if get_stage_config(config, "title_guessing_from_prompt") is not None:
+        _execute_runtime_stage(
+            config=config,
+            database=database,
+            runtime_session=runtime_session,
+            stage="title_guessing_from_prompt",
+            operation=lambda: execute_prompt_title_guessing_stage(
+                config=config, database=database, adapters=adapters
             ),
         )
 

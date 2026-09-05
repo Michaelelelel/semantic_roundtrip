@@ -1,7 +1,7 @@
 """Text-input title guessing through an OpenAI-compatible chat endpoint."""
 
 import math
-from typing import Any
+from typing import Any, Literal
 
 from semantic_roundtrip.adapters.errors import AdapterError
 from semantic_roundtrip.adapters.openai_compatible.client import (
@@ -59,12 +59,18 @@ def title_prediction_from_completion(
 class OpenAICompatibleTextTitleGuesser:
     """Guess a title from a stored description without receiving the image."""
 
-    def __init__(self, settings: OpenAICompatibleStageSettings) -> None:
+    def __init__(
+        self,
+        settings: OpenAICompatibleStageSettings,
+        *,
+        input_variable: Literal["description", "prompt"] = "description",
+    ) -> None:
         self._config = settings
+        self._input_variable = input_variable
         self._prompt_profile = load_prompt_profile(settings.prompt_profile).profile
         validate_prompt_profile_variables(
             self._prompt_profile,
-            available={"description", "domain"},
+            available={input_variable, "domain"},
         )
         if self._prompt_profile.output_format != "plain_text":
             raise ValueError("Title guessing requires a plain-text prompt profile.")
@@ -73,7 +79,11 @@ class OpenAICompatibleTextTitleGuesser:
             model_id=settings.model_id,
             timeout_seconds=settings.timeout_seconds,
             api_key_env=settings.api_key_env,
-            error_subject="Description title guessing",
+            error_subject=(
+                "Description title guessing"
+                if input_variable == "description"
+                else "Prompt title guessing"
+            ),
         )
 
     def guess_title(
@@ -82,10 +92,13 @@ class OpenAICompatibleTextTitleGuesser:
         description: str,
         domain: str | None,
     ) -> TitlePrediction:
+        return self._complete(description, domain)
+
+    def _complete(self, content: str, domain: str | None) -> TitlePrediction:
         rendered_messages = render_prompt_profile(
             self._prompt_profile,
             variables={
-                "description": description,
+                self._input_variable: content,
                 "domain": domain or "",
             },
         )
@@ -107,6 +120,24 @@ class OpenAICompatibleTextTitleGuesser:
             chat_template_kwargs=self._config.chat_template_kwargs,
         )
         return title_prediction_from_completion(completion)
+
+
+class OpenAICompatiblePromptTitleGuesser(OpenAICompatibleTextTitleGuesser):
+    """Text-only title reconstruction from the exact stored image prompt."""
+
+    def __init__(self, settings: OpenAICompatibleStageSettings) -> None:
+        super().__init__(settings, input_variable="prompt")
+
+    def guess_title(self, *, prompt: str, domain: str | None) -> TitlePrediction:
+        return self._complete(prompt, domain)
+
+
+def build_openai_compatible_prompt_title_guesser(
+    raw_settings: dict[str, Any],
+) -> OpenAICompatiblePromptTitleGuesser:
+    return OpenAICompatiblePromptTitleGuesser(
+        OpenAICompatibleStageSettings.model_validate(raw_settings)
+    )
 
 
 def build_openai_compatible_text_title_guesser(

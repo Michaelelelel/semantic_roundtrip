@@ -11,33 +11,47 @@ the thesis Methodology. Exact settings are in
 3. Use the same code/config revision across hosts. Run one model job at a time
    per shared runtime stack.
 
+After SQ5 conversion, all commands must use the converted current-format run
+root. If it is selected through a shell override rather than `.env`, replace
+`sudo docker compose` below with `sudo --preserve-env=RUN_ROOT docker compose`.
+Otherwise `sudo` may discard the override and expose the original old-format
+jobs instead. See the explicit migration/deployment sequence in `RUNNING.md`.
+
 The random main dataset has 90 titles (30 per domain), without illustratability
 or title-length quotas. Each title uses two prompt seeds crossed with two image
 seeds. Use the shipped dataset; do not redraw it for a new condition.
 
-Every current reconstruction run persists the same three checks: normalized
+Every image-dependent study condition persists the same three checks: normalized
 reference-title absence in the generated prompt, blind image rejection of any
 meaningful readable text, and title-aware image rejection of the reference
 title only. The first image policy with Strict Exact Match is primary; the
 title-aware and normalized variants are sensitivity outcomes. Verification
 affects scoring but never stops generation or reconstruction.
+Prompt reconstruction adds one prediction per stored prompt plus domain, with
+the prompt check only; image seeds and image policies do not enter that score.
 
-There are **three main jobs and five supplementary job configurations**, plus a
+There are **three main jobs and six supplementary job configurations**, plus a
 candidate-rating job used for the high-illustratability selection. Direct Core
 also supplies the unrestricted condition of the four-style comparison:
 
 | Group | Job config | Design / research question | Prerequisite |
 | --- | --- | --- | --- |
-| Main | `direct_core.yaml` | 4 x 4 direct; four paired indirect baselines (RQ1, RQ3, RQ4) | services ready |
-| Main | `indirect_local.yaml` | 2 x 4 x 2 local indirect (RQ2, RQ4) | services ready |
-| Main | `aqueduct_v4_extension.yaml` | 20 additions completing 3 x 4 x 3 (RQ2, RQ4) | exact completed local-indirect job; API key |
+| Main | `direct_core.yaml` | 4 x 4 direct; four paired indirect baselines (RQ1, RQ3, SQ4) | services ready |
+| Main | `indirect_local.yaml` | 2 x 4 x 2 local indirect (RQ2, SQ4) | services ready |
+| Main | `aqueduct_v4_extension.yaml` | 20 additions completing 3 x 4 x 3 (RQ2, SQ4) | exact completed local-indirect job; API key |
 | Supplement | `direct_sketch.yaml` | 4 x 4 sketch (SQ1) | services ready |
 | Supplement | `direct_comic.yaml` | 4 x 4 comic (SQ1) | services ready |
 | Supplement | `direct_photorealistic.yaml` | 4 x 4 photorealistic (SQ1) | services ready |
 | Supplement | `direct_thinking.yaml` | 4 x 4 native-thinking comparison (SQ2) | exact completed direct-core job |
 | Supplement | `direct_illustratable.yaml` | 4 x 4 selected-title comparison (SQ3) | completed ratings, selection and runner rebuild |
+| Supplement | `direct_prompt_only.yaml` | 4 x 4 prompt/direct and four-diagonal three-way comparison (SQ5) | confirmed free style; exact completed direct-core source |
 
-All job configs above are under `configs/jobs/final_study/`. Only the last
+RQ1–RQ3 are primary research questions; SQ1–SQ5 are secondary research
+questions. SQ4 compares title domains using the main jobs, without an
+additional experiment. The main/supplementary job grouping describes execution,
+not question priority.
+
+All job configs above are under `configs/jobs/final_study/`. Only the high-illustratability
 reconstruction job depends on the candidate ratings. The high-illustratability
 dataset is a supplement, not a replacement for the random main sample.
 
@@ -262,20 +276,49 @@ For another DGX, copy all four generated dataset/report files into its
 `configs/datasets/` and rebuild its runner. Reuse this selection; do not rate
 again to create a different set. Keep the rating job and generated files together.
 
+### Prompt reconstruction and three-way comparison (SQ5)
+
+First complete the four-style report and obtain the professor's common-style
+confirmation. The preferred recommendation is unrestricted because it adds no
+explicit style constraint, not because of its observed accuracy. This does not
+make the generator style-neutral. If another style is confirmed, revisit SQ5
+explicitly before starting it; do not mix different-style route inputs.
+
+On an idle model stack, after the copy-only format migration where necessary:
+
+```bash
+read -r -p "Completed, current-format unrestricted Direct Core Job ID: " PROMPT_SOURCE_JOB_ID
+
+sudo docker compose --env-file .env \
+  -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
+  --profile runner --profile status run --rm runner \
+  semantic-roundtrip job start \
+  --config configs/jobs/final_study/direct_prompt_only.yaml \
+  --source-job "direct_base=runs/${PROMPT_SOURCE_JOB_ID:?Enter the exact source Job ID first}"
+```
+
+All 16 cells import prompt/image checks and direct predictions. The four
+diagonals also import descriptions and indirect predictions. Only 180 prompt
+predictions per cell are new (2,880 total). RQ3's reused direct/indirect values
+are not independent additional evidence. The whole matrix supplies the
+prompt/direct comparison; the three-way comparison uses only the four matched
+diagonals. Record the exact source and new Job IDs.
+
 ## Analysis and archive
 
 On your Mac/analysis machine: Python 3.14 and `uv` must be available. Copy the
-seven matching completed job directories, including child runs, from the DGXs.
-Run from the repository root and replace all seven example paths before executing:
+six matching completed job directories, including child runs, from the DGXs,
+and first produce the complete style export described below. Use current-format
+copies for converted inputs. Replace every example path before executing:
 
 ```bash
 export DIRECT_JOB=/absolute/path/to/direct-job
 export INDIRECT_JOB=/absolute/path/to/local-indirect-job
 export AQUEDUCT_JOB=/absolute/path/to/matching-aqueduct-job
-export SKETCH_JOB=/absolute/path/to/sketch-job
-export COMIC_JOB=/absolute/path/to/comic-job
 export THINKING_JOB=/absolute/path/to/thinking-job
 export ILLUSTRATABLE_JOB=/absolute/path/to/illustratable-job
+export PROMPT_BASELINE_JOB=/absolute/path/to/prompt-only-job
+export STYLE_REPORT_DIR=/absolute/path/to/complete-style-export
 export OUTPUT_DIR="$PWD/notebooks/results/final"
 
 uv sync --frozen --extra analysis
@@ -285,10 +328,10 @@ uv run jupyter notebook notebooks/final_study.ipynb
 Do not use historical reduced style or development jobs as final inputs. Restart the kernel
 and use **Run All**. Figures appear inline; 300-dpi PNGs and vector PDFs go to
 `OUTPUT_DIR`. Supporting tables and `manifest.json` are exported quietly.
-All seven paths are required for the complete report. SQLite inputs are read
+All six job paths and `STYLE_REPORT_DIR` are required. SQLite inputs are read
 without modification.
 
-For the complete four-style report, set the unrestricted Direct Core job and
+Before the final report, produce the sole complete four-style report. Set the unrestricted Direct Core job and
 the three matching style jobs, then restart the kernel and use **Run All**:
 
 ```bash
@@ -301,9 +344,15 @@ export OUTPUT_DIR="$PWD/notebooks/results/style"
 uv run jupyter notebook notebooks/style_decision.ipynb
 ```
 
-The candidate distribution is reproduced with
-`notebooks/illustratability_distribution.ipynb`; its archived job and completed
-report are under `artifacts/candidate_illustratability/`.
+The final report validates the style export's method IDs and hashes, importing
+only a compact overview and centrality summary. Detailed matrices and domain
+analyses stay in that export. Overall bootstrap intervals retain domain strata;
+prompt checks use origin Run/Prompt IDs (720 unique prompts per complete style).
+
+The archived candidate distribution remains under
+`artifacts/candidate_illustratability/`. Reproduce that older evidence with its
+original checkout and archive instructions; it is excluded from the new-format
+reconstruction converter. Do not rerun ratings or modify their raw archive.
 
 ### Executed HTML report
 
@@ -322,9 +371,12 @@ uv run jupyter nbconvert --to html \
   --output analysis --output-dir "$OUTPUT_DIR"
 ```
 
-Archive the eight reconstruction jobs, rating job, generated datasets/reports, executed
+Archive the nine reconstruction jobs, rating job, generated datasets/reports, executed
 notebook/HTML, PNG/PDF figures, manual evaluation with its validation jobs, status
 screenshots and code revision. Keep old runs unchanged.
+For converted jobs additionally retain original sources, exact migration script
+and conversion manifests. Never expose originals and same-ID converted copies
+to the same website discovery root.
 
 For custom experiments: [`configs/README.md`](configs/README.md). Scientific
 settings: [`STUDY_DESIGN.md`](configs/jobs/final_study/STUDY_DESIGN.md). Model-free

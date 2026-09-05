@@ -1,4 +1,4 @@
-schema_version: 4
+schema_version: 5
 
 job:
   name: example_job_with_inheritance
@@ -17,4 +17,13 @@ experiments:
     inherit:
       from_entry: source_full_pipeline
       stages:
-        - verification
+        - verification_prompt
+        - verification_image
+
+  # The prompt route imports only prompts and their checks, without images.
+  - name: derived_prompt_prediction
+    config: prompt_from_verification.yaml
+    inherit:
+      from_entry: source_full_pipeline
+      stages:
+        - verification_prompt

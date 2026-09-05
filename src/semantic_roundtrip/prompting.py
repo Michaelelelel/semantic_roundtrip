@@ -17,6 +17,7 @@ ALLOWED_TEMPLATE_VARIABLES = {
     "description",
     "domain",
     "normalized_title",
+    "prompt",
     "prompt_number",
     "title",
 }

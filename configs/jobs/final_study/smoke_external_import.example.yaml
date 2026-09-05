@@ -1,5 +1,4 @@
-# Bind the source with --source-job local_smoke=runs/FINAL_SMOKE_LOCAL_JOB.
-schema_version: 4
+schema_version: 5
 job:
   name: final_smoke_external_import
   output_directory: runs
@@ -14,4 +13,5 @@ experiments:
       job: local_smoke
       entry: direct_pg_q25_bi_q25_smoke
     stages:
-    - verification
+    - verification_prompt
+    - verification_image

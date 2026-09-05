@@ -31,6 +31,7 @@ class ResultCounts:
     image_descriptions: int
     direct_predictions: int
     description_predictions: int
+    prompt_predictions: int
     predictions: int
 
 
@@ -56,6 +57,15 @@ class ImageWorkItem:
     prompt: GeneratedPrompt
     image_id: int
     image: ImageArtifact
+
+
+@dataclass(frozen=True, slots=True)
+class PromptPredictionWorkItem:
+    """One prompt-level prediction without a synthetic image observation."""
+
+    prompt: PromptWorkItem
+    prompt_prediction_id: int
+    prediction: TitlePrediction
 
 
 def _relative_path(path: Path, run_directory: Path) -> str:
@@ -599,6 +609,51 @@ class RunResultStore:
             ),
         )
 
+    def get_prompt_prediction(
+        self, prompt_id: int
+    ) -> tuple[int, TitlePrediction] | None:
+        """Return the single title prediction attached directly to this prompt."""
+        row = self._connection.execute(
+            "SELECT * FROM prompt_predictions WHERE prompt_id = ?", (prompt_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        return (
+            int(row["prompt_prediction_id"]),
+            TitlePrediction(
+                title=row["title"],
+                confidence=row["confidence"],
+                confidence_type=row["confidence_type"],
+                raw_response=row["raw_response"],
+            ),
+        )
+
+    def add_prompt_prediction(self, prompt_id: int, prediction: TitlePrediction) -> int:
+        """Persist a prompt-only response independently of image seeds."""
+        return self._insert(
+            """
+            INSERT INTO prompt_predictions (
+                prompt_id, title, confidence, confidence_type, raw_response
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                prompt_id,
+                prediction.title,
+                prediction.confidence,
+                prediction.confidence_type,
+                prediction.raw_response,
+            ),
+        )
+
+    def list_prompt_predictions(self) -> list[PromptPredictionWorkItem]:
+        """Return prompt predictions in stable dataset/prompt order."""
+        result = []
+        for prompt in self.list_prompts():
+            prediction = self.get_prompt_prediction(prompt.prompt_id)
+            if prediction is not None:
+                result.append(PromptPredictionWorkItem(prompt, *prediction))
+        return result
+
     def counts(self) -> ResultCounts:
         """Count all successfully stored result rows."""
         row = self._connection.execute(
@@ -629,7 +684,9 @@ class RunResultStore:
                     SELECT COUNT(*) FROM predictions
                     WHERE input_kind = 'description'
                 ) AS description_predictions,
-                (SELECT COUNT(*) FROM predictions) AS predictions
+                (SELECT COUNT(*) FROM prompt_predictions) AS prompt_predictions,
+                (SELECT COUNT(*) FROM predictions)
+                    + (SELECT COUNT(*) FROM prompt_predictions) AS predictions
             """
         ).fetchone()
         return ResultCounts(
@@ -643,5 +700,6 @@ class RunResultStore:
             image_descriptions=int(row["image_descriptions"]),
             direct_predictions=int(row["direct_predictions"]),
             description_predictions=int(row["description_predictions"]),
+            prompt_predictions=int(row["prompt_predictions"]),
             predictions=int(row["predictions"]),
         )

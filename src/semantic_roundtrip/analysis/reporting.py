@@ -173,6 +173,12 @@ def technical_tables(observation_sets, title_sets, job_sets):
     tables = {}
     accuracy_rows, verifier_rows = ([], [])
     for study, observations in observation_sets.items():
+        observations = observations.copy()
+        observations["route_verification_passed"] = observations[
+            "strict_image_verification_passed"
+        ].where(
+            ~observations.route.eq("prompt"), observations.prompt_verification_passed
+        )
         scoped = pd.concat([observations, observations.assign(domain="all")])
         scoped = pd.concat([scoped, scoped.assign(condition="all")])
         grouped = (
@@ -202,15 +208,15 @@ def technical_tables(observation_sets, title_sets, job_sets):
                     lambda s: int(s.eq(True).sum()),
                 ),
                 accepted=(
-                    "strict_image_verification_passed",
+                    "route_verification_passed",
                     lambda s: int(s.eq(True).sum()),
                 ),
                 verifier_rejections=(
-                    "strict_image_verification_passed",
+                    "route_verification_passed",
                     lambda s: int(s.eq(False).sum()),
                 ),
                 missing_verifier_decisions=(
-                    "strict_image_verification_passed",
+                    "route_verification_passed",
                     lambda s: int(s.isna().sum()),
                 ),
                 missing_predictions_with_error=(
@@ -254,7 +260,7 @@ def technical_tables(observation_sets, title_sets, job_sets):
         prompts = observations.drop_duplicates(
             ["condition", "dataset_id", "item_key", "prompt_seed"]
         )
-        images = observations.drop_duplicates(
+        images = observations[~observations.route.eq("prompt")].drop_duplicates(
             ["condition", "dataset_id", "item_key", "prompt_seed", "image_seed"]
         )
         checks = [
@@ -412,6 +418,21 @@ def load_style_jobs(paths):
         job = load_job(path, entries=entries)
         frame = annotate(job.observations)
         frame = frame[frame.route.eq("direct")].assign(style=style)
+        if set(frame.prompt_seed) != {1000, 1001} or set(frame.image_seed) != {
+            8566257,
+            2875613,
+        }:
+            raise ValueError(
+                f"Style {style} does not use the fixed prompt/image seed grid."
+            )
+        if (
+            not frame.prompt_verification_configured.all()
+            or not frame.strict_image_verification_configured.all()
+            or not frame.title_aware_image_verification_configured.all()
+        ):
+            raise ValueError(
+                f"Style {style} is missing a required verification policy."
+            )
         frame["model_pair"] = frame.pg.str.upper() + " → " + frame.bi.str.upper()
         jobs[style], observations[style] = job, frame
         titles[style] = aggregate_titles(
@@ -424,7 +445,10 @@ def load_style_jobs(paths):
 
 def style_scopes(frame):
     """Include pooled-model and pooled-domain rows with equal original weights."""
-    scoped = pd.concat([frame, frame.assign(domain="all")], ignore_index=True)
+    scoped = pd.concat(
+        [frame.assign(report_domain=frame.domain), frame.assign(report_domain="all")],
+        ignore_index=True,
+    )
     return pd.concat([scoped, scoped.assign(model_pair="all")], ignore_index=True)
 
 
@@ -432,7 +456,7 @@ def style_accuracy(title_scores):
     """Strict/normalized E2E percentages and whole-title percentile intervals."""
     rows = []
     for (style, model_pair, domain), frame in style_scopes(title_scores).groupby(
-        ["style", "model_pair", "domain"],
+        ["style", "model_pair", "report_domain"],
         sort=False,
     ):
         conditions = frame.condition.unique()
@@ -464,9 +488,34 @@ def style_accuracy(title_scores):
 
 def prompt_verifications(observations):
     """Return one persisted prompt-verification decision per generated prompt."""
-    prompts = observations.drop_duplicates(
-        ["style", "condition", "dataset_id", "item_key", "prompt_seed"],
-    ).copy()
+    identity = ["style", "dataset_id", "item_key", "prompt_seed"]
+    materialized = observations[observations.prompt_id.notna()]
+    origin_keys = ["style", "origin_prompt_run_id", "origin_prompt_id"]
+    compared = [
+        "dataset_id",
+        "domain",
+        "item_key",
+        "prompt_seed",
+        "prompt_text",
+        "prompt_verification_passed",
+        "prompt_verification_method",
+    ]
+    if (
+        materialized.groupby(origin_keys, dropna=False)[compared]
+        .nunique(dropna=False)
+        .gt(1)
+        .any(axis=None)
+    ):
+        raise ValueError("Inherited copies disagree about a shared prompt/check.")
+    prompts = pd.concat(
+        [
+            materialized.drop_duplicates(origin_keys),
+            observations[observations.prompt_id.isna()].drop_duplicates(
+                [*identity, "prompt_model"]
+            ),
+        ],
+        ignore_index=True,
+    )
     return prompts[
         [
             "style",
@@ -476,6 +525,9 @@ def prompt_verifications(observations):
             "domain",
             "expected_title",
             "prompt_seed",
+            "prompt_model",
+            "origin_prompt_run_id",
+            "origin_prompt_id",
             "prompt_text",
             "prompt_verification_passed",
             "prompt_verification_reason",

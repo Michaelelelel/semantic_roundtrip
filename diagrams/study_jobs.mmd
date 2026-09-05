@@ -25,6 +25,7 @@ flowchart TB
         COMIC["direct_comic<br/>SQ1: comic style"]
         THINKING["direct_thinking<br/>12 new cells + 4 baseline cells<br/>SQ2: native thinking"]
         SELECTED["direct_illustratable<br/>SQ3: high-illustratability titles"]
+        PROMPT["direct_prompt_only<br/>SQ5: 16 prompt/direct cells<br/>4 shared three-way diagonals<br/>2,880 new prompt predictions"]
     end
 
     subgraph SELECTION["Independent dataset selection"]
@@ -40,7 +41,8 @@ flowchart TB
     DIRECT -. style comparison .-> SKETCH
     DIRECT -. style comparison .-> COMIC
     DIRECT -->|matching source + baseline| THINKING
+    DIRECT -->|confirmed free source + existing routes| PROMPT
     DIRECT -. dataset comparison .-> SELECTED
     DATASET --> SELECTED
-    DIRECT --> CROSS(["Cross-design analysis<br/>RQ4: songs · movies · bands<br/>SQ3: illustratability and reconstruction"])
+    DIRECT --> CROSS(["Cross-design analysis<br/>SQ4: songs · movies · bands<br/>SQ3: illustratability and reconstruction"])
     INDIRECT --> CROSS

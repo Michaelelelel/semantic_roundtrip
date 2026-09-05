@@ -107,14 +107,16 @@ BackendAlias = Annotated[str, Field(min_length=1)]
 StageName = Literal[
     "illustratability_rating",
     "prompt_generation",
+    "verification_prompt",
     "image_generation",
-    "verification",
+    "verification_image",
     "title_guessing_direct",
     "image_description",
     "title_guessing_from_description",
+    "title_guessing_from_prompt",
 ]
 PipelineStageName = StageName
-PredictionInputKind = Literal["image", "description"]
+PredictionInputKind = Literal["image", "description", "prompt"]
 ExecutionOrigin = Literal["local", "imported"]
 ImageVerificationPolicy = Literal["strict", "title_aware"]
 
@@ -207,17 +209,10 @@ class ImageVerificationPolicies(ConfigModel):
         return self
 
 
-class VerificationStage(StageConfig):
-    """Optional prompt check and zero, one, or two independent image checks."""
+class ImageVerificationStage(StageConfig):
+    """Model-backed image checks, independent of deterministic prompt checks."""
 
-    prompt: PromptVerificationPolicy | None = None
-    image: ImageVerificationPolicies | None = None
-
-    @model_validator(mode="after")
-    def require_at_least_one_check(self) -> Self:
-        if self.prompt is None and self.image is None:
-            raise ValueError("Configure at least one verification check.")
-        return self
+    policies: ImageVerificationPolicies
 
 
 class ImageDescriptionStage(StageConfig):
@@ -233,10 +228,15 @@ class TitleGuessingRoutes(ConfigModel):
 
     direct: TitleGuessingStage | None = None
     from_description: TitleGuessingStage | None = None
+    from_prompt: TitleGuessingStage | None = None
 
     @model_validator(mode="after")
     def require_at_least_one_route(self) -> Self:
-        if self.direct is None and self.from_description is None:
+        if (
+            self.direct is None
+            and self.from_description is None
+            and self.from_prompt is None
+        ):
             raise ValueError("Configure at least one title-guessing route.")
         return self
 
@@ -244,8 +244,9 @@ class TitleGuessingRoutes(ConfigModel):
 class StagesConfig(ConfigModel):
     illustratability_rating: IllustratabilityRatingStage | None = None
     prompt_generation: PromptGenerationStage | None = None
+    verification_prompt: PromptVerificationPolicy | None = None
     image_generation: ImageGenerationStage | None = None
-    verification: VerificationStage | None = None
+    verification_image: ImageVerificationStage | None = None
     image_description: ImageDescriptionStage | None = None
     title_guessing: TitleGuessingRoutes | None = None
 
@@ -254,8 +255,9 @@ class StagesConfig(ConfigModel):
         configured = (
             self.illustratability_rating,
             self.prompt_generation,
+            self.verification_prompt,
             self.image_generation,
-            self.verification,
+            self.verification_image,
             self.image_description,
             None if self.title_guessing is None else self.title_guessing.direct,
             (
@@ -263,6 +265,7 @@ class StagesConfig(ConfigModel):
                 if self.title_guessing is None
                 else self.title_guessing.from_description
             ),
+            None if self.title_guessing is None else self.title_guessing.from_prompt,
         )
         if not any(stage is not None for stage in configured):
             raise ValueError("Configure at least one locally executed stage.")
@@ -304,7 +307,7 @@ class ResolvedRunInheritance(ConfigModel):
 class InputAppConfig(ConfigModel):
     """Human-maintained experiment configuration with backend references."""
 
-    schema_version: Literal[10]
+    schema_version: Literal[11]
     run: RunConfig
     dataset: InputDatasetConfig | None = None
     inherit: InputRunInheritance | None = None
@@ -324,7 +327,7 @@ class InputAppConfig(ConfigModel):
 class ResolvedAppConfig(ConfigModel):
     """Self-contained effective configuration stored with a run."""
 
-    schema_version: Literal[10]
+    schema_version: Literal[11]
     configuration_kind: Literal["effective"] = "effective"
     run: RunConfig
     dataset: ResolvedDatasetConfig
@@ -332,6 +335,7 @@ class ResolvedAppConfig(ConfigModel):
     experiment: ExperimentConfig
     backends: dict[BackendAlias, ResolvedBackend] = Field(default_factory=dict)
     stages: StagesConfig
+
 
 class StageAdapterConfig(ConfigModel):
     """Fully merged adapter name and settings for one pipeline stage."""

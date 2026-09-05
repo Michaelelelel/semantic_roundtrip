@@ -1,5 +1,4 @@
-# Bind the source with --source-job local_indirect=runs/JOB_DIRECTORY.
-schema_version: 4
+schema_version: 5
 job:
   name: final_aqueduct_v4_extension
   output_directory: runs
@@ -13,7 +12,8 @@ experiments:
       entry: indirect_pg_d32_bb_q25_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_d32_bb_g3_bi_v4
   config: ../../experiments/final_study/aqueduct/indirect_pg_d32_bb_g3_bi_v4.yaml
   inherit:
@@ -22,7 +22,8 @@ experiments:
       entry: indirect_pg_d32_bb_g3_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_d32_bb_q38_bi_v4
   config: ../../experiments/final_study/aqueduct/indirect_pg_d32_bb_q38_bi_v4.yaml
   inherit:
@@ -31,7 +32,8 @@ experiments:
       entry: indirect_pg_d32_bb_q38_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_d32_bb_g4_bi_v4
   config: ../../experiments/final_study/aqueduct/indirect_pg_d32_bb_g4_bi_v4.yaml
   inherit:
@@ -40,7 +42,8 @@ experiments:
       entry: indirect_pg_d32_bb_g4_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_o120_bb_q25_bi_v4
   config: ../../experiments/final_study/aqueduct/indirect_pg_o120_bb_q25_bi_v4.yaml
   inherit:
@@ -49,7 +52,8 @@ experiments:
       entry: indirect_pg_o120_bb_q25_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_o120_bb_g3_bi_v4
   config: ../../experiments/final_study/aqueduct/indirect_pg_o120_bb_g3_bi_v4.yaml
   inherit:
@@ -58,7 +62,8 @@ experiments:
       entry: indirect_pg_o120_bb_g3_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_o120_bb_q38_bi_v4
   config: ../../experiments/final_study/aqueduct/indirect_pg_o120_bb_q38_bi_v4.yaml
   inherit:
@@ -67,7 +72,8 @@ experiments:
       entry: indirect_pg_o120_bb_q38_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_o120_bb_g4_bi_v4
   config: ../../experiments/final_study/aqueduct/indirect_pg_o120_bb_g4_bi_v4.yaml
   inherit:
@@ -76,7 +82,8 @@ experiments:
       entry: indirect_pg_o120_bb_g4_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_v4_bb_q25_bi_d32
   config: ../../experiments/final_study/aqueduct/indirect_pg_v4_bb_q25_bi_d32.yaml
 - name: indirect_pg_v4_bb_q25_bi_o120
@@ -85,73 +92,84 @@ experiments:
     from_entry: indirect_pg_v4_bb_q25_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_v4_bb_q25_bi_v4
   config: ../../experiments/final_study/aqueduct/indirect_pg_v4_bb_q25_bi_v4.yaml
   inherit:
     from_entry: indirect_pg_v4_bb_q25_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_v4_bb_g3_bi_d32
   config: ../../experiments/final_study/aqueduct/indirect_pg_v4_bb_g3_bi_d32.yaml
   inherit:
     from_entry: indirect_pg_v4_bb_q25_bi_d32
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_v4_bb_g3_bi_o120
   config: ../../experiments/final_study/aqueduct/indirect_pg_v4_bb_g3_bi_o120.yaml
   inherit:
     from_entry: indirect_pg_v4_bb_g3_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_v4_bb_g3_bi_v4
   config: ../../experiments/final_study/aqueduct/indirect_pg_v4_bb_g3_bi_v4.yaml
   inherit:
     from_entry: indirect_pg_v4_bb_g3_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_v4_bb_q38_bi_d32
   config: ../../experiments/final_study/aqueduct/indirect_pg_v4_bb_q38_bi_d32.yaml
   inherit:
     from_entry: indirect_pg_v4_bb_q25_bi_d32
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_v4_bb_q38_bi_o120
   config: ../../experiments/final_study/aqueduct/indirect_pg_v4_bb_q38_bi_o120.yaml
   inherit:
     from_entry: indirect_pg_v4_bb_q38_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_v4_bb_q38_bi_v4
   config: ../../experiments/final_study/aqueduct/indirect_pg_v4_bb_q38_bi_v4.yaml
   inherit:
     from_entry: indirect_pg_v4_bb_q38_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_v4_bb_g4_bi_d32
   config: ../../experiments/final_study/aqueduct/indirect_pg_v4_bb_g4_bi_d32.yaml
   inherit:
     from_entry: indirect_pg_v4_bb_q25_bi_d32
     stages:
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_v4_bb_g4_bi_o120
   config: ../../experiments/final_study/aqueduct/indirect_pg_v4_bb_g4_bi_o120.yaml
   inherit:
     from_entry: indirect_pg_v4_bb_g4_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_v4_bb_g4_bi_v4
   config: ../../experiments/final_study/aqueduct/indirect_pg_v4_bb_g4_bi_v4.yaml
   inherit:
     from_entry: indirect_pg_v4_bb_g4_bi_d32
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 source_jobs:
   local_indirect: {}

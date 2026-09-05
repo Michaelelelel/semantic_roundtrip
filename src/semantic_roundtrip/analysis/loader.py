@@ -20,6 +20,7 @@ from semantic_roundtrip.config_resolution import (
     load_effective_config,
 )
 from semantic_roundtrip.inheritance.dependencies import dependency_closure
+from semantic_roundtrip.inheritance.source import resolve_stage_provenance
 from semantic_roundtrip.job import JOB_SNAPSHOT_FILENAME, load_job_snapshot
 from semantic_roundtrip.persistence.job.database import (
     read_job_entries,
@@ -69,7 +70,7 @@ def _title_length_group(title: str) -> str:
 
 def _local_model(config: ResolvedAppConfig, stage: StageName) -> str | None:
     stage_config = get_stage_config(config, stage)
-    if stage_config is None:
+    if stage_config is None or stage == "verification_prompt":
         return None
     backend = config.backends[stage_config.backend]
     value = (
@@ -83,13 +84,16 @@ def _local_model(config: ResolvedAppConfig, stage: StageName) -> str | None:
 def _stage_models(
     config: ResolvedAppConfig,
     runtime_rows: list[dict[str, Any]],
+    run_directory: Path,
 ) -> dict[str, str | None]:
     stages = (
         "illustratability_rating",
         "prompt_generation",
         "image_generation",
-        "verification",
+        "verification_prompt",
+        "verification_image",
         "title_guessing_direct",
+        "title_guessing_from_prompt",
         "image_description",
         "title_guessing_from_description",
     )
@@ -103,6 +107,10 @@ def _stage_models(
         if len(model_ids) > 1:
             raise ValueError(f"Stage '{stage}' contains several model IDs.")
         result[stage] = next(iter(model_ids), None) or _local_model(config, stage)
+        if result[stage] is None and stage != "verification_prompt":
+            provenance = resolve_stage_provenance(config, run_directory, stage)
+            if provenance is not None:
+                result[stage] = _local_model(provenance[0], stage)
     return result
 
 
@@ -121,19 +129,25 @@ def _available_stages(
 def _verification_checks(
     config: ResolvedAppConfig,
     tasks: list[dict[str, Any]],
+    run_directory: Path,
 ) -> tuple[bool, frozenset[str]]:
-    verification = config.stages.verification
-    prompt = verification is not None and verification.prompt is not None
+    prompt = config.stages.verification_prompt is not None
     image = set(configured_image_verification_policies(config))
+    prompt |= (
+        resolve_stage_provenance(config, run_directory, "verification_prompt")
+        is not None
+    )
+    image_source = resolve_stage_provenance(config, run_directory, "verification_image")
+    if image_source is not None:
+        image.update(configured_image_verification_policies(image_source[0]))
     for row in tasks:
-        if row["stage"] != "verification":
+        if row["stage"] == "verification_prompt":
+            prompt = True
+        if row["stage"] != "verification_image":
             continue
         task_key = str(row["task_key"])
-        prompt |= task_key.startswith(
-            "verification:prompt:reference_title_absent:"
-        )
         for policy in ("strict", "title_aware"):
-            if task_key.startswith(f"verification:image:{policy}:"):
+            if f":{policy}:" in task_key:
                 image.add(policy)
     return prompt, frozenset(image)
 
@@ -188,14 +202,15 @@ def _latest_error(
     prompt_id: int | None,
     image_id: int | None,
     prompt_seed: int,
-    image_seed: int,
+    image_seed: int | None,
     route_stage: str,
 ) -> dict[str, Any] | None:
     relevant = {
         "prompt_generation",
-        "image_generation",
         route_stage,
     }
+    if route_stage != "title_guessing_from_prompt":
+        relevant.add("image_generation")
     if route_stage == "title_guessing_from_description":
         relevant.add("image_description")
     for row in reversed(errors):
@@ -286,6 +301,7 @@ def load_run(path: str | Path) -> AnalysisTables:
             "images",
             "image_descriptions",
             "predictions",
+            "prompt_predictions",
             "stage_tasks",
             "runtime_events",
             "run_lineage",
@@ -316,7 +332,7 @@ def load_run(path: str | Path) -> AnalysisTables:
         ):
             raise ValueError(f"Dataset item {index} differs from the run snapshot.")
 
-    models = _stage_models(config, tables["runtime_events"])
+    models = _stage_models(config, tables["runtime_events"], run_directory)
     base = {
         "condition": metadata["name"],
         "run_id": metadata["run_id"],
@@ -347,6 +363,7 @@ def load_run(path: str | Path) -> AnalysisTables:
     prompt_verification_configured, image_policies = _verification_checks(
         config,
         tables["stage_tasks"],
+        run_directory,
     )
     routes = []
     if "title_guessing_direct" in available:
@@ -368,6 +385,9 @@ def load_run(path: str | Path) -> AnalysisTables:
     )
     descriptions = _map(tables["image_descriptions"], ("image_id",), "description")
     predictions = _map(tables["predictions"], ("image_id", "input_kind"), "prediction")
+    prompt_predictions = _map(
+        tables["prompt_predictions"], ("prompt_id",), "prompt prediction"
+    )
 
     observations: list[dict[str, Any]] = []
     for item_index, configured in enumerate(config.dataset.items):
@@ -383,6 +403,121 @@ def load_run(path: str | Path) -> AnalysisTables:
                 if prompt_id is None
                 else prompt_verifications.get((prompt_id, "reference_title_absent"))
             )
+            prompt_origin_run = (
+                None
+                if prompt is None
+                else prompt["origin_run_id"] or metadata["run_id"]
+            )
+            prompt_origin_id = (
+                None if prompt is None else prompt["origin_prompt_id"] or prompt_id
+            )
+            if "title_guessing_from_prompt" in available:
+                prediction = prompt_predictions.get((prompt_id,))
+                error = _latest_error(
+                    errors,
+                    item_id=item_id,
+                    prompt_id=prompt_id,
+                    image_id=None,
+                    prompt_seed=prompt_seed,
+                    image_seed=None,
+                    route_stage="title_guessing_from_prompt",
+                )
+                observations.append(
+                    {
+                        **base,
+                        "item_key": configured.id,
+                        "item_index": item_index,
+                        "domain": configured.domain,
+                        "expected_title": configured.title,
+                        "title_length_group": _title_length_group(configured.title),
+                        "prompt_index": prompt_index,
+                        "prompt_seed": prompt_seed,
+                        "prompt_id": prompt_id,
+                        "prompt_text": None if prompt is None else prompt["text"],
+                        "origin_prompt_run_id": prompt_origin_run,
+                        "origin_prompt_id": prompt_origin_id,
+                        "image_seed": None,
+                        "image_id": None,
+                        "image_path": None,
+                        "origin_image_run_id": None,
+                        "origin_image_id": None,
+                        "route": "prompt",
+                        "prompt_model": models["prompt_generation"],
+                        "image_model": None,
+                        "verifier_model": None,
+                        "description_model": None,
+                        "prediction_model": models["title_guessing_from_prompt"],
+                        "prompt_verification_configured": prompt_verification_configured,
+                        "prompt_verification_passed": (
+                            None
+                            if prompt_verification is None
+                            else bool(prompt_verification["passed"])
+                        ),
+                        "prompt_verification_reason": (
+                            None
+                            if prompt_verification is None
+                            else prompt_verification["reason"]
+                        ),
+                        "prompt_verification_method": (
+                            None
+                            if prompt_verification is None
+                            else prompt_verification["method"]
+                        ),
+                        **{
+                            f"{policy}_image_verification_{field}": (
+                                False if field == "configured" else None
+                            )
+                            for policy in ("strict", "title_aware")
+                            for field in ("configured", "passed", "reason", "method")
+                        },
+                        "image_description": None,
+                        "prediction_id": (
+                            None
+                            if prediction is None
+                            else prediction["prompt_prediction_id"]
+                        ),
+                        "origin_prediction_run_id": (
+                            None
+                            if prediction is None
+                            else prediction["origin_run_id"] or metadata["run_id"]
+                        ),
+                        "origin_prediction_id": (
+                            None
+                            if prediction is None
+                            else prediction["origin_prompt_prediction_id"]
+                            or prediction["prompt_prediction_id"]
+                        ),
+                        "prediction_execution_origin": (
+                            None
+                            if prediction is None
+                            else "imported"
+                            if prediction["origin_run_id"] is not None
+                            else "local"
+                        ),
+                        "predicted_title": None
+                        if prediction is None
+                        else prediction["title"],
+                        "confidence": None
+                        if prediction is None
+                        else prediction["confidence"],
+                        "confidence_type": None
+                        if prediction is None
+                        else prediction["confidence_type"],
+                        "prediction_raw_response": None
+                        if prediction is None
+                        else prediction["raw_response"],
+                        "prediction_status": (
+                            "completed"
+                            if prediction is not None
+                            else "failed"
+                            if error is not None
+                            else "missing"
+                        ),
+                        "error_stage": None if error is None else error["stage"],
+                        "error_type": None if error is None else error["error_type"],
+                        "error_message": None if error is None else error["message"],
+                    }
+                )
             for image_seed in config.experiment.image_seeds:
                 image = (
                     None if prompt_id is None else images.get((prompt_id, image_seed))
@@ -428,8 +563,20 @@ def load_run(path: str | Path) -> AnalysisTables:
                             "prompt_seed": prompt_seed,
                             "prompt_id": prompt_id,
                             "prompt_text": None if prompt is None else prompt["text"],
+                            "origin_prompt_run_id": prompt_origin_run,
+                            "origin_prompt_id": prompt_origin_id,
                             "image_seed": image_seed,
                             "image_id": image_id,
+                            "origin_image_run_id": (
+                                None
+                                if image is None
+                                else image["origin_run_id"] or metadata["run_id"]
+                            ),
+                            "origin_image_id": (
+                                None
+                                if image is None
+                                else image["origin_image_id"] or image_id
+                            ),
                             "image_path": (
                                 None
                                 if image is None
@@ -438,7 +585,7 @@ def load_run(path: str | Path) -> AnalysisTables:
                             "route": route,
                             "prompt_model": models["prompt_generation"],
                             "image_model": models["image_generation"],
-                            "verifier_model": models["verification"],
+                            "verifier_model": models["verification_image"],
                             "description_model": models["image_description"],
                             "prediction_model": models[route_stage],
                             "prompt_verification_configured": (
@@ -505,6 +652,24 @@ def load_run(path: str | Path) -> AnalysisTables:
                             ),
                             "predicted_title": (
                                 None if prediction is None else prediction["title"]
+                            ),
+                            "origin_prediction_run_id": (
+                                None
+                                if prediction is None
+                                else prediction["origin_run_id"] or metadata["run_id"]
+                            ),
+                            "origin_prediction_id": (
+                                None
+                                if prediction is None
+                                else prediction["origin_prediction_id"]
+                                or prediction["prediction_id"]
+                            ),
+                            "prediction_execution_origin": (
+                                None
+                                if prediction is None
+                                else "imported"
+                                if prediction["origin_run_id"] is not None
+                                else "local"
                             ),
                             "confidence": (
                                 None if prediction is None else prediction["confidence"]

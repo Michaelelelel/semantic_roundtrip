@@ -7,6 +7,7 @@ from semantic_roundtrip.adapters.openai_compatible.rating import (
     build_openai_compatible_illustratability_rater,
 )
 from semantic_roundtrip.adapters.openai_compatible.title import (
+    build_openai_compatible_prompt_title_guesser,
     build_openai_compatible_text_title_guesser,
 )
 from semantic_roundtrip.adapters.openai_compatible.vision import (
@@ -21,5 +22,6 @@ __all__ = [
     "build_openai_compatible_image_title_guesser",
     "build_openai_compatible_image_verifier",
     "build_openai_compatible_prompt_generator",
+    "build_openai_compatible_prompt_title_guesser",
     "build_openai_compatible_text_title_guesser",
 ]

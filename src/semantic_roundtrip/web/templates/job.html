@@ -44,6 +44,7 @@
             <th>Run</th>
             <th>Direct accuracy</th>
             <th>Indirect accuracy</th>
+            <th>Prompt accuracy</th>
             <th>Models</th>
             <th>Error</th>
           </tr>
@@ -61,7 +62,7 @@
                 {% endif %}
               </td>
               <td><strong>{{ entry.name }}</strong></td>
-              <td>
+              <td class="job-run-id">
                 {% if entry.child.status == "unavailable" %}
                   <span class="error-text">Unavailable</span>
                 {% else %}
@@ -72,6 +73,7 @@
               </td>
               <td class="accuracy-cell">{{ show_accuracy(entry_accuracies[entry.index], "image", entry.child.status) }}</td>
               <td class="accuracy-cell">{{ show_accuracy(entry_accuracies[entry.index], "description", entry.child.status) }}</td>
+              <td class="accuracy-cell">{{ show_accuracy(entry_accuracies[entry.index], "prompt", entry.child.status) }}</td>
               <td>{{ entry.models|join(", ") }}</td>
               <td class="error-text">{{ entry.last_error or "-" }}</td>
             </tr>

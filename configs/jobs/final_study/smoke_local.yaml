@@ -1,4 +1,4 @@
-schema_version: 4
+schema_version: 5
 job:
   name: final_smoke_local
   output_directory: runs
@@ -26,7 +26,8 @@ experiments:
     from_entry: indirect_pg_d32_bb_q25_bi_d32_smoke
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image
 - name: indirect_pg_o120_bb_g4_bi_d32_smoke
   config: ../../experiments/final_study/smoke/indirect_pg_o120_bb_g4_bi_d32_smoke.yaml
 - name: indirect_pg_o120_bb_g4_bi_o120_smoke
@@ -35,4 +36,5 @@ experiments:
     from_entry: indirect_pg_o120_bb_g4_bi_d32_smoke
     stages:
     - image_description
-    - verification
+    - verification_prompt
+    - verification_image

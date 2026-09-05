@@ -5,7 +5,7 @@
 {% macro missing_result(trace, stage) -%}
   {% if is_terminal or stage in trace.terminal_stages
         or (stage != "illustratability_rating" and trace.prompt_id is none and "prompt_generation" in trace.terminal_stages)
-        or (stage not in ("illustratability_rating", "prompt_generation") and trace.image_id is none and "image_generation" in trace.terminal_stages)
+        or (stage not in ("illustratability_rating", "prompt_generation", "verification_prompt", "title_guessing_from_prompt") and trace.image_id is none and "image_generation" in trace.terminal_stages)
         or (stage == "title_guessing_from_description" and trace.image_description is none and "image_description" in trace.terminal_stages) %}
     Not produced
   {% else %}
@@ -49,7 +49,11 @@
     {% endif %}
     <span class="mono">{{ run.run_id }}</span>
   </p>
-  <p><a href="{{ url_for('run_detail', run_path=run_path) }}">Back to run status</a></p>
+  <p><a href="{{ url_for('run_detail', run_path=run_path) }}">Back to run status</a>
+    {% if "prompt" in accuracies %}
+      · <a href="{{ url_for('run_prompt_results', run_path=run_path) }}">View prompt results (once per prompt)</a>
+    {% endif %}
+  </p>
 
   {% if run.last_error %}
     <div class="error-panel">
@@ -124,10 +128,10 @@
               </tr>
               {% if trace.prompt_verification_configured %}
                 <tr>
-                  <th>Prompt verification<br><small>reference-title absence</small></th>
+                  <th>{{ stage_heading("verification_prompt", "Prompt verification") }}<br><small>reference-title absence</small></th>
                   <td>
                     {% if trace.prompt_verification_passed is none %}
-                      {{ missing_result(trace, "verification") }}
+                      {{ missing_result(trace, "verification_prompt") }}
                     {% elif trace.prompt_verification_passed %}
                       <span class="value--yes">Passed</span>
                     {% else %}
@@ -140,10 +144,10 @@
             {% endif %}
             {% if trace.strict_image_verification_configured %}
               <tr>
-                <th>{{ stage_heading("verification", "Strict image verification") }}<br><small>any meaningful text</small></th>
+                <th>{{ stage_heading("verification_image", "Strict image verification") }}<br><small>any meaningful text</small></th>
                 <td>
                   {% if trace.strict_image_verification_passed is none %}
-                    {{ missing_result(trace, "verification") }}
+                    {{ missing_result(trace, "verification_image") }}
                   {% elif trace.strict_image_verification_passed %}
                     <span class="value--yes">Passed</span>
                   {% else %}
@@ -155,10 +159,10 @@
             {% endif %}
             {% if trace.title_aware_image_verification_configured %}
                 <tr>
-                  <th>Title-aware image verification<br><small>reference-title text only</small></th>
+                  <th>{{ stage_heading("verification_image", "Title-aware image verification") }}<br><small>reference-title text only</small></th>
                   <td>
                     {% if trace.title_aware_image_verification_passed is none %}
-                      {{ missing_result(trace, "verification") }}
+                      {{ missing_result(trace, "verification_image") }}
                     {% elif trace.title_aware_image_verification_passed %}
                       <span class="value--yes">Passed</span>
                     {% else %}
