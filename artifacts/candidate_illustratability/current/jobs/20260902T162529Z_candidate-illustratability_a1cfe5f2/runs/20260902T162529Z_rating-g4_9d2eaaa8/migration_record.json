@@ -1,0 +1,11 @@
+{
+  "converter": "split_verification_prompt_baseline_rating_archive_v2",
+  "operation_id": "48b42181ff7e4e48a5cdb08518778abb",
+  "source_directory": "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-g4_9d2eaaa8",
+  "source_database_sha256": "164a34de980a1cd4bdcb427192d0cb8af19d2101d6784ddf0ca43afd8aa18aaa",
+  "original_experiment_schema": 8,
+  "original_database_schema": 10,
+  "target_experiment_schema": 11,
+  "target_database_schema": 12,
+  "scientific_outputs_unchanged": true
+}

@@ -72,3 +72,8 @@ notebooks/.ipynb_checkpoints/
 # Published rating evidence; generated runtime jobs remain ignored.
 !/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/
 !/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/**/*.sqlite
+!/artifacts/candidate_illustratability/current/jobs/20260902T162529Z_candidate-illustratability_a1cfe5f2/**/runs/
+!/artifacts/candidate_illustratability/current/jobs/20260902T162529Z_candidate-illustratability_a1cfe5f2/**/*.sqlite
+# Failed conversion diagnostics are not published evidence.
+/artifacts/candidate_illustratability/current/.*.migrating-*/
+/artifacts/candidate_illustratability/current/jobs/.*.migrating-*/

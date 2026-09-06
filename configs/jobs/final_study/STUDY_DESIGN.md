@@ -5,13 +5,11 @@ interpretation belong in the thesis.
 
 ## Study revision and scope (`final_v3`)
 
-The SQ5 extension adds prompt-based reconstruction and separates prompt and image
-verification into independently executable/importable stages. The original
-`final_v2` image/description conditions, model requests, seeds and decisions are
-unchanged. Original run snapshots keep their historical identity; a logged
-format conversion on copies does not retrospectively relabel their protocol.
-The software supports configurable models and predefined reconstruction routes,
-not arbitrary workflow composition.
+The study compares direct image, description-mediated and prompt-based title
+reconstruction. Prompt and image verification are independently executable and
+importable stages. The software supports configurable models and predefined
+reconstruction routes, not arbitrary workflow composition. Run snapshots record
+the settings actually used, and reused outputs retain their source identity.
 
 The preferred common-style recommendation is unrestricted generation: no added
 explicit rendering-style instruction, rather than the highest or lowest
@@ -20,7 +18,7 @@ report contrary evidence and obtain supervisor confirmation before affected
 main jobs or SQ5 start. Existing direct/indirect artifacts are a practical reuse
 advantage. Descriptive style centrality is not an automatic selection rule.
 
-## Four-style comparison (revision `final_v2`)
+## Four-style comparison
 
 The unrestricted `direct_core` job and the `direct_photorealistic`,
 `direct_comic` and `direct_sketch` jobs form the style comparison. Every job
@@ -52,7 +50,10 @@ The completed rating job `20260902T162529Z_candidate-illustratability_a1cfe5f2`
 is preserved in [`../../../artifacts/candidate_illustratability/`](../../../artifacts/candidate_illustratability/README.md),
 with all 3,600 valid ratings, no missing ratings, raw responses, snapshots and
 the executed distribution report. Its README reproduces the figure using the
-dedicated distribution notebook without model calls. Archiving changes no selection rule.
+dedicated distribution notebook without model calls. The notebook defaults to
+the supplied job under `current/jobs/`; `current/report/` contains the executed
+analysis, tables, figures and manifest. The documented source identifiers and
+raw responses accompany the stored ratings and selected title sets.
 
 This profile is a dataset-design diagnostic: inspect low/high-score
 concentrations, asymmetry, sparse tails, domain differences and missing ratings.
@@ -256,7 +257,7 @@ All conditions use `workflows/sd3_5_large_api.json`:
 - negative prompt: `text, letters, words, logos, watermarks`.
 
 This is the fixed study deployment profile, not a claimed universal or official
-optimum. Historical runs keep their own saved workflow.
+optimum. Each run stores the workflow actually used.
 
 ## Outcomes and analysis
 
@@ -295,7 +296,7 @@ image. Prediction-only accuracy is 66.7%, prediction coverage is 75.0% and
 strict-image acceptance is 50.0%. Conditional accuracy changes the evaluated
 subset; it is not an improvement of the model.
 
-Strict Exact Match remains case-sensitive after trimming outer whitespace
+Strict Exact Match is case-sensitive after trimming outer whitespace
 (`strict_trimmed_exact_v1`). Normalized Exact Match uses Unicode NFC, casefold,
 collapsed whitespace and an explicit punctuation mapping: U+00B7 (middle dot)
 and U+2010--U+2015 (typographic hyphens/dashes) become ASCII hyphen-minus.
@@ -307,7 +308,7 @@ text. The method ID is
 `nfc_casefold_whitespace_middot_dashes_outer_quotes_exact_v3`, printed in the
 analysis report. Main-study normalized values remain supporting tables. The
 style report plots all four image-policy/title-matching combinations.
-Existing raw outputs and historical run decisions remain unchanged.
+Analysis reads raw outputs and persisted decisions without modifying them.
 
 Both Normalized Exact Match and the prompt verifier use
 `normalize_title_text()` in `src/semantic_roundtrip/evaluation.py`. Exact Match
@@ -321,9 +322,7 @@ scores 0 in every end-to-end outcome, but it never triggers regeneration or
 prevents downstream work. The status website reports persisted prompt, strict
 image and title-aware image decisions separately. Current code reads and writes
 only experiment schema 11 and run-database schema 12. Job YAML/snapshots use 5;
-Job DB remains 4 and manifest format remains 6. Completed experiment-10/DB-11
-job-4 sources have a one-time, copy-only conversion script; earlier archives
-retain their original checkout.
+Job DB uses 4 and manifest format uses 6.
 
 Four seed observations are averaged per title before comparisons. Confidence
 intervals use 10,000 paired bootstrap resamples of complete titles, stratified
@@ -370,7 +369,7 @@ Supporting CSV tables and input/code/software provenance are saved quietly to
 the notebook's output directory. The three notebooks have no analysis-mode
 switches or embedded helper definitions. Shared table assembly and plotting are
 in `analysis/reporting.py` and `analysis/plotting.py`; the existing statistical
-calculations in `analysis/statistics.py` are unchanged.
+estimators are implemented in `analysis/statistics.py`.
 
 RQ1 compares selected direct Qwen/Gemma configurations through three
 aspects: earlier/later configurations within each family, families within each
@@ -409,8 +408,7 @@ images and retains both policies. `title_guessing_from_prompt` depends only on
 prompts. All are independently optional/importable, and prompt-only execution
 requires no image seeds or verifier model. Local and imported execution of the
 same stage is disallowed. Selected inherited work must be terminal and inactive;
-the parent source may still run unrelated stages in the new format. This is
-not permission to migrate active old-format jobs.
+the parent source may still run unrelated stages.
 
 The Prompt endpoint is passed prompt verification AND Strict Exact Match over
 every planned prompt. Missing decisions, predictions and terminal failures are
@@ -436,12 +434,6 @@ locally), never by text. A complete style has 720 logical prompts. It exports
 the complete four-style evidence, method IDs, file hashes and provenance;
 `STYLE_REPORT_DIR` imports only a validated compact summary into the final report.
 Missing or inconsistent exports fail explicitly.
-
-The copy-only migration preserves IDs, values, decisions, seeds, task attempts
-and provenance. It adds an empty prompt-prediction table and translates the
-verification stage labels/configuration. Only finished supported source jobs
-are accepted; ambiguous mappings fail. Preserve originals, exact converter and
-migration records outside the current website discovery root.
 
 ## Protocol validation and stability
 

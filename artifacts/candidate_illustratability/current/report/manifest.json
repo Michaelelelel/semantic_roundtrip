@@ -1,0 +1,93 @@
+{
+  "analysis": {
+    "purpose": "candidate_distribution",
+    "population": "all eligible candidates",
+    "aggregation": "equal Q25/G3/Q38/G4 mean; four valid integer ratings required; no imputation",
+    "histogram_bins": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100
+    ],
+    "bin_convention": "[left, right), last bin includes 100"
+  },
+  "created_at_utc": "2026-09-06T10:47:22.725811+00:00",
+  "python": "3.14.6",
+  "packages": {
+    "semantic-roundtrip": "0.4.0",
+    "pandas": "2.3.3",
+    "numpy": "2.5.2",
+    "matplotlib": "3.11.1",
+    "seaborn": "0.13.2"
+  },
+  "methods": {
+    "strict_title_match": "strict_trimmed_exact_v1",
+    "normalized_title_match": "nfc_casefold_whitespace_middot_dashes_outer_quotes_exact_v3",
+    "prompt_verification": "nfc_casefold_whitespace_middot_dashes_word_boundaries_v1",
+    "strict_image_verification": "visible_meaningful_text_json_v3",
+    "title_aware_image_verification": "visible_reference_title_json_v1"
+  },
+  "analysis_sha256": {
+    "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\notebooks\\illustratability_distribution.ipynb": "d1ef8d01b2ff7cee7891a2bde83346e9c10967f9fab126288273159420a6730e",
+    "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\src\\semantic_roundtrip\\evaluation.py": "a9422878c24b410202eeda8c3fa296f858d37be43c1110ef271342c58acc2659",
+    "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\src\\semantic_roundtrip\\analysis\\__init__.py": "e91664ac4b28a45bd865026d7c20672afc1c4eb0de65bd58c7278ac684f0405d",
+    "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\src\\semantic_roundtrip\\analysis\\loader.py": "7f794e1f8905c903c2c9a90c8ce3202924db2f86f5666f92620f833fb8089426",
+    "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\src\\semantic_roundtrip\\analysis\\plotting.py": "e3fca983fba6fe8a62bc88a6f88116f5b0cc93580ce6c2e654a7be459beccf7d",
+    "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\src\\semantic_roundtrip\\analysis\\prompt_baseline.py": "2c54c784d542af987d032937c91db5b52a2bf5885b36628d256b732cd17046fc",
+    "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\src\\semantic_roundtrip\\analysis\\reporting.py": "d65f7ec7b3761bf1b9aa90e343e6d010fc124e25b5fe13b51f2e0667a4ea9b76",
+    "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\src\\semantic_roundtrip\\analysis\\statistics.py": "1e6927661a9913809bbafb2ea849714edd1a7cee3b18e39037a9106bb1b6c0b2",
+    "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\src\\semantic_roundtrip\\analysis\\style_report.py": "e2ae94d7042aed9649c6d51f8811ba1b3ce7004893ee10ac267a0cb7bb9de71e"
+  },
+  "sources": [
+    {
+      "label": "Candidate pool",
+      "directory": "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2",
+      "job_id": "20260902T162529Z_candidate-illustratability_a1cfe5f2",
+      "job_name": "candidate_illustratability",
+      "status": "completed",
+      "entries": {
+        "rating_q25": "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-q25_1b2b4333",
+        "rating_g3": "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-g3_ed04acf2",
+        "rating_q38": "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-q38_0b892e18",
+        "rating_g4": "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-g4_9d2eaaa8"
+      },
+      "sha256": {
+        "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\job_snapshot.yaml": "b1f38450475659e0dac7c6d2c4f98a5dbc191fae116812016b34c786cbad73e5",
+        "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\job_state.sqlite": "e36a8caa95395021c7c73ffad1831837a76fbc19c3b11ce38560faa86f0ffaa4",
+        "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-q25_1b2b4333\\config_snapshot.yaml": "e6bebfd0f79d0c9d650366736396c34f1080971ddea404084603085232e4bd8b",
+        "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-q25_1b2b4333\\pipeline_state.sqlite": "d13586c8de22801086b7cecbb5aa16a02379aec02068341baf91ccfbb808723d",
+        "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-g3_ed04acf2\\config_snapshot.yaml": "3d45a25766470b7312da7095e300333f5d098eb51616f6b5ae7106aed0076b7e",
+        "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-g3_ed04acf2\\pipeline_state.sqlite": "5d78784f9fe81245882275593384aec0117c81aa8a1fd14482f83400cfb19016",
+        "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-q38_0b892e18\\config_snapshot.yaml": "e27fd2a82153532acfe6e0d19b9339555bba2739ccb42dd169f4f23f13c822c8",
+        "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-q38_0b892e18\\pipeline_state.sqlite": "e2b7b353ea979ae8f3b30386da33da2f9bf0ecf130c4f8e362d8693c1caa0391",
+        "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-g4_9d2eaaa8\\config_snapshot.yaml": "d14f25b2856efc70e1e86636cda4d9a308e82e02353fcc23b00ee2670001f4a7",
+        "C:\\Users\\micha\\uni\\Bachelor\\semantic_roundtrip\\artifacts\\candidate_illustratability\\current\\jobs\\20260902T162529Z_candidate-illustratability_a1cfe5f2\\runs\\20260902T162529Z_rating-g4_9d2eaaa8\\pipeline_state.sqlite": "5dfb9849df06b1bf3a1b82d41963e07d89ac6b257fb48233a83930493bb2a414"
+      }
+    }
+  ],
+  "exports_sha256": {
+    "candidate_pool_counts.csv": "f93596d14f054900b4f3804339f2da59f47a9842e28151b9e51cfacccfb44d59",
+    "candidate_pool_distribution.pdf": "200d7e0f0af652116e22f1623e9797c9e664c136924cad99f5da1f79b07bda7f",
+    "candidate_pool_distribution.png": "8399248e0e4c356f9d7134aba1146f829d962527df8d7a4c0e2e8c004cb12356",
+    "candidate_pool_histogram.csv": "fe01b949f2d4557ab59737978a0f467b03259958cecb9de40b92658d90212eb9",
+    "candidate_pool_model_counts.csv": "4726dceedb93f046fd6c8dd3f62419e9fe99945425c7774c831f2c45b071fd5d",
+    "candidate_pool_scores.csv": "72a6803d71a985ff9fd69090962775a02b9dae31d08b8f243800d1d9761ed404"
+  }
+}

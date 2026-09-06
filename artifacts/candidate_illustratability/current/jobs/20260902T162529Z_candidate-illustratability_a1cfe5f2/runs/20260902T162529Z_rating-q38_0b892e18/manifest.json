@@ -1,0 +1,17 @@
+{
+  "manifest_schema_version": 6,
+  "run_id": "20260902T162529Z_rating-q38_0b892e18",
+  "run_name": "rating_q38",
+  "created_at": "2026-09-02T16:25:29.414292+00:00",
+  "artifacts": {
+    "input_config": "config_input.yaml",
+    "effective_config": "config_snapshot.yaml",
+    "database": "pipeline_state.sqlite",
+    "images": "images",
+    "prompts": {
+      "illustratability_rating": "illustratability_prompt_profile.yaml"
+    },
+    "workflows": {},
+    "provenance": "provenance"
+  }
+}

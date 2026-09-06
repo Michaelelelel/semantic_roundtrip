@@ -1,0 +1,303 @@
+{
+  "validation": "completed_candidate_rating_conversion_v1",
+  "passed": true,
+  "source_job_id": "20260902T162529Z_candidate-illustratability_a1cfe5f2",
+  "ratings_total": 3600,
+  "ratings_by_model": {
+    "q25": 900,
+    "g3": 900,
+    "q38": 900,
+    "g4": 900
+  },
+  "roster_count": 900,
+  "databases": {
+    "job": {
+      "source_version": 4,
+      "target_version": 4,
+      "identical_populated_tables": {
+        "job_entries": 4,
+        "job_metadata": 1
+      }
+    },
+    "q25": {
+      "source_version": 10,
+      "target_version": 12,
+      "identical_populated_tables": {
+        "dataset_items": 900,
+        "illustratability_ratings": 900,
+        "run_metadata": 1,
+        "runtime_events": 2,
+        "stage_tasks": 900
+      }
+    },
+    "g3": {
+      "source_version": 10,
+      "target_version": 12,
+      "identical_populated_tables": {
+        "dataset_items": 900,
+        "illustratability_ratings": 900,
+        "run_metadata": 1,
+        "runtime_events": 2,
+        "stage_tasks": 900
+      }
+    },
+    "q38": {
+      "source_version": 10,
+      "target_version": 12,
+      "identical_populated_tables": {
+        "dataset_items": 900,
+        "illustratability_ratings": 900,
+        "run_metadata": 1,
+        "runtime_events": 2,
+        "stage_tasks": 900
+      }
+    },
+    "g4": {
+      "source_version": 10,
+      "target_version": 12,
+      "identical_populated_tables": {
+        "dataset_items": 900,
+        "illustratability_ratings": 900,
+        "run_metadata": 1,
+        "runtime_events": 2,
+        "stage_tasks": 900
+      }
+    }
+  },
+  "conversion_record": {
+    "scope": "completed_rating_only",
+    "config_schemas": {
+      "experiment": "8->11",
+      "job": "4->5"
+    },
+    "database_schemas": {
+      "run": "10->12",
+      "job": "4->4"
+    },
+    "scientific_configurations_identical_except_version": 10,
+    "archived_converter_sha256": "d967b079a9d58b1e0182cee84f647075e5ad5ede214e492735f84d087faf7382",
+    "source_files_recorded": 23,
+    "original_backups_validated": true
+  },
+  "selection": {
+    "final": {
+      "count": 90,
+      "ordered_ids": [
+        "songs_anpanman",
+        "songs_yellow",
+        "songs_ace_of_spades",
+        "songs_iron_man",
+        "songs_zombie",
+        "songs_here_comes_the_sun",
+        "songs_stairway_to_heaven",
+        "songs_master_of_puppets",
+        "songs_pompeii",
+        "songs_teardrop",
+        "songs_money",
+        "songs_supermassive_black_hole",
+        "songs_highway_to_hell",
+        "songs_money_trees",
+        "songs_paper_planes",
+        "songs_black_hole_sun",
+        "songs_heartshaped_box",
+        "songs_paint_it_black",
+        "songs_poker_face",
+        "songs_welcome_to_the_jungle",
+        "songs_silver_spoon",
+        "songs_hotel_california",
+        "songs_papercut",
+        "songs_space_oddity",
+        "songs_airbag",
+        "songs_dancing_queen",
+        "songs_africa",
+        "songs_old_town_road",
+        "songs_kryptonite",
+        "songs_sweater_weather",
+        "movies_titanic",
+        "movies_the_lion_king",
+        "movies_spider_man",
+        "movies_shrek",
+        "movies_jaws",
+        "movies_jurassic_park",
+        "movies_black_panther",
+        "movies_walle",
+        "movies_up",
+        "movies_finding_nemo",
+        "movies_wonder_woman",
+        "movies_kung_fu_panda",
+        "movies_star_wars_episode_iv_a_new_hope",
+        "movies_v_for_vendetta",
+        "movies_toy_story",
+        "movies_thor",
+        "movies_spider_man_into_the_spider_verse",
+        "movies_spider_man_2",
+        "movies_the_incredible_hulk",
+        "movies_the_godfather",
+        "movies_the_avengers",
+        "movies_back_to_the_future",
+        "movies_deadpool",
+        "movies_star_wars_episode_vi_return_of_the_jedi",
+        "movies_raiders_of_the_lost_ark",
+        "movies_harry_potter_and_the_sorcerer_s_stone",
+        "movies_ratatouille",
+        "movies_the_amazing_spider_man",
+        "movies_jurassic_world",
+        "movies_transformers",
+        "bands_kiss",
+        "bands_the_beatles",
+        "bands_daft_punk",
+        "bands_slipknot",
+        "bands_the_white_stripes",
+        "bands_pink_floyd",
+        "bands_iron_maiden",
+        "bands_cake",
+        "bands_wutang_clan",
+        "bands_the_rolling_stones",
+        "bands_the_beach_boys",
+        "bands_motorhead",
+        "bands_scorpions",
+        "bands_spoon",
+        "bands_earth_wind_fire",
+        "bands_gorillaz",
+        "bands_metallica",
+        "bands_ac_dc",
+        "bands_guns_n_roses",
+        "bands_zz_top",
+        "bands_rammstein",
+        "bands_bob_marley_the_wailers",
+        "bands_pendulum",
+        "bands_nine_inch_nails",
+        "bands_the_doors",
+        "bands_marilyn_manson",
+        "bands_cage_the_elephant",
+        "bands_black_sabbath",
+        "bands_ramones",
+        "bands_swans"
+      ]
+    },
+    "development": {
+      "count": 6,
+      "ordered_ids": [
+        "songs_under_the_bridge",
+        "songs_radioactive",
+        "movies_spider_man_3",
+        "movies_sherlock_holmes",
+        "bands_grizzly_bear",
+        "bands_lamb_of_god"
+      ]
+    },
+    "unchanged_file_sha256": {
+      "illustratable_titles_v1.yaml": "d4e7ed86ec2d401729bc50cdce35159bc00bffbaa9cf4c289872293ce08f32b2",
+      "illustratable_titles_v1_sources.csv": "0c18cdd34c374aed7b8c82e0a188164485dcb53e3739750c3cd90f35f6fc055d",
+      "development_illustratable_titles_v1.yaml": "213bea4007c7701f1cf9d9723f1d3b928909ea4900923fb0845d8162347ff1b4",
+      "development_illustratable_titles_v1_sources.csv": "70a99c9989ef3d95db528524cedf196ab94e5dc8d356e4b36abd6def2661a742"
+    }
+  },
+  "report": {
+    "candidate_pool_scores.csv": {
+      "rows": 900,
+      "columns": [
+        "dataset_id",
+        "domain",
+        "item_key",
+        "title",
+        "q25",
+        "g3",
+        "q38",
+        "g4",
+        "valid_model_ratings",
+        "mean_score"
+      ],
+      "values_and_row_order_identical": true,
+      "current_sha256": "72a6803d71a985ff9fd69090962775a02b9dae31d08b8f243800d1d9761ed404"
+    },
+    "candidate_pool_counts.csv": {
+      "rows": 3,
+      "columns": [
+        "domain",
+        "candidates",
+        "complete_four_model_means",
+        "missing_means"
+      ],
+      "values_and_row_order_identical": true,
+      "current_sha256": "f93596d14f054900b4f3804339f2da59f47a9842e28151b9e51cfacccfb44d59"
+    },
+    "candidate_pool_model_counts.csv": {
+      "rows": 12,
+      "columns": [
+        "domain",
+        "model",
+        "recorded_ratings",
+        "valid_ratings",
+        "planned_ratings",
+        "missing_ratings",
+        "invalid_ratings"
+      ],
+      "values_and_row_order_identical": true,
+      "current_sha256": "4726dceedb93f046fd6c8dd3f62419e9fe99945425c7774c831f2c45b071fd5d"
+    },
+    "candidate_pool_histogram.csv": {
+      "rows": 60,
+      "columns": [
+        "domain",
+        "bin_left",
+        "bin_right",
+        "right_inclusive",
+        "titles"
+      ],
+      "values_and_row_order_identical": true,
+      "current_sha256": "fe01b949f2d4557ab59737978a0f467b03259958cecb9de40b92658d90212eb9"
+    }
+  },
+  "web": {
+    "in_process_only": true,
+    "successful_pages": [
+      "/health",
+      "/ready",
+      "/",
+      "/jobs/20260902T162529Z_candidate-illustratability_a1cfe5f2",
+      "/runs/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-q25_1b2b4333",
+      "/results/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-q25_1b2b4333",
+      "/runs/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-g3_ed04acf2",
+      "/results/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-g3_ed04acf2",
+      "/runs/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-q38_0b892e18",
+      "/results/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-q38_0b892e18",
+      "/runs/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-g4_9d2eaaa8",
+      "/results/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs/20260902T162529Z_rating-g4_9d2eaaa8"
+    ],
+    "current_analysis_and_stage_counts": {
+      "q25": {
+        "ratings": 900,
+        "stage_produced": 900,
+        "stage_expected": 900,
+        "observations": 0,
+        "errors": 0
+      },
+      "g3": {
+        "ratings": 900,
+        "stage_produced": 900,
+        "stage_expected": 900,
+        "observations": 0,
+        "errors": 0
+      },
+      "q38": {
+        "ratings": 900,
+        "stage_produced": 900,
+        "stage_expected": 900,
+        "observations": 0,
+        "errors": 0
+      },
+      "g4": {
+        "ratings": 900,
+        "stage_produced": 900,
+        "stage_expected": 900,
+        "observations": 0,
+        "errors": 0
+      }
+    }
+  },
+  "original_archive": {
+    "sha256sums_sha256": "e49aaaaabe403ed5ee66517539f708a8dc005a3aca41f1f92626e2dc39852495",
+    "verified_files": 32
+  }
+}

@@ -81,12 +81,10 @@ versioned executable protocol.
 - `runs/`: generated run artifacts; normally mounted outside the repository.
 
 Python dependencies are locked in `uv.lock`. Container images, model revisions
-and model checksums are pinned. Existing run snapshots remain historical facts;
-editing a live config never changes an earlier run.
+and model checksums are pinned. Each run snapshot records the configuration
+actually used; editing a configuration never changes an existing run.
 
-The `final_v3` SQ5 extension preserves original `final_v2` outputs. Current
-formats are experiment 11, Run DB 12 and Job YAML 5 (Job DB 4, manifest 6).
-The one-time [migration script](scripts/migrate_current_runs.py) converts only
-completed experiment-10/DB-11/job-4 inputs on separate copies; see
-[migration and deployment](RUNNING.md#sq5-format-migration-and-deployment).
-Never migrate active jobs or scan original and converted copies together.
+The study protocol is `final_v3`. The application uses experiment/snapshot
+format 11, Run DB 12, Job YAML/snapshot 5, Job DB 4 and manifest 6. Use completed
+jobs with matching study settings for analysis and retain their source
+identifiers, raw responses and snapshots with the reported results.

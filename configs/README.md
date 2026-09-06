@@ -247,15 +247,15 @@ source afterward. Imported successes and terminal failures keep their
 provenance. The importer validates stage structure and expected rows; it does
 not repair or silently regenerate mismatches.
 Selected stages and dependencies must be terminal and inactive; unrelated work
-may continue in a new-format source. Bundled snapshots preserve expected counts
+may continue in the source run. Bundled snapshots preserve expected counts
 and policies even when upstream failures produced no verification tasks.
 
 Run DB 12 stores prompt predictions separately from image-linked predictions:
 `prompt_predictions` has an ID, unique required `prompt_id`, title, raw response,
 optional confidence and method, and origin Run/Prediction IDs. A run defines one
 model assignment, so each prompt has at most one prediction per route.
-Job DB remains 4 and manifest format remains 6. Old formats are accepted only
-by the explicit one-time converter on completed copies, not normal execution.
+The application uses Job DB 4 and manifest format 6, alongside experiment
+schema 11 and job schema 5. Stored inputs must match these formats.
 
 ## Checklist
 

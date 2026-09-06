@@ -1,0 +1,2744 @@
+schema_version: 11
+configuration_kind: effective
+run:
+  name: rating_q38
+  output_directory: runs/20260902T162529Z_candidate-illustratability_a1cfe5f2/runs
+dataset:
+  dataset_id: eligible_top300_v1
+  source_profile: ../../../datasets/eligible_top300_v1.yaml
+  items:
+  - id: songs_fake_love
+    domain: songs
+    title: FAKE LOVE
+  - id: songs_run
+    domain: songs
+    title: RUN
+  - id: songs_dna
+    domain: songs
+    title: DNA
+  - id: songs_boy_with_luv
+    domain: songs
+    title: Boy With Luv
+  - id: songs_in_the_end
+    domain: songs
+    title: In the End
+  - id: songs_mr_brightside
+    domain: songs
+    title: Mr. Brightside
+  - id: songs_creep
+    domain: songs
+    title: Creep
+  - id: songs_smells_like_teen_spirit
+    domain: songs
+    title: Smells Like Teen Spirit
+  - id: songs_chop_suey
+    domain: songs
+    title: Chop Suey!
+  - id: songs_idol
+    domain: songs
+    title: IDOL
+  - id: songs_numb
+    domain: songs
+    title: Numb
+  - id: songs_the_less_i_know_the_better
+    domain: songs
+    title: The Less I Know the Better
+  - id: songs_karma_police
+    domain: songs
+    title: Karma Police
+  - id: songs_airplane_pt_2
+    domain: songs
+    title: Airplane pt.2
+  - id: songs_no_surprises
+    domain: songs
+    title: No Surprises
+  - id: songs_feel_good_inc
+    domain: songs
+    title: Feel Good Inc.
+  - id: songs_seven_nation_army
+    domain: songs
+    title: Seven Nation Army
+  - id: songs_mic_drop
+    domain: songs
+    title: Mic Drop
+  - id: songs_come_as_you_are
+    domain: songs
+    title: Come as You Are
+  - id: songs_do_i_wanna_know
+    domain: songs
+    title: Do I Wanna Know?
+  - id: songs_bohemian_rhapsody
+    domain: songs
+    title: Bohemian Rhapsody
+  - id: songs_everlong
+    domain: songs
+    title: Everlong
+  - id: songs_running
+    domain: songs
+    title: Running
+  - id: songs_viva_la_vida
+    domain: songs
+    title: Viva la vida
+  - id: songs_toxicity
+    domain: songs
+    title: Toxicity
+  - id: songs_take_me_out
+    domain: songs
+    title: Take Me Out
+  - id: songs_wonderwall
+    domain: songs
+    title: Wonderwall
+  - id: songs_where_is_my_mind
+    domain: songs
+    title: Where Is My Mind?
+  - id: songs_killing_in_the_name
+    domain: songs
+    title: Killing in the Name
+  - id: songs_paranoid
+    domain: songs
+    title: Paranoid
+  - id: songs_pumped_up_kicks
+    domain: songs
+    title: Pumped Up Kicks
+  - id: songs_get_lucky
+    domain: songs
+    title: Get Lucky
+  - id: songs_paranoid_android
+    domain: songs
+    title: Paranoid Android
+  - id: songs_song_2
+    domain: songs
+    title: Song 2
+  - id: songs_take_on_me
+    domain: songs
+    title: Take On Me
+  - id: songs_enter_sandman
+    domain: songs
+    title: Enter Sandman
+  - id: songs_truth_untold
+    domain: songs
+    title: Truth Untold
+  - id: songs_let_go
+    domain: songs
+    title: Let Go
+  - id: songs_stairway_to_heaven
+    domain: songs
+    title: Stairway to Heaven
+  - id: songs_africa
+    domain: songs
+    title: Africa
+  - id: songs_bring_me_to_life
+    domain: songs
+    title: Bring Me to Life
+  - id: songs_harder_better_faster_stronger
+    domain: songs
+    title: Harder, Better, Faster, Stronger
+  - id: songs_everybody_wants_to_rule_the_world
+    domain: songs
+    title: Everybody Wants to Rule the World
+  - id: songs_no_more_dream
+    domain: songs
+    title: No More Dream
+  - id: songs_sultans_of_swing
+    domain: songs
+    title: Sultans of Swing
+  - id: songs_midnight_city
+    domain: songs
+    title: Midnight City
+  - id: songs_faint
+    domain: songs
+    title: Faint
+  - id: songs_agust_d
+    domain: songs
+    title: Agust D
+  - id: songs_dreams
+    domain: songs
+    title: Dreams
+  - id: songs_stressed_out
+    domain: songs
+    title: Stressed Out
+  - id: songs_everything_in_its_right_place
+    domain: songs
+    title: Everything in Its Right Place
+  - id: songs_losing_my_religion
+    domain: songs
+    title: Losing My Religion
+  - id: songs_blue_side_outro
+    domain: songs
+    title: Blue Side (outro)
+  - id: songs_intro_dt_suga
+    domain: songs
+    title: Intro ; Dt sugA
+  - id: songs_californication
+    domain: songs
+    title: Californication
+  - id: songs_radioactive
+    domain: songs
+    title: Radioactive
+  - id: songs_kids
+    domain: songs
+    title: Kids
+  - id: songs_misery_business
+    domain: songs
+    title: Misery Business
+  - id: songs_enjoy_the_silence
+    domain: songs
+    title: Enjoy the Silence
+  - id: songs_one_step_closer
+    domain: songs
+    title: One Step Closer
+  - id: songs_sweater_weather
+    domain: songs
+    title: Sweater Weather
+  - id: songs_danger
+    domain: songs
+    title: Danger
+  - id: songs_no_one_knows
+    domain: songs
+    title: No One Knows
+  - id: songs_hotel_california
+    domain: songs
+    title: Hotel California
+  - id: songs_euphoria
+    domain: songs
+    title: Euphoria
+  - id: songs_the_chain
+    domain: songs
+    title: The Chain
+  - id: songs_under_the_bridge
+    domain: songs
+    title: Under the Bridge
+  - id: songs_teardrop
+    domain: songs
+    title: Teardrop
+  - id: songs_time
+    domain: songs
+    title: Time
+  - id: songs_humble
+    domain: songs
+    title: HUMBLE.
+  - id: songs_wish_you_were_here
+    domain: songs
+    title: Wish You Were Here
+  - id: songs_i_need_u_japanese_ver
+    domain: songs
+    title: I NEED U (Japanese ver.)
+  - id: songs_money
+    domain: songs
+    title: Money
+  - id: songs_supermassive_black_hole
+    domain: songs
+    title: Supermassive Black Hole
+  - id: songs_basket_case
+    domain: songs
+    title: Basket Case
+  - id: songs_stigma
+    domain: songs
+    title: Stigma
+  - id: songs_american_idiot
+    domain: songs
+    title: American Idiot
+  - id: songs_on_melancholy_hill
+    domain: songs
+    title: On Melancholy Hill
+  - id: songs_cant_stop
+    domain: songs
+    title: Can’t Stop
+  - id: songs_welcome_to_the_black_parade
+    domain: songs
+    title: Welcome to the Black Parade
+  - id: songs_comfortably_numb
+    domain: songs
+    title: Comfortably Numb
+  - id: songs_one_more_time
+    domain: songs
+    title: One More Time
+  - id: songs_sweet_child_o_mine
+    domain: songs
+    title: Sweet Child o’ Mine
+  - id: songs_somebody_told_me
+    domain: songs
+    title: Somebody Told Me
+  - id: songs_jigsaw_falling_into_place
+    domain: songs
+    title: Jigsaw Falling Into Place
+  - id: songs_another_one_bites_the_dust
+    domain: songs
+    title: Another One Bites the Dust
+  - id: songs_505
+    domain: songs
+    title: '505'
+  - id: songs_outro_wings
+    domain: songs
+    title: 'Outro : Wings'
+  - id: songs_weird_fishes_arpeggi
+    domain: songs
+    title: Weird Fishes/Arpeggi
+  - id: songs_billie_jean
+    domain: songs
+    title: Billie Jean
+  - id: songs_black_hole_sun
+    domain: songs
+    title: Black Hole Sun
+  - id: songs_whalien_52
+    domain: songs
+    title: Whalien 52
+  - id: songs_pied_piper
+    domain: songs
+    title: Pied Piper
+  - id: songs_the_middle
+    domain: songs
+    title: The Middle
+  - id: songs_save_me
+    domain: songs
+    title: Save ME
+  - id: songs_somewhere_i_belong
+    domain: songs
+    title: Somewhere I Belong
+  - id: songs_heartshaped_box
+    domain: songs
+    title: Heart‐Shaped Box
+  - id: songs_let_down
+    domain: songs
+    title: Let Down
+  - id: songs_instant_crush
+    domain: songs
+    title: Instant Crush
+  - id: songs_mama
+    domain: songs
+    title: MAMA
+  - id: songs_paint_it_black
+    domain: songs
+    title: Paint It Black
+  - id: songs_anpanman
+    domain: songs
+    title: Anpanman
+  - id: songs_magic_shop
+    domain: songs
+    title: Magic Shop
+  - id: songs_the_pretender
+    domain: songs
+    title: The Pretender
+  - id: songs_neva
+    domain: songs
+    title: Neva
+  - id: songs_yellow
+    domain: songs
+    title: Yellow
+  - id: songs_master_of_puppets
+    domain: songs
+    title: Master of Puppets
+  - id: songs_what_you_know
+    domain: songs
+    title: What You Know
+  - id: songs_best_of_me
+    domain: songs
+    title: Best of Me
+  - id: songs_lithium
+    domain: songs
+    title: Lithium
+  - id: songs_papercut
+    domain: songs
+    title: Papercut
+  - id: songs_there_is_a_light_that_never_goes_out
+    domain: songs
+    title: There Is a Light That Never Goes Out
+  - id: songs_exit_music_for_a_film
+    domain: songs
+    title: Exit Music (for a Film)
+  - id: songs_take_me_to_church
+    domain: songs
+    title: Take Me to Church
+  - id: songs_love_maze
+    domain: songs
+    title: Love Maze
+  - id: songs_love_will_tear_us_apart
+    domain: songs
+    title: Love Will Tear Us Apart
+  - id: songs_the_kids_arent_alright
+    domain: songs
+    title: The Kids Aren’t Alright
+  - id: songs_dont_stop_believin
+    domain: songs
+    title: Don’t Stop Believin’
+  - id: songs_what_ive_done
+    domain: songs
+    title: What I’ve Done
+  - id: songs_electric_feel
+    domain: songs
+    title: Electric Feel
+  - id: songs_youre_gonna_go_far_kid
+    domain: songs
+    title: You’re Gonna Go Far, Kid
+  - id: songs_summertime_sadness
+    domain: songs
+    title: Summertime Sadness
+  - id: songs_zombie
+    domain: songs
+    title: Zombie
+  - id: songs_here_comes_the_sun
+    domain: songs
+    title: Here Comes the Sun
+  - id: songs_september
+    domain: songs
+    title: September
+  - id: songs_nothing_else_matters
+    domain: songs
+    title: Nothing Else Matters
+  - id: songs_r_u_mine
+    domain: songs
+    title: R U Mine?
+  - id: songs_give_it_to_me
+    domain: songs
+    title: give it to me
+  - id: songs_let_it_happen
+    domain: songs
+    title: Let It Happen
+  - id: songs_all_i_need
+    domain: songs
+    title: All I Need
+  - id: songs_duvet
+    domain: songs
+    title: Duvet
+  - id: songs_reptilia
+    domain: songs
+    title: Reptilia
+  - id: songs_crawling
+    domain: songs
+    title: Crawling
+  - id: songs_back_in_black
+    domain: songs
+    title: Back in Black
+  - id: songs_scar_tissue
+    domain: songs
+    title: Scar Tissue
+  - id: songs_teenagers
+    domain: songs
+    title: Teenagers
+  - id: songs_breezeblocks
+    domain: songs
+    title: Breezeblocks
+  - id: songs_mr_blue_sky
+    domain: songs
+    title: Mr. Blue Sky
+  - id: songs_whyd_you_only_call_me_when_youre_high
+    domain: songs
+    title: Why’d You Only Call Me When You’re High?
+  - id: songs_boulevard_of_broken_dreams
+    domain: songs
+    title: Boulevard of Broken Dreams
+  - id: songs_riptide
+    domain: songs
+    title: Riptide
+  - id: songs_skit
+    domain: songs
+    title: skit
+  - id: songs_counting_stars
+    domain: songs
+    title: Counting Stars
+  - id: songs_bitter_sweet_symphony
+    domain: songs
+    title: Bitter Sweet Symphony
+  - id: songs_breaking_the_habit
+    domain: songs
+    title: Breaking the Habit
+  - id: songs_immigrant_song
+    domain: songs
+    title: Immigrant Song
+  - id: songs_hysteria
+    domain: songs
+    title: Hysteria
+  - id: songs_n_o
+    domain: songs
+    title: N.O
+  - id: songs_fake_plastic_trees
+    domain: songs
+    title: Fake Plastic Trees
+  - id: songs_intro
+    domain: songs
+    title: Intro
+  - id: songs_otherside
+    domain: songs
+    title: Otherside
+  - id: songs_fluorescent_adolescent
+    domain: songs
+    title: Fluorescent Adolescent
+  - id: songs_believer
+    domain: songs
+    title: Believer
+  - id: songs_fortunate_son
+    domain: songs
+    title: Fortunate Son
+  - id: songs_awake
+    domain: songs
+    title: Awake
+  - id: songs_nude
+    domain: songs
+    title: Nude
+  - id: songs_redbone
+    domain: songs
+    title: Redbone
+  - id: songs_time_to_pretend
+    domain: songs
+    title: Time to Pretend
+  - id: songs_uprising
+    domain: songs
+    title: Uprising
+  - id: songs_the_great_gig_in_the_sky
+    domain: songs
+    title: The Great Gig in the Sky
+  - id: songs_dna_898059a0_753
+    domain: songs
+    title: DNA.
+  - id: songs_high_and_dry
+    domain: songs
+    title: High and Dry
+  - id: songs_b_y_o_b
+    domain: songs
+    title: B.Y.O.B.
+  - id: songs_duality
+    domain: songs
+    title: Duality
+  - id: songs_140503_at_dawn
+    domain: songs
+    title: 140503 at dawn
+  - id: songs_starlight
+    domain: songs
+    title: Starlight
+  - id: songs_epiphany
+    domain: songs
+    title: Epiphany
+  - id: songs_poker_face
+    domain: songs
+    title: Poker Face
+  - id: songs_dream_on
+    domain: songs
+    title: Dream On
+  - id: songs_alright
+    domain: songs
+    title: Alright
+  - id: songs_not_today
+    domain: songs
+    title: Not Today
+  - id: songs_see_you_again
+    domain: songs
+    title: See You Again
+  - id: songs_dog_days_are_over
+    domain: songs
+    title: Dog Days Are Over
+  - id: songs_buddy_holly
+    domain: songs
+    title: Buddy Holly
+  - id: songs_pink_white
+    domain: songs
+    title: Pink + White
+  - id: songs_demons
+    domain: songs
+    title: Demons
+  - id: songs_old_town_road
+    domain: songs
+    title: Old Town Road
+  - id: songs_highway_to_hell
+    domain: songs
+    title: Highway to Hell
+  - id: songs_without_me
+    domain: songs
+    title: Without Me
+  - id: songs_hey_ya
+    domain: songs
+    title: Hey Ya!
+  - id: songs_welcome_to_the_jungle
+    domain: songs
+    title: Welcome to the Jungle
+  - id: songs_sex_on_fire
+    domain: songs
+    title: Sex on Fire
+  - id: songs_starboy
+    domain: songs
+    title: Starboy
+  - id: songs_space_oddity
+    domain: songs
+    title: Space Oddity
+  - id: songs_interlude_dream_reality
+    domain: songs
+    title: Interlude ; Dream, Reality
+  - id: songs_bts_cypher_pt_3_killer
+    domain: songs
+    title: 'BTS Cypher PT.3 : KILLER'
+  - id: songs_royals
+    domain: songs
+    title: Royals
+  - id: songs_savior
+    domain: songs
+    title: Savior
+  - id: songs_so_far_away
+    domain: songs
+    title: so far away
+  - id: songs_pompeii
+    domain: songs
+    title: Pompeii
+  - id: songs_money_trees
+    domain: songs
+    title: Money Trees
+  - id: songs_livin_on_a_prayer
+    domain: songs
+    title: Livin’ on a Prayer
+  - id: songs_dont_look_back_in_anger
+    domain: songs
+    title: Don’t Look Back in Anger
+  - id: songs_knights_of_cydonia
+    domain: songs
+    title: Knights of Cydonia
+  - id: songs_i_bet_you_look_good_on_the_dancefloor
+    domain: songs
+    title: I Bet You Look Good on the Dancefloor
+  - id: songs_last_nite
+    domain: songs
+    title: Last Nite
+  - id: songs_last_resort
+    domain: songs
+    title: Last Resort
+  - id: songs_little_talks
+    domain: songs
+    title: Little Talks
+  - id: songs_float_on
+    domain: songs
+    title: Float On
+  - id: songs_friday_im_in_love
+    domain: songs
+    title: Friday I’m in Love
+  - id: songs_say_it_aint_so
+    domain: songs
+    title: Say It Ain’t So
+  - id: songs_this_charming_man
+    domain: songs
+    title: This Charming Man
+  - id: songs_am_i_wrong
+    domain: songs
+    title: Am I Wrong
+  - id: songs_slow_dancing_in_the_dark
+    domain: songs
+    title: SLOW DANCING IN THE DARK
+  - id: songs_how_to_disappear_completely
+    domain: songs
+    title: How to Disappear Completely
+  - id: songs_aint_no_rest_for_the_wicked
+    domain: songs
+    title: Ain’t No Rest for the Wicked
+  - id: songs_thunderstruck
+    domain: songs
+    title: Thunderstruck
+  - id: songs_ride
+    domain: songs
+    title: Ride
+  - id: songs_15_step
+    domain: songs
+    title: 15 Step
+  - id: songs_iris
+    domain: songs
+    title: Iris
+  - id: songs_about_a_girl
+    domain: songs
+    title: About a Girl
+  - id: songs_intro_2_cool_4_skool
+    domain: songs
+    title: 'Intro : 2 COOL 4 SKOOL'
+  - id: songs_feel_it_still
+    domain: songs
+    title: Feel It Still
+  - id: songs_xtal
+    domain: songs
+    title: Xtal
+  - id: songs_i_miss_you
+    domain: songs
+    title: I Miss You
+  - id: songs_little_dark_age
+    domain: songs
+    title: Little Dark Age
+  - id: songs_stronger
+    domain: songs
+    title: Stronger
+  - id: songs_outro
+    domain: songs
+    title: Outro
+  - id: songs_seoul
+    domain: songs
+    title: seoul
+  - id: songs_reckoner
+    domain: songs
+    title: Reckoner
+  - id: songs_go_with_the_flow
+    domain: songs
+    title: Go With the Flow
+  - id: songs_paper_planes
+    domain: songs
+    title: Paper Planes
+  - id: songs_hurt
+    domain: songs
+    title: Hurt
+  - id: songs_power
+    domain: songs
+    title: Power
+  - id: songs_bleed_it_out
+    domain: songs
+    title: Bleed It Out
+  - id: songs_moonchild
+    domain: songs
+    title: moonchild
+  - id: songs_even_flow
+    domain: songs
+    title: Even Flow
+  - id: songs_rolling_in_the_deep
+    domain: songs
+    title: Rolling in the Deep
+  - id: songs_heroes
+    domain: songs
+    title: “Heroes”
+  - id: songs_tokyo
+    domain: songs
+    title: tokyo
+  - id: songs_every_breath_you_take
+    domain: songs
+    title: Every Breath You Take
+  - id: songs_space_song
+    domain: songs
+    title: Space Song
+  - id: songs_lonely_day
+    domain: songs
+    title: Lonely Day
+  - id: songs_lie
+    domain: songs
+    title: Lie
+  - id: songs_helena
+    domain: songs
+    title: Helena
+  - id: songs_heathens
+    domain: songs
+    title: Heathens
+  - id: songs_baba_oriley
+    domain: songs
+    title: Baba O’Riley
+  - id: songs_silver_spoon
+    domain: songs
+    title: Silver Spoon
+  - id: songs_thnks_fr_th_mmrs
+    domain: songs
+    title: Thnks fr th Mmrs
+  - id: songs_lonely_boy
+    domain: songs
+    title: Lonely Boy
+  - id: songs_all_the_small_things
+    domain: songs
+    title: All the Small Things
+  - id: songs_toxic
+    domain: songs
+    title: Toxic
+  - id: songs_in_bloom
+    domain: songs
+    title: In Bloom
+  - id: songs_the_scientist
+    domain: songs
+    title: The Scientist
+  - id: songs_island_in_the_sun
+    domain: songs
+    title: Island in the Sun
+  - id: songs_should_i_stay_or_should_i_go
+    domain: songs
+    title: Should I Stay or Should I Go
+  - id: songs_intro_boy_meets_evil
+    domain: songs
+    title: 'Intro : Boy Meets Evil'
+  - id: songs_du_hast
+    domain: songs
+    title: Du hast
+  - id: songs_interlude
+    domain: songs
+    title: Interlude
+  - id: songs_snow_hey_oh
+    domain: songs
+    title: Snow ((Hey Oh))
+  - id: songs_dance_dance
+    domain: songs
+    title: Dance, Dance
+  - id: songs_im_not_okay_i_promise
+    domain: songs
+    title: I’m Not Okay (I Promise)
+  - id: songs_someday
+    domain: songs
+    title: Someday
+  - id: songs_something_about_us
+    domain: songs
+    title: Something About Us
+  - id: songs_let_me_know
+    domain: songs
+    title: Let Me Know
+  - id: songs_bodysnatchers
+    domain: songs
+    title: Bodysnatchers
+  - id: songs_more_than_a_feeling
+    domain: songs
+    title: More Than a Feeling
+  - id: songs_for_whom_the_bell_tolls
+    domain: songs
+    title: For Whom the Bell Tolls
+  - id: songs_running_up_that_hill_a_deal_with_god
+    domain: songs
+    title: Running Up That Hill (A Deal With God)
+  - id: songs_under_pressure
+    domain: songs
+    title: Under Pressure
+  - id: songs_king_kunta
+    domain: songs
+    title: King Kunta
+  - id: songs_fix_you
+    domain: songs
+    title: Fix You
+  - id: songs_begin
+    domain: songs
+    title: Begin
+  - id: songs_airbag
+    domain: songs
+    title: Airbag
+  - id: songs_in_the_aeroplane_over_the_sea
+    domain: songs
+    title: In the Aeroplane Over the Sea
+  - id: songs_whats_my_age_again
+    domain: songs
+    title: What’s My Age Again?
+  - id: songs_paradise_city
+    domain: songs
+    title: Paradise City
+  - id: songs_just_like_heaven
+    domain: songs
+    title: Just Like Heaven
+  - id: songs_butterfly
+    domain: songs
+    title: Butterfly
+  - id: songs_my_own_summer_shove_it
+    domain: songs
+    title: My Own Summer (Shove It)
+  - id: songs_the_diary_of_jane
+    domain: songs
+    title: The Diary of Jane
+  - id: songs_i_hate_everything_about_you
+    domain: songs
+    title: (I Hate) Everything About You
+  - id: songs_would
+    domain: songs
+    title: Would?
+  - id: songs_bts_cypher_4
+    domain: songs
+    title: BTS Cypher 4
+  - id: songs_the_real_slim_shady
+    domain: songs
+    title: The Real Slim Shady
+  - id: songs_bad_romance
+    domain: songs
+    title: Bad Romance
+  - id: songs_safe_and_sound
+    domain: songs
+    title: Safe and Sound
+  - id: songs_walking_on_a_dream
+    domain: songs
+    title: Walking on a Dream
+  - id: songs_dani_california
+    domain: songs
+    title: Dani California
+  - id: songs_hope_world
+    domain: songs
+    title: Hope World
+  - id: songs_when_you_were_young
+    domain: songs
+    title: When You Were Young
+  - id: songs_epilogue_young_forever
+    domain: songs
+    title: 'EPILOGUE : Young Forever'
+  - id: songs_blank_space
+    domain: songs
+    title: Blank Space
+  - id: songs_shape_of_you
+    domain: songs
+    title: Shape of You
+  - id: songs_killer_queen
+    domain: songs
+    title: Killer Queen
+  - id: songs_kryptonite
+    domain: songs
+    title: Kryptonite
+  - id: songs_dancing_queen
+    domain: songs
+    title: Dancing Queen
+  - id: songs_the_last
+    domain: songs
+    title: The Last
+  - id: songs_beat_it
+    domain: songs
+    title: Beat It
+  - id: songs_call_me_maybe
+    domain: songs
+    title: Call Me Maybe
+  - id: songs_aerials
+    domain: songs
+    title: Aerials
+  - id: songs_brain_damage
+    domain: songs
+    title: Brain Damage
+  - id: songs_idioteque
+    domain: songs
+    title: Idioteque
+  - id: songs_digital_love
+    domain: songs
+    title: Digital Love
+  - id: songs_somewhere_only_we_know
+    domain: songs
+    title: Somewhere Only We Know
+  - id: songs_crazy
+    domain: songs
+    title: Crazy
+  - id: songs_the_sound_of_silence
+    domain: songs
+    title: The Sound of Silence
+  - id: songs_ace_of_spades
+    domain: songs
+    title: Ace of Spades
+  - id: songs_iron_man
+    domain: songs
+    title: Iron Man
+  - id: songs_money_for_nothing
+    domain: songs
+    title: Money for Nothing
+  - id: movies_the_shawshank_redemption
+    domain: movies
+    title: The Shawshank Redemption
+  - id: movies_the_dark_knight
+    domain: movies
+    title: The Dark Knight
+  - id: movies_inception
+    domain: movies
+    title: Inception
+  - id: movies_fight_club
+    domain: movies
+    title: Fight Club
+  - id: movies_interstellar
+    domain: movies
+    title: Interstellar
+  - id: movies_forrest_gump
+    domain: movies
+    title: Forrest Gump
+  - id: movies_pulp_fiction
+    domain: movies
+    title: Pulp Fiction
+  - id: movies_the_godfather
+    domain: movies
+    title: The Godfather
+  - id: movies_the_lord_of_the_rings_the_fellowship_of_the_ring
+    domain: movies
+    title: 'The Lord of the Rings: The Fellowship of the Ring'
+  - id: movies_the_lord_of_the_rings_the_return_of_the_king
+    domain: movies
+    title: 'The Lord of the Rings: The Return of the King'
+  - id: movies_seven
+    domain: movies
+    title: Seven
+  - id: movies_the_dark_knight_rises
+    domain: movies
+    title: The Dark Knight Rises
+  - id: movies_the_lord_of_the_rings_the_two_towers
+    domain: movies
+    title: 'The Lord of the Rings: The Two Towers'
+  - id: movies_django_unchained
+    domain: movies
+    title: Django Unchained
+  - id: movies_gladiator
+    domain: movies
+    title: Gladiator
+  - id: movies_the_wolf_of_wall_street
+    domain: movies
+    title: The Wolf of Wall Street
+  - id: movies_inglourious_basterds
+    domain: movies
+    title: Inglourious Basterds
+  - id: movies_the_silence_of_the_lambs
+    domain: movies
+    title: The Silence of the Lambs
+  - id: movies_batman_begins
+    domain: movies
+    title: Batman Begins
+  - id: movies_shutter_island
+    domain: movies
+    title: Shutter Island
+  - id: movies_saving_private_ryan
+    domain: movies
+    title: Saving Private Ryan
+  - id: movies_the_prestige
+    domain: movies
+    title: The Prestige
+  - id: movies_schindler_s_list
+    domain: movies
+    title: Schindler's List
+  - id: movies_star_wars_episode_iv_a_new_hope
+    domain: movies
+    title: 'Star Wars: Episode IV - A New Hope'
+  - id: movies_the_green_mile
+    domain: movies
+    title: The Green Mile
+  - id: movies_the_avengers
+    domain: movies
+    title: The Avengers
+  - id: movies_the_departed
+    domain: movies
+    title: The Departed
+  - id: movies_star_wars_episode_v_the_empire_strikes_back
+    domain: movies
+    title: 'Star Wars: Episode V - The Empire Strikes Back'
+  - id: movies_avatar
+    domain: movies
+    title: Avatar
+  - id: movies_the_godfather_part_ii
+    domain: movies
+    title: The Godfather Part II
+  - id: movies_back_to_the_future
+    domain: movies
+    title: Back to the Future
+  - id: movies_memento
+    domain: movies
+    title: Memento
+  - id: movies_titanic
+    domain: movies
+    title: Titanic
+  - id: movies_goodfellas
+    domain: movies
+    title: GoodFellas
+  - id: movies_avengers_infinity_war
+    domain: movies
+    title: 'Avengers: Infinity War'
+  - id: movies_the_truman_show
+    domain: movies
+    title: The Truman Show
+  - id: movies_guardians_of_the_galaxy
+    domain: movies
+    title: Guardians of the Galaxy
+  - id: movies_leon_the_professional
+    domain: movies
+    title: 'Léon: The Professional'
+  - id: movies_pirates_of_the_caribbean_the_curse_of_the_black_pearl
+    domain: movies
+    title: 'Pirates of the Caribbean: The Curse of the Black Pearl'
+  - id: movies_walle
+    domain: movies
+    title: WALL·E
+  - id: movies_kill_bill_vol_1
+    domain: movies
+    title: 'Kill Bill: Vol. 1'
+  - id: movies_terminator_2_judgment_day
+    domain: movies
+    title: 'Terminator 2: Judgment Day'
+  - id: movies_american_beauty
+    domain: movies
+    title: American Beauty
+  - id: movies_american_history_x
+    domain: movies
+    title: American History X
+  - id: movies_the_lion_king
+    domain: movies
+    title: The Lion King
+  - id: movies_deadpool
+    domain: movies
+    title: Deadpool
+  - id: movies_catch_me_if_you_can
+    domain: movies
+    title: Catch Me If You Can
+  - id: movies_v_for_vendetta
+    domain: movies
+    title: V for Vendetta
+  - id: movies_up
+    domain: movies
+    title: Up
+  - id: movies_the_usual_suspects
+    domain: movies
+    title: The Usual Suspects
+  - id: movies_the_shining
+    domain: movies
+    title: The Shining
+  - id: movies_good_will_hunting
+    domain: movies
+    title: Good Will Hunting
+  - id: movies_finding_nemo
+    domain: movies
+    title: Finding Nemo
+  - id: movies_star_wars_episode_vi_return_of_the_jedi
+    domain: movies
+    title: 'Star Wars: Episode VI - Return of the Jedi'
+  - id: movies_mad_max_fury_road
+    domain: movies
+    title: 'Mad Max: Fury Road'
+  - id: movies_no_country_for_old_men
+    domain: movies
+    title: No Country for Old Men
+  - id: movies_jurassic_park
+    domain: movies
+    title: Jurassic Park
+  - id: movies_toy_story
+    domain: movies
+    title: Toy Story
+  - id: movies_eternal_sunshine_of_the_spotless_mind
+    domain: movies
+    title: Eternal Sunshine of the Spotless Mind
+  - id: movies_gone_girl
+    domain: movies
+    title: Gone Girl
+  - id: movies_reservoir_dogs
+    domain: movies
+    title: Reservoir Dogs
+  - id: movies_whiplash
+    domain: movies
+    title: Whiplash
+  - id: movies_braveheart
+    domain: movies
+    title: Braveheart
+  - id: movies_one_flew_over_the_cuckoo_s_nest
+    domain: movies
+    title: One Flew Over the Cuckoo's Nest
+  - id: movies_the_sixth_sense
+    domain: movies
+    title: The Sixth Sense
+  - id: movies_raiders_of_the_lost_ark
+    domain: movies
+    title: Raiders of the Lost Ark
+  - id: movies_the_hunger_games
+    domain: movies
+    title: The Hunger Games
+  - id: movies_monsters_inc
+    domain: movies
+    title: Monsters, Inc.
+  - id: movies_alien
+    domain: movies
+    title: Alien
+  - id: movies_a_beautiful_mind
+    domain: movies
+    title: A Beautiful Mind
+  - id: movies_harry_potter_and_the_deathly_hallows_part_2
+    domain: movies
+    title: 'Harry Potter and the Deathly Hallows: Part 2'
+  - id: movies_the_intouchables
+    domain: movies
+    title: The Intouchables
+  - id: movies_taxi_driver
+    domain: movies
+    title: Taxi Driver
+  - id: movies_die_hard
+    domain: movies
+    title: Die Hard
+  - id: movies_star_wars_episode_vii_the_force_awakens
+    domain: movies
+    title: 'Star Wars: Episode VII - The Force Awakens'
+  - id: movies_scarface
+    domain: movies
+    title: Scarface
+  - id: movies_the_martian
+    domain: movies
+    title: The Martian
+  - id: movies_the_pianist
+    domain: movies
+    title: The Pianist
+  - id: movies_avengers_age_of_ultron
+    domain: movies
+    title: 'Avengers: Age of Ultron'
+  - id: movies_the_terminator
+    domain: movies
+    title: The Terminator
+  - id: movies_12_angry_men
+    domain: movies
+    title: 12 Angry Men
+  - id: movies_spider_man
+    domain: movies
+    title: Spider-Man
+  - id: movies_toy_story_3
+    domain: movies
+    title: Toy Story 3
+  - id: movies_captain_america_the_winter_soldier
+    domain: movies
+    title: 'Captain America: The Winter Soldier'
+  - id: movies_the_grand_budapest_hotel
+    domain: movies
+    title: The Grand Budapest Hotel
+  - id: movies_snatch
+    domain: movies
+    title: Snatch
+  - id: movies_requiem_for_a_dream
+    domain: movies
+    title: Requiem for a Dream
+  - id: movies_captain_america_the_first_avenger
+    domain: movies
+    title: 'Captain America: The First Avenger'
+  - id: movies_spirited_away
+    domain: movies
+    title: Spirited Away
+  - id: movies_iron_man_3
+    domain: movies
+    title: Iron Man 3
+  - id: movies_thor
+    domain: movies
+    title: Thor
+  - id: movies_harry_potter_and_the_sorcerer_s_stone
+    domain: movies
+    title: Harry Potter and the Sorcerer's Stone
+  - id: movies_ratatouille
+    domain: movies
+    title: Ratatouille
+  - id: movies_the_revenant
+    domain: movies
+    title: The Revenant
+  - id: movies_prisoners
+    domain: movies
+    title: Prisoners
+  - id: movies_iron_man_2
+    domain: movies
+    title: Iron Man 2
+  - id: movies_captain_america_civil_war
+    domain: movies
+    title: 'Captain America: Civil War'
+  - id: movies_a_clockwork_orange
+    domain: movies
+    title: A Clockwork Orange
+  - id: movies_the_hangover
+    domain: movies
+    title: The Hangover
+  - id: movies_logan
+    domain: movies
+    title: Logan
+  - id: movies_star_wars_episode_i_the_phantom_menace
+    domain: movies
+    title: 'Star Wars: Episode I - The Phantom Menace'
+  - id: movies_the_hobbit_an_unexpected_journey
+    domain: movies
+    title: 'The Hobbit: An Unexpected Journey'
+  - id: movies_star_wars_episode_iii_revenge_of_the_sith
+    domain: movies
+    title: 'Star Wars: Episode III - Revenge of the Sith'
+  - id: movies_inside_out
+    domain: movies
+    title: Inside Out
+  - id: movies_the_big_lebowski
+    domain: movies
+    title: The Big Lebowski
+  - id: movies_black_panther
+    domain: movies
+    title: Black Panther
+  - id: movies_300
+    domain: movies
+    title: '300'
+  - id: movies_donnie_darko
+    domain: movies
+    title: Donnie Darko
+  - id: movies_slumdog_millionaire
+    domain: movies
+    title: Slumdog Millionaire
+  - id: movies_the_incredibles
+    domain: movies
+    title: The Incredibles
+  - id: movies_thor_ragnarok
+    domain: movies
+    title: 'Thor: Ragnarok'
+  - id: movies_how_to_train_your_dragon
+    domain: movies
+    title: How to Train Your Dragon
+  - id: movies_gravity
+    domain: movies
+    title: Gravity
+  - id: movies_the_good_the_bad_and_the_ugly
+    domain: movies
+    title: The Good, the Bad and the Ugly
+  - id: movies_black_swan
+    domain: movies
+    title: Black Swan
+  - id: movies_doctor_strange
+    domain: movies
+    title: Doctor Strange
+  - id: movies_blade_runner
+    domain: movies
+    title: Blade Runner
+  - id: movies_i_am_legend
+    domain: movies
+    title: I Am Legend
+  - id: movies_the_imitation_game
+    domain: movies
+    title: The Imitation Game
+  - id: movies_city_of_god
+    domain: movies
+    title: City of God
+  - id: movies_kill_bill_vol_2
+    domain: movies
+    title: 'Kill Bill: Vol. 2'
+  - id: movies_arrival
+    domain: movies
+    title: Arrival
+  - id: movies_man_of_steel
+    domain: movies
+    title: Man of Steel
+  - id: movies_indiana_jones_and_the_last_crusade
+    domain: movies
+    title: Indiana Jones and the Last Crusade
+  - id: movies_gran_torino
+    domain: movies
+    title: Gran Torino
+  - id: movies_full_metal_jacket
+    domain: movies
+    title: Full Metal Jacket
+  - id: movies_american_psycho
+    domain: movies
+    title: American Psycho
+  - id: movies_aliens
+    domain: movies
+    title: Aliens
+  - id: movies_amelie
+    domain: movies
+    title: Amélie
+  - id: movies_guardians_of_the_galaxy_vol_2
+    domain: movies
+    title: 'Guardians of the Galaxy: Vol. 2'
+  - id: movies_john_wick
+    domain: movies
+    title: John Wick
+  - id: movies_pirates_of_the_caribbean_dead_man_s_chest
+    domain: movies
+    title: 'Pirates of the Caribbean: Dead Man''s Chest'
+  - id: movies_get_out
+    domain: movies
+    title: Get Out
+  - id: movies_star_wars_episode_ii_attack_of_the_clones
+    domain: movies
+    title: 'Star Wars: Episode II - Attack of the Clones'
+  - id: movies_spider_man_homecoming
+    domain: movies
+    title: 'Spider-Man: Homecoming'
+  - id: movies_the_social_network
+    domain: movies
+    title: The Social Network
+  - id: movies_sin_city
+    domain: movies
+    title: Sin City
+  - id: movies_dunkirk
+    domain: movies
+    title: Dunkirk
+  - id: movies_life_is_beautiful
+    domain: movies
+    title: Life Is Beautiful
+  - id: movies_shrek
+    domain: movies
+    title: Shrek
+  - id: movies_heat
+    domain: movies
+    title: Heat
+  - id: movies_edge_of_tomorrow
+    domain: movies
+    title: Edge of Tomorrow
+  - id: movies_spider_man_into_the_spider_verse
+    domain: movies
+    title: 'Spider-Man: Into the Spider-Verse'
+  - id: movies_spider_man_2
+    domain: movies
+    title: Spider-Man 2
+  - id: movies_batman_v_superman_dawn_of_justice
+    domain: movies
+    title: 'Batman v Superman: Dawn of Justice'
+  - id: movies_x_men_days_of_future_past
+    domain: movies
+    title: 'X-Men: Days of Future Past'
+  - id: movies_fargo
+    domain: movies
+    title: Fargo
+  - id: movies_12_years_a_slave
+    domain: movies
+    title: 12 Years a Slave
+  - id: movies_psycho
+    domain: movies
+    title: Psycho
+  - id: movies_world_war_z
+    domain: movies
+    title: World War Z
+  - id: movies_ant_man
+    domain: movies
+    title: Ant-Man
+  - id: movies_2001_a_space_odyssey
+    domain: movies
+    title: '2001: A Space Odyssey'
+  - id: movies_thor_the_dark_world
+    domain: movies
+    title: 'Thor: The Dark World'
+  - id: movies_the_amazing_spider_man
+    domain: movies
+    title: The Amazing Spider-Man
+  - id: movies_kingsman_the_secret_service
+    domain: movies
+    title: 'Kingsman: The Secret Service'
+  - id: movies_the_hunger_games_catching_fire
+    domain: movies
+    title: 'The Hunger Games: Catching Fire'
+  - id: movies_skyfall
+    domain: movies
+    title: Skyfall
+  - id: movies_silver_linings_playbook
+    domain: movies
+    title: Silver Linings Playbook
+  - id: movies_now_you_see_me
+    domain: movies
+    title: Now You See Me
+  - id: movies_apocalypse_now
+    domain: movies
+    title: Apocalypse Now
+  - id: movies_harry_potter_and_the_prisoner_of_azkaban
+    domain: movies
+    title: Harry Potter and the Prisoner of Azkaban
+  - id: movies_la_la_land
+    domain: movies
+    title: La La Land
+  - id: movies_harry_potter_and_the_chamber_of_secrets
+    domain: movies
+    title: Harry Potter and the Chamber of Secrets
+  - id: movies_trainspotting
+    domain: movies
+    title: Trainspotting
+  - id: movies_million_dollar_baby
+    domain: movies
+    title: Million Dollar Baby
+  - id: movies_drive
+    domain: movies
+    title: Drive
+  - id: movies_x_men_first_class
+    domain: movies
+    title: 'X-Men: First Class'
+  - id: movies_blade_runner_2049
+    domain: movies
+    title: Blade Runner 2049
+  - id: movies_suicide_squad
+    domain: movies
+    title: Suicide Squad
+  - id: movies_rogue_one_a_star_wars_story
+    domain: movies
+    title: 'Rogue One: A Star Wars Story'
+  - id: movies_harry_potter_and_the_goblet_of_fire
+    domain: movies
+    title: Harry Potter and the Goblet of Fire
+  - id: movies_the_hobbit_the_desolation_of_smaug
+    domain: movies
+    title: 'The Hobbit: The Desolation of Smaug'
+  - id: movies_district_9
+    domain: movies
+    title: District 9
+  - id: movies_deadpool_2
+    domain: movies
+    title: Deadpool 2
+  - id: movies_home_alone
+    domain: movies
+    title: Home Alone
+  - id: movies_the_curious_case_of_benjamin_button
+    domain: movies
+    title: The Curious Case of Benjamin Button
+  - id: movies_casino_royale
+    domain: movies
+    title: Casino Royale
+  - id: movies_pan_s_labyrinth
+    domain: movies
+    title: Pan's Labyrinth
+  - id: movies_pirates_of_the_caribbean_at_world_s_end
+    domain: movies
+    title: 'Pirates of the Caribbean: At World''s End'
+  - id: movies_jaws
+    domain: movies
+    title: Jaws
+  - id: movies_wonder_woman
+    domain: movies
+    title: Wonder Woman
+  - id: movies_groundhog_day
+    domain: movies
+    title: Groundhog Day
+  - id: movies_jurassic_world
+    domain: movies
+    title: Jurassic World
+  - id: movies_the_king_s_speech
+    domain: movies
+    title: The King's Speech
+  - id: movies_her
+    domain: movies
+    title: Her
+  - id: movies_oldboy
+    domain: movies
+    title: Oldboy
+  - id: movies_the_hateful_eight
+    domain: movies
+    title: The Hateful Eight
+  - id: movies_star_wars_episode_viii_the_last_jedi
+    domain: movies
+    title: 'Star Wars: Episode VIII - The Last Jedi'
+  - id: movies_transformers
+    domain: movies
+    title: Transformers
+  - id: movies_coco
+    domain: movies
+    title: Coco
+  - id: movies_frozen
+    domain: movies
+    title: Frozen
+  - id: movies_there_will_be_blood
+    domain: movies
+    title: There Will Be Blood
+  - id: movies_ted
+    domain: movies
+    title: Ted
+  - id: movies_spider_man_3
+    domain: movies
+    title: Spider-Man 3
+  - id: movies_sherlock_holmes
+    domain: movies
+    title: Sherlock Holmes
+  - id: movies_harry_potter_and_the_order_of_the_phoenix
+    domain: movies
+    title: Harry Potter and the Order of the Phoenix
+  - id: movies_it
+    domain: movies
+    title: It
+  - id: movies_prometheus
+    domain: movies
+    title: Prometheus
+  - id: movies_life_of_pi
+    domain: movies
+    title: Life of Pi
+  - id: movies_birdman_or_the_unexpected_virtue_of_ignorance
+    domain: movies
+    title: Birdman or (The Unexpected Virtue of Ignorance)
+  - id: movies_superbad
+    domain: movies
+    title: Superbad
+  - id: movies_green_book
+    domain: movies
+    title: Green Book
+  - id: movies_x_men
+    domain: movies
+    title: X-Men
+  - id: movies_the_notebook
+    domain: movies
+    title: The Notebook
+  - id: movies_rocky
+    domain: movies
+    title: Rocky
+  - id: movies_into_the_wild
+    domain: movies
+    title: Into the Wild
+  - id: movies_cast_away
+    domain: movies
+    title: Cast Away
+  - id: movies_hacksaw_ridge
+    domain: movies
+    title: Hacksaw Ridge
+  - id: movies_baby_driver
+    domain: movies
+    title: Baby Driver
+  - id: movies_the_bourne_ultimatum
+    domain: movies
+    title: The Bourne Ultimatum
+  - id: movies_zodiac
+    domain: movies
+    title: Zodiac
+  - id: movies_12_monkeys
+    domain: movies
+    title: 12 Monkeys
+  - id: movies_toy_story_2
+    domain: movies
+    title: Toy Story 2
+  - id: movies_ocean_s_eleven
+    domain: movies
+    title: Ocean's Eleven
+  - id: movies_nightcrawler
+    domain: movies
+    title: Nightcrawler
+  - id: movies_taken
+    domain: movies
+    title: Taken
+  - id: movies_the_matrix_reloaded
+    domain: movies
+    title: The Matrix Reloaded
+  - id: movies_zombieland
+    domain: movies
+    title: Zombieland
+  - id: movies_harry_potter_and_the_deathly_hallows_part_1
+    domain: movies
+    title: 'Harry Potter and the Deathly Hallows: Part 1'
+  - id: movies_argo
+    domain: movies
+    title: Argo
+  - id: movies_men_in_black
+    domain: movies
+    title: Men in Black
+  - id: movies_harry_potter_and_the_half_blood_prince
+    domain: movies
+    title: Harry Potter and the Half-Blood Prince
+  - id: movies_a_quiet_place
+    domain: movies
+    title: A Quiet Place
+  - id: movies_dead_poets_society
+    domain: movies
+    title: Dead Poets Society
+  - id: movies_l_a_confidential
+    domain: movies
+    title: L.A. Confidential
+  - id: movies_casablanca
+    domain: movies
+    title: Casablanca
+  - id: movies_independence_day
+    domain: movies
+    title: Independence Day
+  - id: movies_21_jump_street
+    domain: movies
+    title: 21 Jump Street
+  - id: movies_limitless
+    domain: movies
+    title: Limitless
+  - id: movies_lock_stock_and_two_smoking_barrels
+    domain: movies
+    title: Lock, Stock and Two Smoking Barrels
+  - id: movies_bohemian_rhapsody
+    domain: movies
+    title: Bohemian Rhapsody
+  - id: movies_the_great_gatsby
+    domain: movies
+    title: The Great Gatsby
+  - id: movies_zootopia
+    domain: movies
+    title: Zootopia
+  - id: movies_ex_machina
+    domain: movies
+    title: Ex Machina
+  - id: movies_troy
+    domain: movies
+    title: Troy
+  - id: movies_shaun_of_the_dead
+    domain: movies
+    title: Shaun of the Dead
+  - id: movies_star_trek
+    domain: movies
+    title: Star Trek
+  - id: movies_despicable_me
+    domain: movies
+    title: Despicable Me
+  - id: movies_looper
+    domain: movies
+    title: Looper
+  - id: movies_the_conjuring
+    domain: movies
+    title: The Conjuring
+  - id: movies_blood_diamond
+    domain: movies
+    title: Blood Diamond
+  - id: movies_the_pursuit_of_happyness
+    domain: movies
+    title: The Pursuit of Happyness
+  - id: movies_split
+    domain: movies
+    title: Split
+  - id: movies_back_to_the_future_part_ii
+    domain: movies
+    title: Back to the Future Part II
+  - id: movies_crazy_stupid_love
+    domain: movies
+    title: Crazy, Stupid, Love.
+  - id: movies_casino
+    domain: movies
+    title: Casino
+  - id: movies_minority_report
+    domain: movies
+    title: Minority Report
+  - id: movies_500_days_of_summer
+    domain: movies
+    title: 500 Days of Summer
+  - id: movies_the_hobbit_the_battle_of_the_five_armies
+    domain: movies
+    title: 'The Hobbit: The Battle of the Five Armies'
+  - id: movies_kick_ass
+    domain: movies
+    title: Kick-Ass
+  - id: movies_i_robot
+    domain: movies
+    title: I, Robot
+  - id: movies_the_bourne_identity
+    domain: movies
+    title: The Bourne Identity
+  - id: movies_fury
+    domain: movies
+    title: Fury
+  - id: movies_x2_x_men_united
+    domain: movies
+    title: 'X2: X-Men United'
+  - id: movies_watchmen
+    domain: movies
+    title: Watchmen
+  - id: movies_venom
+    domain: movies
+    title: Venom
+  - id: movies_three_billboards_outside_ebbing_missouri
+    domain: movies
+    title: Three Billboards Outside Ebbing, Missouri
+  - id: movies_pirates_of_the_caribbean_on_stranger_tides
+    domain: movies
+    title: 'Pirates of the Caribbean: On Stranger Tides'
+  - id: movies_rise_of_the_planet_of_the_apes
+    domain: movies
+    title: Rise of the Planet of the Apes
+  - id: movies_monty_python_and_the_holy_grail
+    domain: movies
+    title: Monty Python and the Holy Grail
+  - id: movies_the_amazing_spider_man_2
+    domain: movies
+    title: The Amazing Spider-Man 2
+  - id: movies_the_perks_of_being_a_wallflower
+    domain: movies
+    title: The Perks of Being a Wallflower
+  - id: movies_mr_mrs_smith
+    domain: movies
+    title: Mr. & Mrs. Smith
+  - id: movies_oblivion
+    domain: movies
+    title: Oblivion
+  - id: movies_rain_man
+    domain: movies
+    title: Rain Man
+  - id: movies_kung_fu_panda
+    domain: movies
+    title: Kung Fu Panda
+  - id: movies_source_code
+    domain: movies
+    title: Source Code
+  - id: movies_lucy
+    domain: movies
+    title: Lucy
+  - id: movies_the_hangover_part_ii
+    domain: movies
+    title: The Hangover Part II
+  - id: movies_love_actually
+    domain: movies
+    title: Love Actually
+  - id: movies_the_matrix_revolutions
+    domain: movies
+    title: The Matrix Revolutions
+  - id: movies_x_men_the_last_stand
+    domain: movies
+    title: 'X-Men: The Last Stand'
+  - id: movies_john_wick_chapter_2
+    domain: movies
+    title: 'John Wick: Chapter 2'
+  - id: movies_charlie_and_the_chocolate_factory
+    domain: movies
+    title: Charlie and the Chocolate Factory
+  - id: movies_juno
+    domain: movies
+    title: Juno
+  - id: movies_american_sniper
+    domain: movies
+    title: American Sniper
+  - id: movies_the_incredible_hulk
+    domain: movies
+    title: The Incredible Hulk
+  - id: movies_x_men_origins_wolverine
+    domain: movies
+    title: 'X-Men Origins: Wolverine'
+  - id: movies_indiana_jones_and_the_temple_of_doom
+    domain: movies
+    title: Indiana Jones and the Temple of Doom
+  - id: movies_rear_window
+    domain: movies
+    title: Rear Window
+  - id: movies_hot_fuzz
+    domain: movies
+    title: Hot Fuzz
+  - id: movies_ice_age
+    domain: movies
+    title: Ice Age
+  - id: movies_children_of_men
+    domain: movies
+    title: Children of Men
+  - id: movies_the_maze_runner
+    domain: movies
+    title: The Maze Runner
+  - id: movies_edward_scissorhands
+    domain: movies
+    title: Edward Scissorhands
+  - id: movies_the_devil_wears_prada
+    domain: movies
+    title: The Devil Wears Prada
+  - id: movies_mission_impossible_ghost_protocol
+    domain: movies
+    title: 'Mission: Impossible - Ghost Protocol'
+  - id: movies_rush
+    domain: movies
+    title: Rush
+  - id: movies_little_miss_sunshine
+    domain: movies
+    title: Little Miss Sunshine
+  - id: movies_pacific_rim
+    domain: movies
+    title: Pacific Rim
+  - id: movies_shrek_2
+    domain: movies
+    title: Shrek 2
+  - id: movies_big_hero_6
+    domain: movies
+    title: Big Hero 6
+  - id: movies_top_gun
+    domain: movies
+    title: Top Gun
+  - id: movies_the_butterfly_effect
+    domain: movies
+    title: The Butterfly Effect
+  - id: movies_aquaman
+    domain: movies
+    title: Aquaman
+  - id: movies_it_s_a_wonderful_life
+    domain: movies
+    title: It's a Wonderful Life
+  - id: movies_28_days_later
+    domain: movies
+    title: 28 Days Later
+  - id: movies_dr_strangelove_or_how_i_learned_to_stop_worrying_and_love_the_bomb
+    domain: movies
+    title: 'Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb'
+  - id: movies_tangled
+    domain: movies
+    title: Tangled
+  - id: movies_the_hunger_games_mockingjay_part_1
+    domain: movies
+    title: 'The Hunger Games: Mockingjay - Part 1'
+  - id: bands_radiohead
+    domain: bands
+    title: Radiohead
+  - id: bands_daft_punk
+    domain: bands
+    title: Daft Punk
+  - id: bands_the_beatles
+    domain: bands
+    title: The Beatles
+  - id: bands_linkin_park
+    domain: bands
+    title: Linkin Park
+  - id: bands_pink_floyd
+    domain: bands
+    title: Pink Floyd
+  - id: bands_gorillaz
+    domain: bands
+    title: Gorillaz
+  - id: bands_coldplay
+    domain: bands
+    title: Coldplay
+  - id: bands_red_hot_chili_peppers
+    domain: bands
+    title: Red Hot Chili Peppers
+  - id: bands_muse
+    domain: bands
+    title: Muse
+  - id: bands_metallica
+    domain: bands
+    title: Metallica
+  - id: bands_arctic_monkeys
+    domain: bands
+    title: Arctic Monkeys
+  - id: bands_system_of_a_down
+    domain: bands
+    title: System of a Down
+  - id: bands_green_day
+    domain: bands
+    title: Green Day
+  - id: bands_led_zeppelin
+    domain: bands
+    title: Led Zeppelin
+  - id: bands_bts
+    domain: bands
+    title: BTS
+  - id: bands_foo_fighters
+    domain: bands
+    title: Foo Fighters
+  - id: bands_the_cure
+    domain: bands
+    title: The Cure
+  - id: bands_nine_inch_nails
+    domain: bands
+    title: Nine Inch Nails
+  - id: bands_imagine_dragons
+    domain: bands
+    title: Imagine Dragons
+  - id: bands_the_rolling_stones
+    domain: bands
+    title: The Rolling Stones
+  - id: bands_the_strokes
+    domain: bands
+    title: The Strokes
+  - id: bands_weezer
+    domain: bands
+    title: Weezer
+  - id: bands_paramore
+    domain: bands
+    title: Paramore
+  - id: bands_depeche_mode
+    domain: bands
+    title: Depeche Mode
+  - id: bands_the_smashing_pumpkins
+    domain: bands
+    title: The Smashing Pumpkins
+  - id: bands_the_killers
+    domain: bands
+    title: The Killers
+  - id: bands_deftones
+    domain: bands
+    title: Deftones
+  - id: bands_rammstein
+    domain: bands
+    title: Rammstein
+  - id: bands_fleetwood_mac
+    domain: bands
+    title: Fleetwood Mac
+  - id: bands_my_chemical_romance
+    domain: bands
+    title: My Chemical Romance
+  - id: bands_queens_of_the_stone_age
+    domain: bands
+    title: Queens of the Stone Age
+  - id: bands_twenty_one_pilots
+    domain: bands
+    title: twenty one pilots
+  - id: bands_tool
+    domain: bands
+    title: Tool
+  - id: bands_black_sabbath
+    domain: bands
+    title: Black Sabbath
+  - id: bands_ac_dc
+    domain: bands
+    title: AC/DC
+  - id: bands_fall_out_boy
+    domain: bands
+    title: Fall Out Boy
+  - id: bands_the_offspring
+    domain: bands
+    title: The Offspring
+  - id: bands_the_smiths
+    domain: bands
+    title: The Smiths
+  - id: bands_boards_of_canada
+    domain: bands
+    title: Boards of Canada
+  - id: bands_massive_attack
+    domain: bands
+    title: Massive Attack
+  - id: bands_blink182
+    domain: bands
+    title: blink‐182
+  - id: bands_arcade_fire
+    domain: bands
+    title: Arcade Fire
+  - id: bands_slipknot
+    domain: bands
+    title: Slipknot
+  - id: bands_iron_maiden
+    domain: bands
+    title: Iron Maiden
+  - id: bands_rage_against_the_machine
+    domain: bands
+    title: Rage Against the Machine
+  - id: bands_pixies
+    domain: bands
+    title: Pixies
+  - id: bands_the_white_stripes
+    domain: bands
+    title: The White Stripes
+  - id: bands_mgmt
+    domain: bands
+    title: MGMT
+  - id: bands_u2
+    domain: bands
+    title: U2
+  - id: bands_pearl_jam
+    domain: bands
+    title: Pearl Jam
+  - id: bands_r_e_m
+    domain: bands
+    title: R.E.M.
+  - id: bands_the_prodigy
+    domain: bands
+    title: The Prodigy
+  - id: bands_bring_me_the_horizon
+    domain: bands
+    title: Bring Me the Horizon
+  - id: bands_the_black_keys
+    domain: bands
+    title: The Black Keys
+  - id: bands_florence_the_machine
+    domain: bands
+    title: Florence + the Machine
+  - id: bands_guns_n_roses
+    domain: bands
+    title: Guns N’ Roses
+  - id: bands_the_doors
+    domain: bands
+    title: The Doors
+  - id: bands_korn
+    domain: bands
+    title: Korn
+  - id: bands_panic_at_the_disco
+    domain: bands
+    title: Panic! at the Disco
+  - id: bands_oasis
+    domain: bands
+    title: Oasis
+  - id: bands_maroon_5
+    domain: bands
+    title: Maroon 5
+  - id: bands_m83
+    domain: bands
+    title: M83
+  - id: bands_talking_heads
+    domain: bands
+    title: Talking Heads
+  - id: bands_bon_iver
+    domain: bands
+    title: Bon Iver
+  - id: bands_blur
+    domain: bands
+    title: Blur
+  - id: bands_portishead
+    domain: bands
+    title: Portishead
+  - id: bands_the_beach_boys
+    domain: bands
+    title: The Beach Boys
+  - id: bands_alice_in_chains
+    domain: bands
+    title: Alice in Chains
+  - id: bands_beastie_boys
+    domain: bands
+    title: Beastie Boys
+  - id: bands_modest_mouse
+    domain: bands
+    title: Modest Mouse
+  - id: bands_dire_straits
+    domain: bands
+    title: Dire Straits
+  - id: bands_the_xx
+    domain: bands
+    title: The xx
+  - id: bands_the_clash
+    domain: bands
+    title: The Clash
+  - id: bands_abba
+    domain: bands
+    title: ABBA
+  - id: bands_disturbed
+    domain: bands
+    title: Disturbed
+  - id: bands_death_cab_for_cutie
+    domain: bands
+    title: Death Cab for Cutie
+  - id: bands_joy_division
+    domain: bands
+    title: Joy Division
+  - id: bands_beach_house
+    domain: bands
+    title: Beach House
+  - id: bands_franz_ferdinand
+    domain: bands
+    title: Franz Ferdinand
+  - id: bands_creedence_clearwater_revival
+    domain: bands
+    title: Creedence Clearwater Revival
+  - id: bands_death_grips
+    domain: bands
+    title: Death Grips
+  - id: bands_evanescence
+    domain: bands
+    title: Evanescence
+  - id: bands_placebo
+    domain: bands
+    title: Placebo
+  - id: bands_marilyn_manson
+    domain: bands
+    title: Marilyn Manson
+  - id: bands_king_gizzard_the_lizard_wizard
+    domain: bands
+    title: King Gizzard & the Lizard Wizard
+  - id: bands_rise_against
+    domain: bands
+    title: Rise Against
+  - id: bands_vampire_weekend
+    domain: bands
+    title: Vampire Weekend
+  - id: bands_megadeth
+    domain: bands
+    title: Megadeth
+  - id: bands_altj
+    domain: bands
+    title: alt‐J
+  - id: bands_the_national
+    domain: bands
+    title: The National
+  - id: bands_outkast
+    domain: bands
+    title: OutKast
+  - id: bands_justice
+    domain: bands
+    title: Justice
+  - id: bands_the_chemical_brothers
+    domain: bands
+    title: The Chemical Brothers
+  - id: bands_air
+    domain: bands
+    title: Air
+  - id: bands_bob_marley_the_wailers
+    domain: bands
+    title: Bob Marley & The Wailers
+  - id: bands_new_order
+    domain: bands
+    title: New Order
+  - id: bands_the_who
+    domain: bands
+    title: The Who
+  - id: bands_sigur_ros
+    domain: bands
+    title: Sigur Rós
+  - id: bands_nightwish
+    domain: bands
+    title: Nightwish
+  - id: bands_interpol
+    domain: bands
+    title: Interpol
+  - id: bands_crystal_castles
+    domain: bands
+    title: Crystal Castles
+  - id: bands_limp_bizkit
+    domain: bands
+    title: Limp Bizkit
+  - id: bands_onerepublic
+    domain: bands
+    title: OneRepublic
+  - id: bands_kings_of_leon
+    domain: bands
+    title: Kings of Leon
+  - id: bands_the_police
+    domain: bands
+    title: The Police
+  - id: bands_aerosmith
+    domain: bands
+    title: Aerosmith
+  - id: bands_simon_garfunkel
+    domain: bands
+    title: Simon & Garfunkel
+  - id: bands_the_cranberries
+    domain: bands
+    title: The Cranberries
+  - id: bands_soundgarden
+    domain: bands
+    title: Soundgarden
+  - id: bands_avenged_sevenfold
+    domain: bands
+    title: Avenged Sevenfold
+  - id: bands_royksopp
+    domain: bands
+    title: Röyksopp
+  - id: bands_sonic_youth
+    domain: bands
+    title: Sonic Youth
+  - id: bands_cage_the_elephant
+    domain: bands
+    title: Cage the Elephant
+  - id: bands_three_days_grace
+    domain: bands
+    title: Three Days Grace
+  - id: bands_in_flames
+    domain: bands
+    title: In Flames
+  - id: bands_sum_41
+    domain: bands
+    title: Sum 41
+  - id: bands_the_chainsmokers
+    domain: bands
+    title: The Chainsmokers
+  - id: bands_a_tribe_called_quest
+    domain: bands
+    title: A Tribe Called Quest
+  - id: bands_pendulum
+    domain: bands
+    title: Pendulum
+  - id: bands_opeth
+    domain: bands
+    title: Opeth
+  - id: bands_chvrches
+    domain: bands
+    title: CHVRCHES
+  - id: bands_incubus
+    domain: bands
+    title: Incubus
+  - id: bands_electric_light_orchestra
+    domain: bands
+    title: Electric Light Orchestra
+  - id: bands_mogwai
+    domain: bands
+    title: Mogwai
+  - id: bands_lcd_soundsystem
+    domain: bands
+    title: LCD Soundsystem
+  - id: bands_judas_priest
+    domain: bands
+    title: Judas Priest
+  - id: bands_slayer
+    domain: bands
+    title: Slayer
+  - id: bands_a_perfect_circle
+    domain: bands
+    title: A Perfect Circle
+  - id: bands_ghost
+    domain: bands
+    title: Ghost
+  - id: bands_dream_theater
+    domain: bands
+    title: Dream Theater
+  - id: bands_bon_jovi
+    domain: bands
+    title: Bon Jovi
+  - id: bands_the_velvet_underground
+    domain: bands
+    title: The Velvet Underground
+  - id: bands_rush
+    domain: bands
+    title: Rush
+  - id: bands_my_bloody_valentine
+    domain: bands
+    title: My Bloody Valentine
+  - id: bands_cocteau_twins
+    domain: bands
+    title: Cocteau Twins
+  - id: bands_slowdive
+    domain: bands
+    title: Slowdive
+  - id: bands_glass_animals
+    domain: bands
+    title: Glass Animals
+  - id: bands_run_the_jewels
+    domain: bands
+    title: Run the Jewels
+  - id: bands_nick_cave_the_bad_seeds
+    domain: bands
+    title: Nick Cave & the Bad Seeds
+  - id: bands_foster_the_people
+    domain: bands
+    title: Foster the People
+  - id: bands_papa_roach
+    domain: bands
+    title: Papa Roach
+  - id: bands_two_door_cinema_club
+    domain: bands
+    title: Two Door Cinema Club
+  - id: bands_madvillain
+    domain: bands
+    title: Madvillain
+  - id: bands_mumford_sons
+    domain: bands
+    title: Mumford & Sons
+  - id: bands_bloc_party
+    domain: bands
+    title: Bloc Party
+  - id: bands_yeah_yeah_yeahs
+    domain: bands
+    title: Yeah Yeah Yeahs
+  - id: bands_genesis
+    domain: bands
+    title: Genesis
+  - id: bands_black_eyed_peas
+    domain: bands
+    title: Black Eyed Peas
+  - id: bands_gojira
+    domain: bands
+    title: Gojira
+  - id: bands_the_flaming_lips
+    domain: bands
+    title: The Flaming Lips
+  - id: bands_jamiroquai
+    domain: bands
+    title: Jamiroquai
+  - id: bands_major_lazer
+    domain: bands
+    title: Major Lazer
+  - id: bands_phoenix
+    domain: bands
+    title: Phoenix
+  - id: bands_metric
+    domain: bands
+    title: Metric
+  - id: bands_neutral_milk_hotel
+    domain: bands
+    title: Neutral Milk Hotel
+  - id: bands_deep_purple
+    domain: bands
+    title: Deep Purple
+  - id: bands_the_neighbourhood
+    domain: bands
+    title: The Neighbourhood
+  - id: bands_van_halen
+    domain: bands
+    title: Van Halen
+  - id: bands_twice
+    domain: bands
+    title: TWICE
+  - id: bands_pantera
+    domain: bands
+    title: Pantera
+  - id: bands_fleet_foxes
+    domain: bands
+    title: Fleet Foxes
+  - id: bands_porcupine_tree
+    domain: bands
+    title: Porcupine Tree
+  - id: bands_eagles
+    domain: bands
+    title: Eagles
+  - id: bands_tears_for_fears
+    domain: bands
+    title: Tears for Fears
+  - id: bands_mastodon
+    domain: bands
+    title: Mastodon
+  - id: bands_brockhampton
+    domain: bands
+    title: BROCKHAMPTON
+  - id: bands_motorhead
+    domain: bands
+    title: Motörhead
+  - id: bands_wilco
+    domain: bands
+    title: Wilco
+  - id: bands_ramones
+    domain: bands
+    title: Ramones
+  - id: bands_100_gecs
+    domain: bands
+    title: 100 gecs
+  - id: bands_the_shins
+    domain: bands
+    title: The Shins
+  - id: bands_breaking_benjamin
+    domain: bands
+    title: Breaking Benjamin
+  - id: bands_jimmy_eat_world
+    domain: bands
+    title: Jimmy Eat World
+  - id: bands_kiss
+    domain: bands
+    title: KISS
+  - id: bands_animal_collective
+    domain: bands
+    title: Animal Collective
+  - id: bands_the_kinks
+    domain: bands
+    title: The Kinks
+  - id: bands_audioslave
+    domain: bands
+    title: Audioslave
+  - id: bands_belle_and_sebastian
+    domain: bands
+    title: Belle and Sebastian
+  - id: bands_nickelback
+    domain: bands
+    title: Nickelback
+  - id: bands_blackpink
+    domain: bands
+    title: BLACKPINK
+  - id: bands_king_crimson
+    domain: bands
+    title: King Crimson
+  - id: bands_the_1975
+    domain: bands
+    title: The 1975
+  - id: bands_the_avalanches
+    domain: bands
+    title: The Avalanches
+  - id: bands_foals
+    domain: bands
+    title: Foals
+  - id: bands_sabaton
+    domain: bands
+    title: Sabaton
+  - id: bands_faith_no_more
+    domain: bands
+    title: Faith No More
+  - id: bands_bastille
+    domain: bands
+    title: Bastille
+  - id: bands_scorpions
+    domain: bands
+    title: Scorpions
+  - id: bands_bad_religion
+    domain: bands
+    title: Bad Religion
+  - id: bands_thirty_seconds_to_mars
+    domain: bands
+    title: Thirty Seconds to Mars
+  - id: bands_yes
+    domain: bands
+    title: 'Yes'
+  - id: bands_duran_duran
+    domain: bands
+    title: Duran Duran
+  - id: bands_cake
+    domain: bands
+    title: CAKE
+  - id: bands_magdalena_bay
+    domain: bands
+    title: Magdalena Bay
+  - id: bands_babymetal
+    domain: bands
+    title: BABYMETAL
+  - id: bands_steely_dan
+    domain: bands
+    title: Steely Dan
+  - id: bands_within_temptation
+    domain: bands
+    title: Within Temptation
+  - id: bands_garbage
+    domain: bands
+    title: Garbage
+  - id: bands_car_seat_headrest
+    domain: bands
+    title: Car Seat Headrest
+  - id: bands_ratatat
+    domain: bands
+    title: Ratatat
+  - id: bands_toto
+    domain: bands
+    title: Toto
+  - id: bands_bullet_for_my_valentine
+    domain: bands
+    title: Bullet for My Valentine
+  - id: bands_portugal_the_man
+    domain: bands
+    title: Portugal. The Man
+  - id: bands_disclosure
+    domain: bands
+    title: Disclosure
+  - id: bands_kraftwerk
+    domain: bands
+    title: Kraftwerk
+  - id: bands_infected_mushroom
+    domain: bands
+    title: Infected Mushroom
+  - id: bands_pavement
+    domain: bands
+    title: Pavement
+  - id: bands_stone_temple_pilots
+    domain: bands
+    title: Stone Temple Pilots
+  - id: bands_five_finger_death_punch
+    domain: bands
+    title: Five Finger Death Punch
+  - id: bands_blondie
+    domain: bands
+    title: Blondie
+  - id: bands_of_monsters_and_men
+    domain: bands
+    title: Of Monsters and Men
+  - id: bands_snow_patrol
+    domain: bands
+    title: Snow Patrol
+  - id: bands_billy_talent
+    domain: bands
+    title: Billy Talent
+  - id: bands_tenacious_d
+    domain: bands
+    title: Tenacious D
+  - id: bands_pet_shop_boys
+    domain: bands
+    title: Pet Shop Boys
+  - id: bands_supertramp
+    domain: bands
+    title: Supertramp
+  - id: bands_uicideboy
+    domain: bands
+    title: $uicideboy$
+  - id: bands_wutang_clan
+    domain: bands
+    title: Wu‐Tang Clan
+  - id: bands_spoon
+    domain: bands
+    title: Spoon
+  - id: bands_men_i_trust
+    domain: bands
+    title: Men I Trust
+  - id: bands_kasabian
+    domain: bands
+    title: Kasabian
+  - id: bands_lynyrd_skynyrd
+    domain: bands
+    title: Lynyrd Skynyrd
+  - id: bands_swans
+    domain: bands
+    title: Swans
+  - id: bands_de_la_soul
+    domain: bands
+    title: De La Soul
+  - id: bands_a_day_to_remember
+    domain: bands
+    title: A Day to Remember
+  - id: bands_khruangbin
+    domain: bands
+    title: Khruangbin
+  - id: bands_eels
+    domain: bands
+    title: EELS
+  - id: bands_cigarettes_after_sex
+    domain: bands
+    title: Cigarettes After Sex
+  - id: bands_caravan_palace
+    domain: bands
+    title: Caravan Palace
+  - id: bands_explosions_in_the_sky
+    domain: bands
+    title: Explosions in the Sky
+  - id: bands_journey
+    domain: bands
+    title: Journey
+  - id: bands_sepultura
+    domain: bands
+    title: Sepultura
+  - id: bands_autechre
+    domain: bands
+    title: Autechre
+  - id: bands_the_mars_volta
+    domain: bands
+    title: The Mars Volta
+  - id: bands_thievery_corporation
+    domain: bands
+    title: Thievery Corporation
+  - id: bands_sublime
+    domain: bands
+    title: Sublime
+  - id: bands_amon_amarth
+    domain: bands
+    title: Amon Amarth
+  - id: bands_big_thief
+    domain: bands
+    title: Big Thief
+  - id: bands_yo_la_tengo
+    domain: bands
+    title: Yo La Tengo
+  - id: bands_daryl_hall_john_oates
+    domain: bands
+    title: Daryl Hall & John Oates
+  - id: bands_the_kooks
+    domain: bands
+    title: The Kooks
+  - id: bands_the_decemberists
+    domain: bands
+    title: The Decemberists
+  - id: bands_tv_girl
+    domain: bands
+    title: TV Girl
+  - id: bands_3_doors_down
+    domain: bands
+    title: 3 Doors Down
+  - id: bands_no_doubt
+    domain: bands
+    title: No Doubt
+  - id: bands_fugazi
+    domain: bands
+    title: Fugazi
+  - id: bands_blind_guardian
+    domain: bands
+    title: Blind Guardian
+  - id: bands_zz_top
+    domain: bands
+    title: ZZ Top
+  - id: bands_haim
+    domain: bands
+    title: HAIM
+  - id: bands_santana
+    domain: bands
+    title: Santana
+  - id: bands_red_velvet
+    domain: bands
+    title: Red Velvet
+  - id: bands_sleep_token
+    domain: bands
+    title: Sleep Token
+  - id: bands_jethro_tull
+    domain: bands
+    title: Jethro Tull
+  - id: bands_aha
+    domain: bands
+    title: a‐ha
+  - id: bands_kero_kero_bonito
+    domain: bands
+    title: Kero Kero Bonito
+  - id: bands_keane
+    domain: bands
+    title: Keane
+  - id: bands_architects
+    domain: bands
+    title: Architects
+  - id: bands_grizzly_bear
+    domain: bands
+    title: Grizzly Bear
+  - id: bands_earth_wind_fire
+    domain: bands
+    title: Earth, Wind & Fire
+  - id: bands_katatonia
+    domain: bands
+    title: Katatonia
+  - id: bands_mother_mother
+    domain: bands
+    title: Mother Mother
+  - id: bands_skillet
+    domain: bands
+    title: Skillet
+  - id: bands_seether
+    domain: bands
+    title: Seether
+  - id: bands_apocalyptica
+    domain: bands
+    title: Apocalyptica
+  - id: bands_they_might_be_giants
+    domain: bands
+    title: They Might Be Giants
+  - id: bands_beirut
+    domain: bands
+    title: Beirut
+  - id: bands_brand_new
+    domain: bands
+    title: Brand New
+  - id: bands_all_time_low
+    domain: bands
+    title: All Time Low
+  - id: bands_tv_on_the_radio
+    domain: bands
+    title: TV on the Radio
+  - id: bands_machine_girl
+    domain: bands
+    title: Machine Girl
+  - id: bands_bee_gees
+    domain: bands
+    title: Bee Gees
+  - id: bands_passion_pit
+    domain: bands
+    title: Passion Pit
+  - id: bands_royal_blood
+    domain: bands
+    title: Royal Blood
+  - id: bands_morcheeba
+    domain: bands
+    title: Morcheeba
+  - id: bands_nofx
+    domain: bands
+    title: NOFX
+  - id: bands_bright_eyes
+    domain: bands
+    title: Bright Eyes
+  - id: bands_lamb_of_god
+    domain: bands
+    title: Lamb of God
+  - id: bands_empire_of_the_sun
+    domain: bands
+    title: Empire of the Sun
+  - id: bands_odesza
+    domain: bands
+    title: ODESZA
+  - id: bands_afi
+    domain: bands
+    title: AFI
+  - id: bands_death
+    domain: bands
+    title: Death
+  - id: bands_stereolab
+    domain: bands
+    title: Stereolab
+  - id: bands_ween
+    domain: bands
+    title: Ween
+  - id: bands_the_knife
+    domain: bands
+    title: The Knife
+  - id: bands_clean_bandit
+    domain: bands
+    title: Clean Bandit
+  - id: bands_shinedown
+    domain: bands
+    title: Shinedown
+  - id: bands_godspeed_you_black_emperor
+    domain: bands
+    title: Godspeed You! Black Emperor
+  - id: bands_broken_social_scene
+    domain: bands
+    title: Broken Social Scene
+  - id: bands_the_mountain_goats
+    domain: bands
+    title: The Mountain Goats
+  - id: bands_killswitch_engage
+    domain: bands
+    title: Killswitch Engage
+  - id: bands_the_lumineers
+    domain: bands
+    title: The Lumineers
+  - id: bands_sade
+    domain: bands
+    title: Sade
+  - id: bands_trivium
+    domain: bands
+    title: Trivium
+  - id: bands_arch_enemy
+    domain: bands
+    title: Arch Enemy
+  - id: bands_the_cardigans
+    domain: bands
+    title: The Cardigans
+  - id: bands_ajr
+    domain: bands
+    title: AJR
+  - id: bands_metronomy
+    domain: bands
+    title: Metronomy
+  - id: bands_hot_chip
+    domain: bands
+    title: Hot Chip
+  - id: bands_siouxsie_and_the_banshees
+    domain: bands
+    title: Siouxsie and the Banshees
+  - id: bands_migos
+    domain: bands
+    title: Migos
+experiment:
+  prompt_seeds: []
+  image_seeds: []
+  retry_limit: 1
+backends:
+  prompt_model:
+    source_profile: ../../../backends/text/qwen3.8-27b-bf16-llamacpp.yaml
+    adapter: openai_compatible
+    settings:
+      endpoint: http://text_runtime:8080/v1/chat/completions
+      model_id: qwen3.8-27b-bf16
+      timeout_seconds: 1800
+      reasoning_effort: none
+      reasoning_format: deepseek
+      thinking_budget_tokens: 0
+      chat_template_kwargs:
+        enable_thinking: false
+    runtime:
+      controller: llama_cpp_router
+      control_url: http://text_runtime:8080
+      resource_group: dgx-main
+stages:
+  illustratability_rating:
+    backend: prompt_model
+    parameters:
+      temperature: 0.0
+      top_k: 0
+      top_p: 1.0
+      min_p: 0.0
+      repeat_penalty: 1.0
+      presence_penalty: 0.0
+      frequency_penalty: 0.0
+      max_tokens: 512
+      seed: 4001
+    prompt_profile: prompts/illustratability/rating_v2.yaml

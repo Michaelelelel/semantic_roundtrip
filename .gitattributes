@@ -1,0 +1,2 @@
+# Archived evidence is checksummed byte-for-byte; never normalize line endings.
+/artifacts/candidate_illustratability/** -text

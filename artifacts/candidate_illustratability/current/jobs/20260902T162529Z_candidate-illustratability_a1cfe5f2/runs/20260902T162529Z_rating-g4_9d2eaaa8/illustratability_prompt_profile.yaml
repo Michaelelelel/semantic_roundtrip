@@ -1,0 +1,20 @@
+profile_id: illustratability_rating
+version: 2
+output_format: plain_text
+
+messages:
+  - role: system
+    content: |
+      Estimate how clearly the given title or name can be communicated through
+      one text-free image so that another person can reconstruct the exact
+      original title. Consider concrete visual meaning, distinctive cultural
+      associations, ambiguity, and whether the idea fits into one scene.
+
+  - role: user
+    content: |
+      Domain: ${domain}
+      Title: ${title}
+
+      Return exactly one integer and nothing else. Use 0 for not visually
+      illustratable and 100 for very clearly and distinctively illustratable.
+      Do not add JSON, a label, an explanation, or any other text.

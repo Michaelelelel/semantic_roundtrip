@@ -11,11 +11,10 @@ the thesis Methodology. Exact settings are in
 3. Use the same code/config revision across hosts. Run one model job at a time
    per shared runtime stack.
 
-After SQ5 conversion, all commands must use the converted current-format run
-root. If it is selected through a shell override rather than `.env`, replace
-`sudo docker compose` below with `sudo --preserve-env=RUN_ROOT docker compose`.
-Otherwise `sudo` may discard the override and expose the original old-format
-jobs instead. See the explicit migration/deployment sequence in `RUNNING.md`.
+These commands use the `RUN_ROOT` configured in `.env`. If you deliberately
+select another run directory through the shell, preserve `RUN_ROOT` through
+`sudo` as described in [shell setup](RUNNING.md#once-per-terminal-or-tmux-window).
+The CLI and analysis use the [documented application formats](RUNNING.md#run-storage-and-reproducibility).
 
 The random main dataset has 90 titles (30 per domain), without illustratability
 or title-length quotas. Each title uses two prompt seeds crossed with two image
@@ -54,6 +53,11 @@ not question priority.
 All job configs above are under `configs/jobs/final_study/`. Only the high-illustratability
 reconstruction job depends on the candidate ratings. The high-illustratability
 dataset is a supplement, not a replacement for the random main sample.
+
+Complete the four-style report and obtain common-style confirmation before
+the remaining style-dependent main and supplementary jobs. The shipped
+configuration uses unrestricted generation; a different confirmed choice
+requires explicitly aligned profiles and source bindings before execution.
 
 ![Main and supplementary study jobs](diagrams/study_jobs.svg)
 
@@ -194,6 +198,13 @@ in [the candidate-rating archive](artifacts/candidate_illustratability/README.md
 The sequence below reruns inference on the DGX; the archive needs no rerun to
 inspect the ratings. Archived evidence is not bundled into the runner image.
 
+For the shipped study inputs, both selected dataset YAMLs and selection CSVs
+already exist; no rating rerun or reselection is necessary. To use these
+datasets, continue with Step 4. Steps 1–3 reproduce rating inference and
+selection. The stored rating job used by the distribution notebook is under
+`artifacts/candidate_illustratability/current/jobs/`; its source identifiers,
+raw responses and reporting evidence are provided with the data.
+
 #### Step 1 — Run the rating job
 
 Skip only if you already have its completed job for this study.
@@ -254,7 +265,7 @@ Path distinction: `runs/JOB_ID` is inside the runner; the same job is at
 
 #### Step 4 — Rebuild, then start
 
-The runner image must contain the newly generated YAMLs:
+The runner image must contain the dataset YAMLs selected for this experiment:
 
 ```bash
 sudo docker compose --env-file .env \
@@ -284,10 +295,10 @@ explicit style constraint, not because of its observed accuracy. This does not
 make the generator style-neutral. If another style is confirmed, revisit SQ5
 explicitly before starting it; do not mix different-style route inputs.
 
-On an idle model stack, after the copy-only format migration where necessary:
+On an idle model stack, enter the exact completed source Job ID and start SQ5:
 
 ```bash
-read -r -p "Completed, current-format unrestricted Direct Core Job ID: " PROMPT_SOURCE_JOB_ID
+read -r -p "Completed unrestricted Direct Core Job ID: " PROMPT_SOURCE_JOB_ID
 
 sudo docker compose --env-file .env \
   -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
@@ -304,12 +315,12 @@ are not independent additional evidence. The whole matrix supplies the
 prompt/direct comparison; the three-way comparison uses only the four matched
 diagonals. Record the exact source and new Job IDs.
 
-## Analysis and archive
+## Analysis and result preservation
 
 On your Mac/analysis machine: Python 3.14 and `uv` must be available. Copy the
 six matching completed job directories, including child runs, from the DGXs,
-and first produce the complete style export described below. Use current-format
-copies for converted inputs. Replace every example path before executing:
+and first produce the complete style export described below. Replace every
+example path before executing:
 
 ```bash
 export DIRECT_JOB=/absolute/path/to/direct-job
@@ -325,7 +336,7 @@ uv sync --frozen --extra analysis
 uv run jupyter notebook notebooks/final_study.ipynb
 ```
 
-Do not use historical reduced style or development jobs as final inputs. Restart the kernel
+Do not use reduced style or development jobs as final inputs. Restart the kernel
 and use **Run All**. Figures appear inline; 300-dpi PNGs and vector PDFs go to
 `OUTPUT_DIR`. Supporting tables and `manifest.json` are exported quietly.
 All six job paths and `STYLE_REPORT_DIR` are required. SQLite inputs are read
@@ -349,10 +360,12 @@ only a compact overview and centrality summary. Detailed matrices and domain
 analyses stay in that export. Overall bootstrap intervals retain domain strata;
 prompt checks use origin Run/Prompt IDs (720 unique prompts per complete style).
 
-The archived candidate distribution remains under
-`artifacts/candidate_illustratability/`. Reproduce that older evidence with its
-original checkout and archive instructions; it is excluded from the new-format
-reconstruction converter. Do not rerun ratings or modify their raw archive.
+Stored candidate ratings and the completed distribution report are provided in
+`artifacts/candidate_illustratability/current/jobs/` and `current/report/`.
+The distribution notebook defaults to the supplied rating job and reproduces
+the figure from stored responses without model calls. Its
+[README](artifacts/candidate_illustratability/README.md) documents the inputs,
+output files, checksums and commands.
 
 ### Executed HTML report
 
@@ -371,12 +384,11 @@ uv run jupyter nbconvert --to html \
   --output analysis --output-dir "$OUTPUT_DIR"
 ```
 
-Archive the nine reconstruction jobs, rating job, generated datasets/reports, executed
+Preserve the nine reconstruction jobs, rating job, generated datasets/reports, executed
 notebook/HTML, PNG/PDF figures, manual evaluation with its validation jobs, status
-screenshots and code revision. Keep old runs unchanged.
-For converted jobs additionally retain original sources, exact migration script
-and conversion manifests. Never expose originals and same-ID converted copies
-to the same website discovery root.
+screenshots and code revision. Keep each result's source identifiers, raw
+responses, frozen settings and provenance intact. Expose each Job/Run ID only
+once in a website discovery root.
 
 For custom experiments: [`configs/README.md`](configs/README.md). Scientific
 settings: [`STUDY_DESIGN.md`](configs/jobs/final_study/STUDY_DESIGN.md). Model-free
