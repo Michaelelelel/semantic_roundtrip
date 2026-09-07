@@ -15,7 +15,7 @@ The preferred common-style recommendation is unrestricted generation: no added
 explicit rendering-style instruction, rather than the highest or lowest
 observed accuracy. It is not style-neutral. Complete the full four-style report,
 report contrary evidence and obtain supervisor confirmation before affected
-main jobs or SQ5 start. Existing direct/indirect artifacts are a practical reuse
+main jobs or SQ1 start. Existing direct/indirect artifacts are a practical reuse
 advantage. Descriptive style centrality is not an automatic selection rule.
 
 ## Four-style comparison
@@ -145,7 +145,7 @@ equal-compute comparison.
 | `direct_photorealistic.yaml` | 16 | 1,440 | paired photorealistic condition |
 | `direct_thinking.yaml` | 12 additions | 720 | native-thinking direct supplement |
 | `direct_illustratable.yaml` | 16 | 1,440 | high-illustratability direct supplement |
-| `direct_prompt_only.yaml` | 16 | 0 | SQ5 prompt reconstruction and four diagonal three-way comparisons |
+| `direct_prompt_only.yaml` | 16 | 0 | SQ1 prompt reconstruction and four diagonal three-way comparisons |
 
 `candidate_illustratability.yaml` is a four-model rating prerequisite, not an
 additional reconstruction job. It must complete before the illustratability datasets
@@ -166,7 +166,7 @@ The prompt job imports the exact completed unrestricted `direct_core` job via
 cell imports prompt/image verification and direct predictions. The four diagonal
 cells additionally import `title_guessing_from_description` and its descriptions.
 No new image, description or indirect calls are made. If a different style is
-confirmed, revise this binding/design explicitly before starting SQ5; do not
+confirmed, revise this binding/design explicitly before starting SQ1; do not
 combine different-style direct and indirect inputs.
 
 ## Prompts
@@ -342,17 +342,17 @@ All six completed jobs and the validated style export are required. It reports:
 - complete indirect 3 x 4 x 3 accuracy and local/hosted role contrasts;
 - paired direct versus description-mediated routes on the four diagonal direct
   conditions;
-- domain subgroups for songs, movies and bands;
-- title-length distributions, domain-wise distributions of the four-model mean
-  illustratability rating, and exploratory model-specific PG associations;
+- SQ1 prompt/direct matrices and the four-diagonal three-way comparison below;
 - a compact imported four-style overview and descriptive centrality summary;
   complete matrices and effects remain in the sole full style report;
 - native-minus-off matrices and paired effects for all 16 cells, the 12 changed
   cells and the PG-only, BI-only and both-role groups (four cells each);
+- domain subgroups for songs, movies and bands;
+- title-length distributions, domain-wise distributions of the four-model mean
+  illustratability rating, and exploratory model-specific PG associations;
 - descriptive random-versus-high-illustratability differences without causal
   or population-level interpretation;
 - technical validity and coverage.
-- SQ5 prompt/direct matrices and the four-diagonal three-way comparison below.
 
 Each title contributes one equally weighted Q25/G3/Q38/G4 mean to its domain's
 rating histogram. All four Direct-job ratings are required; missing means are
@@ -383,18 +383,18 @@ routes on identical images. These three primary research questions address
 model configuration and reconstruction route.
 
 The five secondary research questions contextualise these comparisons.
-SQ1 compares unrestricted, photorealistic, Sketch
-and Comic direct reconstruction. SQ2 compares the thinking-off and
-native-thinking direct matrices. SQ3 reports the association with model-rated
-illustratability and the descriptive random-versus-high-illustratability
-comparison. SQ4 reports domain subgroups for songs, movie titles and band names.
-SQ5 compares prompt-based reconstruction with the image and description routes.
+SQ1 compares prompt-based reconstruction with the image and description routes.
+SQ2 compares unrestricted, photorealistic, Sketch and Comic direct
+reconstruction. SQ3 compares the thinking-off and native-thinking direct
+matrices. SQ4 reports domain subgroups for songs, movie titles and band names.
+SQ5 reports the association with model-rated illustratability and the
+descriptive random-versus-high-illustratability comparison.
 SQ means secondary research question. The distinction between main and
 supplementary jobs describes experimental conditions, not question priority.
 
-## SQ5: prompt reconstruction and three-way comparison
+## SQ1: prompt reconstruction and three-way comparison
 
-SQ5 is an explicitly added secondary comparison, not a retrospectively
+SQ1 is an explicitly added secondary comparison, not a retrospectively
 predeclared original experiment. It uses Q25/Q38/G3/G4 in all 4x4 PG/BI cells,
 the same 90 titles, prompt seeds `1000`, `1001`, thinking off and the matching
 direct BI parameters (including seed `3003`). Its 180 prompt predictions per
@@ -425,7 +425,7 @@ references RQ3 and is not independent new evidence. A descriptive common-valid
 input table retains only passed prompt and Strict-image checks, uses the same
 accepted images across routes and still scores missing predictions as zero.
 It reports subset denominators and does not replace the primary estimate.
-Modality, representation and policy differences preclude interpreting SQ5 as
+Modality, representation and policy differences preclude interpreting SQ1 as
 an exact stage-wise semantic-loss decomposition or a guaranteed upper bound.
 
 The style report preserves domain strata in overall bootstrap intervals and

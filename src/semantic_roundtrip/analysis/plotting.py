@@ -183,7 +183,7 @@ def paired_style_analysis(positive, negative, label, reference_label, slug, outp
     delta = heatmap(axes[2], positive, QG, comparison, baseline=negative)
     fig.colorbar(image, ax=list(axes[:2]), label="End-to-end Strict Exact Match (%)")
     fig.colorbar(delta, ax=axes[2], label="Difference (pp)")
-    save_figure(fig, output_dir / f"direct_{slug}_matrices", f"SQ1: {comparison}")
+    save_figure(fig, output_dir / f"direct_{slug}_matrices", f"SQ2: {comparison}")
     reference_scores = negative.assign(
         condition_style=lambda f: "reference__" + f.condition.astype(str)
     )
@@ -212,7 +212,7 @@ def paired_style_analysis(positive, negative, label, reference_label, slug, outp
     plotted["comparison"] = plotted.comparison.str.split(":").str[0]
     fig, ax = plt.subplots(figsize=(9, 6), layout="constrained")
     interval_plot(ax, plotted)
-    save_figure(fig, output_dir / f"direct_{slug}_effects", f"SQ1: {comparison}")
+    save_figure(fig, output_dir / f"direct_{slug}_effects", f"SQ2: {comparison}")
     return table
 
 

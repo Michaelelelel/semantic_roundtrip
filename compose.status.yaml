@@ -9,9 +9,9 @@ services:
     working_dir: /app
     environment:
       PYTHONDONTWRITEBYTECODE: "1"
-      SEMANTIC_ROUNDTRIP_RUNS_ROOT: /data/runs
+      SEMANTIC_ROUNDTRIP_RUNS_ROOT: /app/runs
     volumes:
-      - "${RUN_ROOT:?RUN_ROOT must be set}:/data/runs"
+      - "${RUN_ROOT:?RUN_ROOT must be set}:/app/runs"
     tmpfs:
       - /tmp
     ports:

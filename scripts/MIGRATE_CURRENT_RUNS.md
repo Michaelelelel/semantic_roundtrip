@@ -49,7 +49,7 @@ changed YAMLs and original-schema SQLite backups. Per-run
 absolute source locations remain recorded; operational reads resolve the
 bundled translated snapshots without requiring those original locations.
 
-Keep original archives and conversion evidence. Bind the new SQ5 job explicitly
+Keep original archives and conversion evidence. Bind the SQ1 job explicitly
 to the converted **chosen-style** job. Do not expose original and converted
 copies with identical IDs simultaneously under one website/report input root.
 The converter remains available until the real completed jobs have been

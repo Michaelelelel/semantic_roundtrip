@@ -38,17 +38,18 @@ also supplies the unrestricted condition of the four-style comparison:
 | Main | `direct_core.yaml` | 4 x 4 direct; four paired indirect baselines (RQ1, RQ3, SQ4) | services ready |
 | Main | `indirect_local.yaml` | 2 x 4 x 2 local indirect (RQ2, SQ4) | services ready |
 | Main | `aqueduct_v4_extension.yaml` | 20 additions completing 3 x 4 x 3 (RQ2, SQ4) | exact completed local-indirect job; API key |
-| Supplement | `direct_sketch.yaml` | 4 x 4 sketch (SQ1) | services ready |
-| Supplement | `direct_comic.yaml` | 4 x 4 comic (SQ1) | services ready |
-| Supplement | `direct_photorealistic.yaml` | 4 x 4 photorealistic (SQ1) | services ready |
-| Supplement | `direct_thinking.yaml` | 4 x 4 native-thinking comparison (SQ2) | exact completed direct-core job |
-| Supplement | `direct_illustratable.yaml` | 4 x 4 selected-title comparison (SQ3) | completed ratings, selection and runner rebuild |
-| Supplement | `direct_prompt_only.yaml` | 4 x 4 prompt/direct and four-diagonal three-way comparison (SQ5) | confirmed free style; exact completed direct-core source |
+| Supplement | `direct_sketch.yaml` | 4 x 4 sketch (SQ2) | services ready |
+| Supplement | `direct_comic.yaml` | 4 x 4 comic (SQ2) | services ready |
+| Supplement | `direct_photorealistic.yaml` | 4 x 4 photorealistic (SQ2) | services ready |
+| Supplement | `direct_thinking.yaml` | 4 x 4 native-thinking comparison (SQ3) | exact completed direct-core job |
+| Supplement | `direct_illustratable.yaml` | 4 x 4 selected-title comparison (SQ5) | completed ratings, selection and runner rebuild |
+| Supplement | `direct_prompt_only.yaml` | 4 x 4 prompt/direct and four-diagonal three-way comparison (SQ1) | confirmed free style; exact completed direct-core source |
 
 RQ1–RQ3 are primary research questions; SQ1–SQ5 are secondary research
-questions. SQ4 compares title domains using the main jobs, without an
-additional experiment. The main/supplementary job grouping describes execution,
-not question priority.
+questions covering prompt reconstruction, visual style, native thinking, title
+domains and illustratability, respectively. SQ4 compares title domains using the
+main jobs, without an additional experiment. The main/supplementary job grouping
+describes execution, not question priority.
 
 All job configs above are under `configs/jobs/final_study/`. Only the high-illustratability
 reconstruction job depends on the candidate ratings. The high-illustratability
@@ -287,15 +288,15 @@ For another DGX, copy all four generated dataset/report files into its
 `configs/datasets/` and rebuild its runner. Reuse this selection; do not rate
 again to create a different set. Keep the rating job and generated files together.
 
-### Prompt reconstruction and three-way comparison (SQ5)
+### Prompt reconstruction and three-way comparison (SQ1)
 
 First complete the four-style report and obtain the professor's common-style
 confirmation. The preferred recommendation is unrestricted because it adds no
 explicit style constraint, not because of its observed accuracy. This does not
-make the generator style-neutral. If another style is confirmed, revisit SQ5
+make the generator style-neutral. If another style is confirmed, revisit SQ1
 explicitly before starting it; do not mix different-style route inputs.
 
-On an idle model stack, enter the exact completed source Job ID and start SQ5:
+On an idle model stack, enter the exact completed source Job ID and start SQ1:
 
 ```bash
 read -r -p "Completed unrestricted Direct Core Job ID: " PROMPT_SOURCE_JOB_ID

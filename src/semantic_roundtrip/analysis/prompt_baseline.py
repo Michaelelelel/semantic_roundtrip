@@ -1,4 +1,4 @@
-"""The bounded SQ5 comparison; observations remain prompt- or image-bound."""
+"""The bounded SQ1 comparison; observations remain prompt- or image-bound."""
 
 import hashlib
 import json
@@ -55,19 +55,19 @@ def load_prompt_baseline(path, direct_job_path):
             != "completed"
         ):
             raise ValueError(
-                "SQ5 analysis requires completed source and supplement jobs."
+                "SQ1 analysis requires completed source and supplement jobs."
             )
     source = load_job(direct_job_path)
     job = load_job(path)
     original = annotate(source.observations)
     observations = annotate(job.observations)
     if set(original.job_name) != {"final_direct_core"}:
-        raise ValueError("SQ5 requires the unrestricted final_direct_core source.")
+        raise ValueError("SQ1 requires the unrestricted final_direct_core source.")
     if set(observations.job_name) != {"final_direct_prompt_only"}:
-        raise ValueError("SQ5 requires final_direct_prompt_only.")
+        raise ValueError("SQ1 requires final_direct_prompt_only.")
     entries = {f"direct_pg_{pg}_bi_{bi}" for pg in QG for bi in QG}
     if set(observations.condition) != entries or set(original.condition) != entries:
-        raise ValueError("SQ5 requires all sixteen matching PG/reconstruction cells.")
+        raise ValueError("SQ1 requires all sixteen matching PG/reconstruction cells.")
     if (
         not observations.prediction_model.eq(
             observations.bi.map(RECONSTRUCTION_MODELS)
@@ -77,7 +77,7 @@ def load_prompt_baseline(path, direct_job_path):
         ).all()
     ):
         raise ValueError(
-            "SQ5 model identities differ from the final Qwen/Gemma matrix."
+            "SQ1 model identities differ from the final Qwen/Gemma matrix."
         )
     for _, entries_frame in observations.groupby("condition", sort=False):
         run_directory = Path(entries_frame.run_directory.iloc[0])
@@ -89,12 +89,12 @@ def load_prompt_baseline(path, direct_job_path):
         )
         if prompt_stage is None or direct_source is None:
             raise ValueError(
-                "SQ5 requires local prompt guessing and inherited Direct provenance."
+                "SQ1 requires local prompt guessing and inherited Direct provenance."
             )
         direct_config = direct_source[0]
         direct_stage = direct_config.stages.title_guessing.direct
         if prompt_stage.parameters != direct_stage.parameters:
-            raise ValueError("SQ5 prompt and image decoding parameters differ.")
+            raise ValueError("SQ1 prompt and image decoding parameters differ.")
         prompt_backend = config.backends[prompt_stage.backend].settings
         direct_backend = direct_config.backends[direct_stage.backend].settings
         for setting in (
@@ -109,7 +109,7 @@ def load_prompt_baseline(path, direct_job_path):
         ):
             if prompt_backend.get(setting) != direct_backend.get(setting):
                 raise ValueError(
-                    f"SQ5 reconstruction backend setting differs: {setting}."
+                    f"SQ1 reconstruction backend setting differs: {setting}."
                 )
     for directory in original.run_directory.unique():
         config = load_effective_config(Path(directory) / EFFECTIVE_CONFIG_FILENAME)
@@ -117,7 +117,7 @@ def load_prompt_baseline(path, direct_job_path):
             config, Path(directory), "prompt_generation"
         )
         if provenance is None:
-            raise ValueError("SQ5 source has no frozen prompt-generation provenance.")
+            raise ValueError("SQ1 source has no frozen prompt-generation provenance.")
         _, defining_directory = provenance
         manifest = json.loads(
             (defining_directory / "manifest.json").read_text(encoding="utf-8")
@@ -132,7 +132,7 @@ def load_prompt_baseline(path, direct_job_path):
         ).hexdigest()
         if profile_hash != UNRESTRICTED_PROFILE_SHA256:
             raise ValueError(
-                "SQ5 must not mix another style with unrestricted descriptions."
+                "SQ1 must not mix another style with unrestricted descriptions."
             )
     roster = observations[
         ["dataset_id", "domain", "item_key", "expected_title"]
@@ -140,12 +140,12 @@ def load_prompt_baseline(path, direct_job_path):
     if set(roster.dataset_id) != {"final_titles_v1"} or roster.groupby(
         "domain"
     ).size().to_dict() != {"songs": 30, "movies": 30, "bands": 30}:
-        raise ValueError("SQ5 requires the fixed ninety-title main dataset.")
+        raise ValueError("SQ1 requires the fixed ninety-title main dataset.")
     if set(observations.prompt_seed) != {1000, 1001}:
-        raise ValueError("SQ5 requires the two fixed prompt seeds.")
+        raise ValueError("SQ1 requires the two fixed prompt seeds.")
     image_rows = observations[observations.route.ne("prompt")]
     if set(image_rows.image_seed.dropna()) != {8566257, 2875613}:
-        raise ValueError("SQ5 requires the two fixed image seeds.")
+        raise ValueError("SQ1 requires the two fixed image seeds.")
     diagonal = observations.pg.eq(observations.bi)
     if (
         set(observations[observations.route.eq("description")].condition)
@@ -153,7 +153,7 @@ def load_prompt_baseline(path, direct_job_path):
         or observations[observations.route.eq("description") & ~diagonal].shape[0]
     ):
         raise ValueError(
-            "SQ5 requires description reconstruction only on four diagonals."
+            "SQ1 requires description reconstruction only on four diagonals."
         )
     prompt_rows = observations[observations.route.eq("prompt")]
     if (
@@ -161,7 +161,7 @@ def load_prompt_baseline(path, direct_job_path):
         or len(image_rows[image_rows.route.eq("direct")]) != 5760
         or len(image_rows[image_rows.route.eq("description")]) != 1440
     ):
-        raise ValueError("SQ5 planned route grids are incomplete or duplicated.")
+        raise ValueError("SQ1 planned route grids are incomplete or duplicated.")
     _same_rows(
         image_rows,
         original,
@@ -203,7 +203,7 @@ def load_prompt_baseline(path, direct_job_path):
     )
     if prompt_rows.prediction_execution_origin.eq("imported").any():
         raise ValueError(
-            "The SQ5 study job must execute its prompt predictions locally."
+            "The SQ1 study job must execute its prompt predictions locally."
         )
     titles = pd.concat(
         [
@@ -275,8 +275,8 @@ def prompt_baseline_tables(observations, titles):
                             **estimate,
                         }
                     )
-    results["sq5_route_accuracy"] = pd.DataFrame(absolute)
-    results["sq5_paired_effects"] = pd.DataFrame(contrasts)
+    results["sq1_route_accuracy"] = pd.DataFrame(absolute)
+    results["sq1_paired_effects"] = pd.DataFrame(contrasts)
     cell_contrasts = {
         f"{pg.upper()} / {bi.upper()}: prompt - direct": difference(
             [f"direct_pg_{pg}_bi_{bi}__prompt"], [f"direct_pg_{pg}_bi_{bi}__direct"]
@@ -284,12 +284,12 @@ def prompt_baseline_tables(observations, titles):
         for pg in QG
         for bi in QG
     }
-    results["sq5_cell_effects"] = effects(
+    results["sq1_cell_effects"] = effects(
         scored, cell_contrasts, condition_column="condition_route"
     )
-    results["sq5_title_scores"] = titles
-    results["sq5_observations"] = observations
-    results["sq5_common_valid_inputs"] = common_valid_inputs(observations)
+    results["sq1_title_scores"] = titles
+    results["sq1_observations"] = observations
+    results["sq1_common_valid_inputs"] = common_valid_inputs(observations)
     return results
 
 
@@ -369,8 +369,8 @@ def plot_prompt_baseline(titles, tables, output_dir):
     fig.colorbar(delta, ax=axes[2], label="Difference (pp)")
     save_figure(
         fig,
-        output_dir / "sq5_prompt_direct_matrices",
-        "SQ5: Prompt and image reconstruction, all 16 cells",
+        output_dir / "sq1_prompt_direct_matrices",
+        "SQ1: Prompt and image reconstruction, all 16 cells",
     )
     diagonal = titles[titles.pg.eq(titles.bi)]
     means = 100 * diagonal.groupby(
@@ -397,7 +397,7 @@ def plot_prompt_baseline(titles, tables, output_dir):
         ylabel="End-to-end Strict Exact Match (%)",
     )
     axes[0].legend()
-    selected = tables["sq5_paired_effects"]
+    selected = tables["sq1_paired_effects"]
     selected = selected[
         selected.scope.eq("four-diagonal three-route")
         & selected.domain.eq("all")
@@ -412,6 +412,6 @@ def plot_prompt_baseline(titles, tables, output_dir):
     interval_plot(axes[1], selected)
     save_figure(
         fig,
-        output_dir / "sq5_three_routes_diagonal",
-        "SQ5: Three reconstruction routes, four existing diagonal baselines",
+        output_dir / "sq1_three_routes_diagonal",
+        "SQ1: Three reconstruction routes, four existing diagonal baselines",
     )
