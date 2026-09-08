@@ -262,6 +262,10 @@ ssh -N -L 8000:127.0.0.1:18000 user@dgx-host
 
 Open `http://127.0.0.1:8000` locally. Use another local port for a second DGX.
 
+`View results` shows all configured reconstruction routes in one table,
+including prompt-only runs. When a prompt has several images, its Prompt route
+answer appears with each image but counts only once in Prompt accuracy.
+
 ## Optional deployment validation
 
 Smokes and previews check deployment with the fixed profiles. They are not final

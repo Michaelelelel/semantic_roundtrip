@@ -79,7 +79,7 @@ class VerificationCheckSummary:
 
 @dataclass(frozen=True, slots=True)
 class ResultTrace:
-    """One title, optionally expanded into its existing prompt/image products."""
+    """A title/prompt slot, optionally expanded into its existing images."""
 
     item_index: int
     item_key: str
@@ -90,6 +90,8 @@ class ResultTrace:
     prompt_index: int | None
     prompt_sampling_seed: int | None
     prompt_text: str | None
+    prompt_origin_run_id: str | None
+    prompt_origin_id: int | None
     prompt_verification_configured: bool
     prompt_verification_passed: bool | None
     prompt_verification_reason: str | None
@@ -104,6 +106,11 @@ class ResultTrace:
     image_description: str | None
     direct_result: PredictionTrace | None
     description_result: PredictionTrace | None
+    prompt_result: PredictionTrace | None
+    prompt_prediction_origin_run_id: str | None
+    prompt_prediction_origin_id: int | None
+    prompt_task_statuses: dict[str, str]
+    prompt_task_errors: dict[str, str]
     terminal_stages: frozenset[str]
 
 
@@ -112,51 +119,6 @@ class ResultTracePage:
     """One bounded page of pipeline result traces."""
 
     traces: tuple[ResultTrace, ...]
-    page: int
-    page_size: int
-    total_traces: int
-
-    @property
-    def total_pages(self) -> int:
-        return max(1, (self.total_traces + self.page_size - 1) // self.page_size)
-
-    @property
-    def has_previous(self) -> bool:
-        return self.page > 1
-
-    @property
-    def has_next(self) -> bool:
-        return self.page < self.total_pages
-
-
-@dataclass(frozen=True, slots=True)
-class PromptResultTrace:
-    """One planned prompt observation, never multiplied by generated images."""
-
-    item_key: str
-    domain: str
-    expected_title: str
-    prompt_index: int
-    prompt_sampling_seed: int
-    prompt_id: int | None
-    prompt_text: str | None
-    prompt_origin_run_id: str | None
-    prompt_origin_id: int | None
-    prompt_verification_configured: bool
-    prompt_verification_passed: bool | None
-    prompt_verification_reason: str | None
-    result: PredictionTrace | None
-    prediction_origin_run_id: str | None
-    prediction_origin_id: int | None
-    task_statuses: dict[str, str]
-    task_errors: dict[str, str]
-
-
-@dataclass(frozen=True, slots=True)
-class PromptResultTracePage:
-    """A page of planned prompt coordinates, including missing outputs."""
-
-    traces: tuple[PromptResultTrace, ...]
     page: int
     page_size: int
     total_traces: int
@@ -220,137 +182,6 @@ def _configured_verification_checks(
     return prompt, frozenset(image)
 
 
-def read_prompt_result_trace_page(
-    database_path: Path,
-    config: ResolvedAppConfig,
-    *,
-    page: int,
-    page_size: int,
-) -> PromptResultTracePage:
-    """Read prompt results, provenance and only their own upstream task errors."""
-    if page < 1 or page_size < 1:
-        raise ValueError("Prompt result page and page size must be at least 1.")
-    observations = [
-        (item_index, item.id, item.domain, item.title, prompt_index, seed)
-        for item_index, item in enumerate(config.dataset.items)
-        for prompt_index, seed in enumerate(config.experiment.prompt_seeds)
-    ]
-    if not observations:
-        return PromptResultTracePage((), page, page_size, 0)
-    # Construct only the requested page, not a potentially enormous VALUES list.
-    selected = observations[(page - 1) * page_size : page * page_size]
-    if not selected:
-        return PromptResultTracePage((), page, page_size, len(observations))
-    placeholders = ", ".join("(?, ?, ?, ?, ?, ?)" for _ in selected)
-    connection = connect_run_database(database_path, read_only=True)
-    try:
-        require_run_schema(connection)
-        prompt_configured, _ = _configured_verification_checks(
-            connection, config, database_path.parent
-        )
-        rows = connection.execute(
-            f"""
-            WITH planned(item_index, item_key, domain, expected_title,
-                         prompt_index, prompt_sampling_seed) AS (
-                VALUES {placeholders}
-            )
-            SELECT planned.*, items.item_id,
-                prompts.prompt_id, prompts.text AS prompt_text,
-                COALESCE(prompts.origin_run_id, run_metadata.run_id)
-                    AS prompt_origin_run_id,
-                COALESCE(prompts.origin_prompt_id, prompts.prompt_id)
-                    AS prompt_origin_id,
-                prompt_verifications.passed AS prompt_verification_passed,
-                prompt_verifications.reason AS prompt_verification_reason,
-                predictions.prompt_prediction_id AS prompt_prediction_id,
-                predictions.title AS prompt_title,
-                predictions.confidence AS prompt_confidence,
-                predictions.confidence_type AS prompt_confidence_type,
-                COALESCE(predictions.origin_run_id, run_metadata.run_id)
-                    AS prediction_origin_run_id,
-                COALESCE(predictions.origin_prompt_prediction_id,
-                         predictions.prompt_prediction_id) AS prediction_origin_id
-            FROM planned
-            CROSS JOIN run_metadata
-            LEFT JOIN dataset_items AS items USING (item_index)
-            LEFT JOIN prompts ON prompts.item_id = items.item_id
-                AND prompts.prompt_index = planned.prompt_index
-            LEFT JOIN prompt_verifications ON
-                prompt_verifications.prompt_id = prompts.prompt_id
-                AND prompt_verifications.policy = 'reference_title_absent'
-            LEFT JOIN prompt_predictions AS predictions ON
-                predictions.prompt_id = prompts.prompt_id
-            ORDER BY planned.item_index, planned.prompt_index
-            """,
-            tuple(value for observation in selected for value in observation),
-        ).fetchall()
-        tasks = connection.execute(
-            """
-            SELECT tasks.stage, tasks.item_id, tasks.prompt_id, tasks.seed,
-                tasks.status,
-                (SELECT error_type || ': ' || message FROM stage_errors
-                 WHERE task_id = tasks.task_id
-                 ORDER BY error_id DESC LIMIT 1) AS error
-            FROM stage_tasks AS tasks
-            WHERE tasks.stage IN ('prompt_generation', 'verification_prompt',
-                                  'title_guessing_from_prompt')
-            """
-        ).fetchall()
-    finally:
-        connection.close()
-
-    traces = []
-    for row in rows:
-        matched_tasks = [
-            task
-            for task in tasks
-            if task["item_id"] == row["item_id"]
-            and (
-                task["stage"] == "prompt_generation"
-                and task["seed"] == row["prompt_sampling_seed"]
-                or task["stage"] != "prompt_generation"
-                and row["prompt_id"] is not None
-                and task["prompt_id"] == row["prompt_id"]
-            )
-        ]
-        traces.append(
-            PromptResultTrace(
-                item_key=row["item_key"],
-                domain=row["domain"],
-                expected_title=row["expected_title"],
-                prompt_index=row["prompt_index"],
-                prompt_sampling_seed=row["prompt_sampling_seed"],
-                prompt_id=row["prompt_id"],
-                prompt_text=row["prompt_text"],
-                prompt_origin_run_id=(
-                    row["prompt_origin_run_id"]
-                    if row["prompt_id"] is not None
-                    else None
-                ),
-                prompt_origin_id=row["prompt_origin_id"],
-                prompt_verification_configured=prompt_configured,
-                prompt_verification_passed=_optional_bool(
-                    row["prompt_verification_passed"]
-                ),
-                prompt_verification_reason=row["prompt_verification_reason"],
-                result=_prediction_trace(row, "prompt"),
-                prediction_origin_run_id=(
-                    row["prediction_origin_run_id"]
-                    if row["prompt_prediction_id"] is not None
-                    else None
-                ),
-                prediction_origin_id=row["prediction_origin_id"],
-                task_statuses={task["stage"]: task["status"] for task in matched_tasks},
-                task_errors={
-                    task["stage"]: task["error"]
-                    for task in matched_tasks
-                    if task["status"] == "failed" and task["error"]
-                },
-            )
-        )
-    return PromptResultTracePage(tuple(traces), page, page_size, len(observations))
-
-
 def read_result_trace_page(
     database_path: Path,
     config: ResolvedAppConfig,
@@ -358,11 +189,20 @@ def read_result_trace_page(
     page: int,
     page_size: int,
 ) -> ResultTracePage:
-    """Include every configured title, even before its first persisted output."""
+    """Include planned prompt slots when enabled, and existing image products."""
     if page < 1:
         raise ValueError("Result page must be at least 1.")
     if page_size < 1:
         raise ValueError("Result page size must be at least 1.")
+
+    stages = set(configured_stage_names(config))
+    if config.inherit is not None:
+        stages.update(dependency_closure(config.inherit.stages))
+    prompt_route_configured = "title_guessing_from_prompt" in stages
+    if not config.dataset.items or (
+        prompt_route_configured and not config.experiment.prompt_seeds
+    ):
+        return ResultTracePage((), page, page_size, 0)
 
     # Dataset rows are inserted lazily by the runner. Anchor the display in its
     # frozen snapshot, without writing placeholder rows into the run database.
@@ -381,6 +221,32 @@ def read_result_trace_page(
         for index, item in enumerate(config.dataset.items)
         for value in (index, item.id, item.domain, item.title)
     )
+    prompt_join = "LEFT JOIN prompts ON prompts.item_id = items.item_id"
+    prompt_index_column = "prompts.prompt_index"
+    prompt_seed_column = "prompts.sampling_seed"
+    if prompt_route_configured:
+        # Keep missing seeds distinct without constructing item x seed VALUES
+        # in Python. Existing images expand a slot, not its prompt prediction.
+        seed_placeholders = ", ".join("(?, ?)" for _ in config.experiment.prompt_seeds)
+        dataset_sql += f"""
+            , planned_prompts(prompt_index, sampling_seed) AS (
+                VALUES {seed_placeholders}
+            )
+        """
+        dataset_parameters += tuple(
+            value
+            for index, seed in enumerate(config.experiment.prompt_seeds)
+            for value in (index, seed)
+        )
+        prompt_join = """
+            CROSS JOIN planned_prompts
+            LEFT JOIN prompts ON prompts.item_id = items.item_id
+                AND prompts.prompt_index = planned_prompts.prompt_index
+        """
+        prompt_index_column = "planned_prompts.prompt_index"
+        prompt_seed_column = (
+            "COALESCE(prompts.sampling_seed, planned_prompts.sampling_seed)"
+        )
     connection = connect_run_database(database_path, read_only=True)
     try:
         require_run_schema(connection)
@@ -390,10 +256,10 @@ def read_result_trace_page(
         total_traces = int(
             connection.execute(
                 dataset_sql
-                + """
+                + f"""
                 SELECT COUNT(*)
                 FROM items
-                LEFT JOIN prompts ON prompts.item_id = items.item_id
+                {prompt_join}
                 LEFT JOIN images
                     ON images.prompt_id = prompts.prompt_id
                 """,
@@ -434,9 +300,13 @@ def read_result_trace_page(
                 items.title AS expected_title,
                 illustratability_ratings.score AS illustratability_score,
                 prompts.prompt_id,
-                prompts.prompt_index,
-                prompts.sampling_seed AS prompt_sampling_seed,
+                {prompt_index_column} AS prompt_index,
+                {prompt_seed_column} AS prompt_sampling_seed,
                 prompts.text AS prompt_text,
+                COALESCE(prompts.origin_run_id, run_metadata.run_id)
+                    AS prompt_origin_run_id,
+                COALESCE(prompts.origin_prompt_id, prompts.prompt_id)
+                    AS prompt_origin_id,
                 {verification_columns}
                 images.image_id,
                 images.seed AS image_seed,
@@ -450,9 +320,19 @@ def read_result_trace_page(
                 description_predictions.title AS description_title,
                 description_predictions.confidence AS description_confidence,
                 description_predictions.confidence_type
-                    AS description_confidence_type
+                    AS description_confidence_type,
+                prompt_predictions.prompt_prediction_id,
+                prompt_predictions.title AS prompt_title,
+                prompt_predictions.confidence AS prompt_confidence,
+                prompt_predictions.confidence_type AS prompt_confidence_type,
+                COALESCE(prompt_predictions.origin_run_id, run_metadata.run_id)
+                    AS prompt_prediction_origin_run_id,
+                COALESCE(prompt_predictions.origin_prompt_prediction_id,
+                         prompt_predictions.prompt_prediction_id)
+                    AS prompt_prediction_origin_id
             FROM items
-            LEFT JOIN prompts ON prompts.item_id = items.item_id
+            CROSS JOIN run_metadata
+            {prompt_join}
             LEFT JOIN illustratability_ratings
                 ON illustratability_ratings.item_id = items.item_id
             LEFT JOIN images
@@ -466,9 +346,11 @@ def read_result_trace_page(
             LEFT JOIN predictions AS description_predictions
                 ON description_predictions.image_id = images.image_id
                 AND description_predictions.input_kind = 'description'
+            LEFT JOIN prompt_predictions
+                ON prompt_predictions.prompt_id = prompts.prompt_id
             ORDER BY
                 items.item_index,
-                prompts.prompt_index,
+                {prompt_index_column},
                 images.seed,
                 images.image_id
             LIMIT ? OFFSET ?
@@ -476,10 +358,37 @@ def read_result_trace_page(
             (*dataset_parameters, page_size, (page - 1) * page_size),
         ).fetchall()
         tasks_by_item = defaultdict(list)
-        for task in connection.execute(
-            "SELECT stage, status, item_id, prompt_id, image_id, seed FROM stage_tasks"
-        ):
-            tasks_by_item[task["item_id"]].append(task)
+        task_errors = {}
+        item_ids = tuple(
+            dict.fromkeys(row["item_id"] for row in rows if row["item_id"] is not None)
+        )
+        if item_ids:
+            item_placeholders = ", ".join("?" for _ in item_ids)
+            for task in connection.execute(
+                f"""
+                SELECT task_id, stage, status, item_id, prompt_id, image_id, seed
+                FROM stage_tasks WHERE item_id IN ({item_placeholders})
+                """,
+                item_ids,
+            ):
+                tasks_by_item[task["item_id"]].append(task)
+            # Only prompt-route terminal errors for this page are needed. The
+            # ordered rows keep the latest failed attempt for each task.
+            for error in connection.execute(
+                f"""
+                SELECT errors.task_id, errors.error_type || ': ' || errors.message
+                    AS error
+                FROM stage_errors AS errors
+                JOIN stage_tasks AS tasks USING (task_id)
+                WHERE tasks.item_id IN ({item_placeholders})
+                    AND tasks.status = 'failed'
+                    AND tasks.stage IN ('prompt_generation', 'verification_prompt',
+                                        'title_guessing_from_prompt')
+                ORDER BY errors.error_id
+                """,
+                item_ids,
+            ):
+                task_errors[error["task_id"]] = error["error"]
     finally:
         connection.close()
 
@@ -498,6 +407,10 @@ def read_result_trace_page(
             prompt_index=row["prompt_index"],
             prompt_sampling_seed=row["prompt_sampling_seed"],
             prompt_text=row["prompt_text"],
+            prompt_origin_run_id=(
+                row["prompt_origin_run_id"] if row["prompt_id"] is not None else None
+            ),
+            prompt_origin_id=row["prompt_origin_id"],
             prompt_verification_configured=prompt_verification_configured,
             prompt_verification_passed=_optional_bool(
                 row["prompt_verification_passed"]
@@ -520,6 +433,22 @@ def read_result_trace_page(
             image_description=row["image_description"],
             direct_result=_prediction_trace(row, "direct"),
             description_result=_prediction_trace(row, "description"),
+            prompt_result=_prediction_trace(row, "prompt"),
+            prompt_prediction_origin_run_id=(
+                row["prompt_prediction_origin_run_id"]
+                if row["prompt_prediction_id"] is not None
+                else None
+            ),
+            prompt_prediction_origin_id=row["prompt_prediction_origin_id"],
+            prompt_task_statuses={
+                task["stage"]: task["status"]
+                for task in _prompt_tasks(row, tasks_by_item[row["item_id"]])
+            },
+            prompt_task_errors={
+                task["stage"]: task_errors[task["task_id"]]
+                for task in _prompt_tasks(row, tasks_by_item[row["item_id"]])
+                if task["task_id"] in task_errors
+            },
             terminal_stages=_terminal_stages(
                 row,
                 tasks_by_item[row["item_id"]],
@@ -538,6 +467,23 @@ def read_result_trace_page(
     )
 
 
+def _prompt_tasks(row: sqlite3.Row, tasks: list[sqlite3.Row]) -> list[sqlite3.Row]:
+    """Match this prompt's own tasks, never sibling prompts or image failures."""
+    return [
+        task
+        for task in tasks
+        if (
+            task["stage"] == "prompt_generation"
+            and task["seed"] == row["prompt_sampling_seed"]
+        )
+        or (
+            task["stage"] in {"verification_prompt", "title_guessing_from_prompt"}
+            and row["prompt_id"] is not None
+            and task["prompt_id"] == row["prompt_id"]
+        )
+    ]
+
+
 def _terminal_stages(
     row: sqlite3.Row,
     tasks: list[sqlite3.Row],
@@ -548,19 +494,21 @@ def _terminal_stages(
 ) -> frozenset[str]:
     """Recognize exhausted work, including a collapsed pre-prompt/image trace."""
     states = defaultdict(list)
+    single_prompt = row["prompt_index"] is not None
     for task in tasks:
         stage = task["stage"]
         if stage == "prompt_generation":
-            if (
-                row["prompt_id"] is not None
-                and task["seed"] != row["prompt_sampling_seed"]
-            ):
+            if single_prompt and task["seed"] != row["prompt_sampling_seed"]:
                 continue
         elif stage in {"verification_prompt", "title_guessing_from_prompt"}:
-            if row["prompt_id"] is not None and task["prompt_id"] != row["prompt_id"]:
+            if single_prompt and (
+                row["prompt_id"] is None or task["prompt_id"] != row["prompt_id"]
+            ):
                 continue
         elif stage == "verification_image":
-            if row["prompt_id"] is not None and task["prompt_id"] != row["prompt_id"]:
+            if single_prompt and (
+                row["prompt_id"] is None or task["prompt_id"] != row["prompt_id"]
+            ):
                 continue
             if row["image_id"] is not None and task["image_id"] not in {
                 None,
@@ -568,13 +516,15 @@ def _terminal_stages(
             }:
                 continue
         elif stage != "illustratability_rating":
-            if row["prompt_id"] is not None and task["prompt_id"] != row["prompt_id"]:
+            if single_prompt and (
+                row["prompt_id"] is None or task["prompt_id"] != row["prompt_id"]
+            ):
                 continue
             if row["image_id"] is not None and task["seed"] != row["image_seed"]:
                 continue
         states[stage].append(task["status"])
 
-    prompts = 1 if row["prompt_id"] is not None else len(config.experiment.prompt_seeds)
+    prompts = 1 if single_prompt else len(config.experiment.prompt_seeds)
     images = (
         1
         if row["image_id"] is not None

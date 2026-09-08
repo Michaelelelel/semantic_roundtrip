@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
 from semantic_roundtrip.config_resolution import load_effective_config
@@ -13,7 +13,6 @@ from semantic_roundtrip.persistence.run.config_snapshot import EFFECTIVE_CONFIG_
 from semantic_roundtrip.persistence.run.result_queries import (
     RouteAccuracy,
     read_image_artifact_path,
-    read_prompt_result_trace_page,
     read_result_trace_page,
     read_route_accuracies,
     read_verification_summary,
@@ -294,45 +293,21 @@ def run_image(
     return FileResponse(_resolve_image_file(run_directory, stored_path))
 
 
-@router.get("/prompt-results/{run_path:path}", response_class=HTMLResponse)
+@router.get("/prompt-results/{run_path:path}", response_class=RedirectResponse)
 def run_prompt_results(
     request: Request,
     run_path: str,
     runs_root: RunsRoot,
-    page: Annotated[int, Query(ge=1)] = 1,
-) -> HTMLResponse:
-    """Show every planned prompt reconstruction once, without an image join."""
+) -> RedirectResponse:
+    """Keep old bookmarks working without a separate prompt-results page."""
     run_directory = _resolve_run_directory(runs_root, run_path)
-    database_path = database_path_for_run(run_directory)
-    try:
-        run = get_run_status(run_directory)
-        config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
-        accuracies = read_route_accuracies(database_path, config)
-        if "prompt" not in accuracies:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Prompt reconstruction is not configured for this run.",
-            )
-        result_page = read_prompt_result_trace_page(
-            database_path, config, page=page, page_size=RESULTS_PAGE_SIZE
-        )
-    except STATUS_READ_ERRORS as error:
-        raise _unreadable_status(error) from error
-    if page > result_page.total_pages:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Prompt result page not found.",
-        )
-    return _render(
-        request,
-        "prompt_results.html",
-        run=run,
-        run_path=run_directory.relative_to(runs_root).as_posix(),
-        result_page=result_page,
-        accuracies=accuracies,
-        stages={stage.name: stage for stage in run.stages},
-        is_terminal=run.status in TERMINAL_STATUSES,
-        auto_refresh=run.status not in TERMINAL_STATUSES,
+    # Old pagination counted prompts, while the unified view can expand images.
+    # Reset to the first page rather than forwarding a different page coordinate.
+    return RedirectResponse(
+        request.url_for(
+            "run_results", run_path=run_directory.relative_to(runs_root).as_posix()
+        ),
+        status_code=status.HTTP_303_SEE_OTHER,
     )
 
 

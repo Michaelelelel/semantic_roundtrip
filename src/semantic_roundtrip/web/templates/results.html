@@ -3,13 +3,22 @@
 {% from "verification.html" import verification_summary %}
 
 {% macro missing_result(trace, stage) -%}
-  {% if is_terminal or stage in trace.terminal_stages
+  {% set task_status = trace.prompt_task_statuses.get(stage) %}
+  {% if task_status == "failed" %}
+    <span class="error-text">Failed</span>
+  {% elif is_terminal or task_status == "completed" or stage in trace.terminal_stages
+        or (stage != "illustratability_rating" and trace.prompt_id is none and trace.prompt_task_statuses.get("prompt_generation") == "failed")
         or (stage != "illustratability_rating" and trace.prompt_id is none and "prompt_generation" in trace.terminal_stages)
         or (stage not in ("illustratability_rating", "prompt_generation", "verification_prompt", "title_guessing_from_prompt") and trace.image_id is none and "image_generation" in trace.terminal_stages)
         or (stage == "title_guessing_from_description" and trace.image_description is none and "image_description" in trace.terminal_stages) %}
     Not produced
+  {% elif task_status == "running" %}
+    Running
   {% else %}
     Pending
+  {% endif %}
+  {% if trace.prompt_task_errors.get(stage) %}
+    <br><small class="error-text">{{ trace.prompt_task_errors[stage] }}</small>
   {% endif %}
 {%- endmacro %}
 
@@ -49,11 +58,7 @@
     {% endif %}
     <span class="mono">{{ run.run_id }}</span>
   </p>
-  <p><a href="{{ url_for('run_detail', run_path=run_path) }}">Back to run status</a>
-    {% if "prompt" in accuracies %}
-      · <a href="{{ url_for('run_prompt_results', run_path=run_path) }}">View prompt results (once per prompt)</a>
-    {% endif %}
-  </p>
+  <p><a href="{{ url_for('run_detail', run_path=run_path) }}">Back to run status</a></p>
 
   {% if run.last_error %}
     <div class="error-panel">
@@ -63,6 +68,9 @@
 
   {{ accuracy_summary(accuracies, run.status) }}
   {{ verification_summary(verification) }}
+  {% if "prompt" in accuracies %}
+    <p>Prompt accuracy counts each prompt once, even when the same prediction is shown with multiple images. Exact labels below show title matching before verification.</p>
+  {% endif %}
 
   {% if result_page.traces %}
     <p>
@@ -116,13 +124,18 @@
                 <td>
                   {% if trace.prompt_id is not none %}
                     {{ trace.prompt_text }}
+                  {% else %}
+                    {{ missing_result(trace, "prompt_generation") }}
+                  {% endif %}
+                  {% if trace.prompt_index is not none %}
                     <br>
                     <small>
                       Prompt {{ trace.prompt_index + 1 }} · sampling seed
                       <span class="mono">{{ trace.prompt_sampling_seed }}</span>
                     </small>
-                  {% else %}
-                    {{ missing_result(trace, "prompt_generation") }}
+                  {% endif %}
+                  {% if "prompt" in accuracies and trace.prompt_origin_id is not none %}
+                    <br><small>Origin: <span class="mono">{{ trace.prompt_origin_run_id }}</span> · prompt {{ trace.prompt_origin_id }}</small>
                   {% endif %}
                 </td>
               </tr>
@@ -171,6 +184,17 @@
                     {% if trace.title_aware_image_verification_reason %} · {{ trace.title_aware_image_verification_reason }}{% endif %}
                   </td>
                 </tr>
+            {% endif %}
+            {% if 'title_guessing_from_prompt' in stages %}
+              <tr>
+                <th>{{ stage_heading("title_guessing_from_prompt", "Prompt route") }}{% if not stages["title_guessing_from_prompt"].imported %}<br><small>local</small>{% endif %}</th>
+                <td>
+                  {{ show_prediction(trace.prompt_result, trace, "title_guessing_from_prompt") }}
+                  {% if trace.prompt_prediction_origin_id is not none %}
+                    <br><small>Origin: <span class="mono">{{ trace.prompt_prediction_origin_run_id }}</span> · prompt prediction {{ trace.prompt_prediction_origin_id }}</small>
+                  {% endif %}
+                </td>
+              </tr>
             {% endif %}
             {% if 'title_guessing_direct' in stages %}
               <tr>

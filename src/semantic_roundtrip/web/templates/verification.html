@@ -26,10 +26,20 @@
         </tbody>
       </table>
       <p class="accuracy-note">
-        The prompt check is deterministic. Both image checks use the same image;
-        the strict policy rejects any meaningful readable text, while the title-aware
-        policy rejects only readable reference-title text. Missing configured decisions
-        remain in the end-to-end denominator.
+        {% set check_keys = checks | map(attribute="key") | list %}
+        {% if "prompt" in check_keys %}
+          The prompt check is deterministic.
+        {% endif %}
+        {% if "strict_image" in check_keys %}
+          The strict image policy rejects any meaningful readable text.
+        {% endif %}
+        {% if "title_aware_image" in check_keys %}
+          The title-aware image policy rejects only readable reference-title text.
+        {% endif %}
+        {% if "strict_image" in check_keys and "title_aware_image" in check_keys %}
+          Both image checks use the same image.
+        {% endif %}
+        Missing configured decisions remain in the end-to-end denominator.
       </p>
     </section>
   {% endif %}
