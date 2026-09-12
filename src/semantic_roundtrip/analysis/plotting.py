@@ -60,14 +60,14 @@ def heatmap(ax, frame, models, title, baseline=None):
         xticklabels=labels,
         yticklabels=labels,
     )
-    ax.set(xlabel="BI", ylabel="PG", title=title)
+    ax.set(xlabel="TG", ylabel="PG", title=title)
     return ax.collections[0]
 
 
 def bb_heatmaps(frame, models, name, title):
     fig, axes = plt.subplots(2, 2, figsize=(9, 7), layout="constrained")
     for bb, ax in zip(QG, axes.flat):
-        image = heatmap(ax, frame[frame.bb == bb], models, f"BB = {bb.upper()}")
+        image = heatmap(ax, frame[frame.bb == bb], models, f"ID = {bb.upper()}")
     fig.colorbar(image, ax=list(axes.flat), label="End-to-end Strict Exact Match (%)")
     save_figure(fig, name, title)
 
@@ -104,7 +104,12 @@ def interval_plot(
         )
     ax.set(
         yticks=range(len(table)),
-        yticklabels=table.comparison.str.replace("−", "-", regex=False),
+        yticklabels=(
+            table.comparison.str.replace("−", "-", regex=False)
+            .str.replace(r"\bBI\b", "TG", regex=True)
+            .str.replace(r"\bBB\b", "ID", regex=True)
+            .str.replace(r"\bBG\b", "IG", regex=True)
+        ),
         xlabel=xlabel,
         ylim=(len(table) - 0.5, -0.6),
     )

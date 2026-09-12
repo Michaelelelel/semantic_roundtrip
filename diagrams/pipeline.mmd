@@ -1,59 +1,68 @@
 ---
+title: All stages are optional. Enabled stages require their inputs.
 config:
-  theme: neutral
+  theme: base
   fontFamily: Arial, sans-serif
   flowchart:
     curve: linear
-    nodeSpacing: 30
-    rankSpacing: 45
+    nodeSpacing: 12
+    rankSpacing: 8
     htmlLabels: false
+    padding: 6
+    wrappingWidth: 600
+    subGraphTitleMargin:
+      top: 4
+      bottom: 10
   themeVariables:
     fontFamily: Arial, sans-serif
-    fontSize: 16px
+    fontSize: 20px
+    primaryColor: '#edf3f8'
+    primaryTextColor: '#152c40'
+    primaryBorderColor: '#526b80'
+    lineColor: '#52616c'
+    clusterBkg: '#ffffff'
+    clusterBorder: '#c2ccd4'
+    edgeLabelBackground: '#ffffff'
 ---
-flowchart LR
-    %% Editable source for the thesis pipeline figure.
-    title(["Original title<br/>and domain"])
-    pg["PG<br/>Prompt generation"]
-    image["Image generation<br/>SD3.5 Large"]
+flowchart TB
+    %% Editable source for both the documentation SVG and thesis PDF.
+    %% The two panels reuse stored artifacts, not regenerated copies.
+    subgraph routes["A. Generation and reconstruction"]
+        direction LR
+        source(["Title and<br/>domain"])
+        pg["PG<br/>Prompt<br/>generation"]
+        ig["IG<br/>Image<br/>generation"]
+        id["ID<br/>Image<br/>description"]
+        direct["TG<br/>Image + domain"]
+        indirect["TG<br/>Description + domain"]
+        prompttg["TG<br/>Prompt + domain"]
+        rating["Illustratability<br/>rating"]
 
-    subgraph reconstruction["Title reconstruction"]
-        direct["Direct BI<br/>Image + domain → title"]
-        bb["BB<br/>Image → description"]
-        indirect["Indirect BI<br/>Description + domain → title"]
-        promptbi["Prompt BI · optional SQ1<br/>Generated prompt + domain → title"]
-        bb --> indirect
+        source --> pg
+        source --> rating
+        pg -->|prompt| ig
+        %% Longer links align the three TG alternatives in one right-hand column.
+        pg ---->|prompt| prompttg
+        ig --->|image| direct
+        ig -->|image| id
+        id -->|text| indirect
+        %% Every TG also receives the domain, stated inside each input box.
     end
 
-    subgraph verification["Independent prompt / image verification"]
-        strictverifier["Strict image verifier · Q38<br/>Any meaningful text"]
-        awareverifier["Title-aware image verifier · Q38<br/>Reference-title text only"]
-        promptverifier["Prompt verifier<br/>Reference-title absence<br/>Deterministic"]
+    subgraph assessment["B. Independent checks and evaluation of each predicted title"]
+        direction TB
+        promptcheck["Prompt check (deterministic)<br/>Prompt + source title<br/>Normalized title absent"]
+        strictcheck["Strict image check<br/>Image only<br/>No meaningful readable text"]
+        awarecheck["Title-aware check<br/>Image + source title<br/>No readable source title"]
+        score["Title match + applicable checks<br/>Strict and title-aware are alternative image policies"]
+
+        promptcheck --> score
+        strictcheck --> score
+        awarecheck --> score
     end
 
-    rating["Illustratability rating<br/>PG model · 0–100"]
-    evaluation["Evaluation<br/>Prompt: prompt check only<br/>Image routes: prompt + image checks"]
-    analysis(["Analysis<br/>Accuracy · effects · correlations"])
-
-    title --> pg
-    pg -->|visual prompt| image
-    pg -->|same stored prompt| promptbi
-    image -->|direct route| direct
-    image -->|description-mediated route| bb
-    direct -->|predicted title| evaluation
-    indirect -->|predicted title| evaluation
-    promptbi -->|predicted title| evaluation
-
-    image --> strictverifier
-    image --> awareverifier
-    title -->|reference title| awareverifier
-    pg -->|generated prompt| promptverifier
-    title -->|reference title| promptverifier
-    promptverifier -->|pass / reject| evaluation
-    strictverifier -->|pass / reject| evaluation
-    awareverifier -->|pass / reject| evaluation
-    title -.->|reference title| evaluation
-
-    title --> rating
-    rating --> analysis
-    evaluation --> analysis
+    routes ~~~ assessment
+    classDef context fill:#ffffff,stroke:#526b80,color:#152c40;
+    classDef check fill:#f5f5f5,stroke:#68737b,color:#253541;
+    class source context;
+    class promptcheck,strictcheck,awarecheck check;

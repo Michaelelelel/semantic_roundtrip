@@ -55,8 +55,8 @@ Smokes and six-title previews are optional deployment checks, not final results.
   concise executable study protocol.
 - [`configs/datasets/final_titles_v1.md`](configs/datasets/final_titles_v1.md):
   dataset construction and sources.
-- [`manual_evaluation/README.md`](manual_evaluation/README.md): manual verifier,
-  sketch and comic checks.
+- [`manual_evaluation/README.md`](manual_evaluation/README.md): manual verifier
+  assessment and calculation.
 - [`notebooks/final_study.ipynb`](notebooks/final_study.ipynb): thesis figures for
   primary research questions RQ1–RQ3 and secondary research questions SQ1–SQ5.
 - [`notebooks/style_decision.ipynb`](notebooks/style_decision.ipynb): complete four-style 4 x 4 comparison.
@@ -84,7 +84,9 @@ Python dependencies are locked in `uv.lock`. Container images, model revisions
 and model checksums are pinned. Each run snapshot records the configuration
 actually used; editing a configuration never changes an existing run.
 
-The study protocol is `final_v3`. The application uses experiment/snapshot
-format 11, Run DB 12, Job YAML/snapshot 5, Job DB 4 and manifest 6. Use completed
+The current study protocol is `final_v7`, including the manual-assessment
+procedure. Existing run snapshots keep the revisions under which they were
+created. The application uses experiment/snapshot format 11, Run DB 12,
+Job YAML/snapshot 5, Job DB 4 and manifest 6. Use completed
 jobs with matching study settings for analysis and retain their source
 identifiers, raw responses and snapshots with the reported results.

@@ -364,7 +364,7 @@ def plot_prompt_baseline(titles, tables, output_dir):
     heatmap(axes[1], direct, QG, "Direct image reconstruction")
     delta = heatmap(axes[2], prompt, QG, "Prompt - direct", baseline=direct)
     for ax in axes:
-        ax.set_xlabel("Reconstruction model")
+        ax.set_xlabel("Title-guessing model (TG)")
     fig.colorbar(image, ax=list(axes[:2]), label="End-to-end Strict Exact Match (%)")
     fig.colorbar(delta, ax=axes[2], label="Difference (pp)")
     save_figure(
@@ -393,7 +393,7 @@ def plot_prompt_baseline(titles, tables, output_dir):
         xticks=range(4),
         xticklabels=[model.upper() for model in QG],
         ylim=(-2, 102),
-        xlabel="Same-model diagonal (PG = BB = reconstruction)",
+        xlabel="Same-model diagonal (PG = ID = TG)",
         ylabel="End-to-end Strict Exact Match (%)",
     )
     axes[0].legend()

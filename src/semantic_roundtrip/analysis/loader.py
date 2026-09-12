@@ -152,10 +152,12 @@ def _verification_checks(
     return prompt, frozenset(image)
 
 
-def _image_path(run_directory: Path, stored_path: str) -> str:
+def _image_path(
+    run_directory: Path, stored_path: str, *, require_image_files: bool = True
+) -> str:
     path = Path(stored_path)
     resolved = (path if path.is_absolute() else run_directory / path).resolve()
-    if not resolved.is_file():
+    if require_image_files and not resolved.is_file():
         raise FileNotFoundError(f"Run references a missing image: {resolved}")
     return str(resolved)
 
@@ -274,7 +276,9 @@ def _timing_rows(
     return result
 
 
-def load_run(path: str | Path) -> AnalysisTables:
+def load_run(
+    path: str | Path, *, require_image_files: bool = True
+) -> AnalysisTables:
     """Load one completed current-schema run without modifying it."""
     run_directory = Path(path).expanduser().resolve()
     config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
@@ -580,7 +584,11 @@ def load_run(path: str | Path) -> AnalysisTables:
                             "image_path": (
                                 None
                                 if image is None
-                                else _image_path(run_directory, image["path"])
+                                else _image_path(
+                                    run_directory,
+                                    image["path"],
+                                    require_image_files=require_image_files,
+                                )
                             ),
                             "route": route,
                             "prompt_model": models["prompt_generation"],
@@ -741,8 +749,15 @@ def _concat(frames: list[pd.DataFrame]) -> pd.DataFrame:
 def load_job(
     path: str | Path,
     entries: Iterable[str | int] | None = None,
+    *,
+    require_image_files: bool = True,
 ) -> AnalysisTables:
-    """Load explicitly selected entries from one persisted sequential job."""
+    """Load selected entries, optionally omitting only local image-file checks.
+
+    Compact analysis copies may deliberately omit pixels. Their stored image
+    rows, errors, checks, provenance and planned observations remain mandatory.
+    Callers must record the chosen file-check policy with their analysis.
+    """
     job_directory = Path(path).expanduser().resolve()
     record = read_job_record(job_database_path(job_directory))
     snapshot = load_job_snapshot(job_directory / JOB_SNAPSHOT_FILENAME)
@@ -774,7 +789,9 @@ def load_job(
         "timings": [],
     }
     for configured, stored in selected:
-        tables = load_run(stored.run_directory)
+        tables = load_run(
+            stored.run_directory, require_image_files=require_image_files
+        )
         metadata = {
             "job_id": record.job_id,
             "job_name": record.name,

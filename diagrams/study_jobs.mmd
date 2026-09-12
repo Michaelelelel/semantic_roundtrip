@@ -1,6 +1,7 @@
 ---
 config:
   theme: neutral
+  layout: elk
   fontFamily: Arial, sans-serif
   flowchart:
     curve: linear
@@ -13,10 +14,12 @@ config:
 flowchart TB
     %% Edit in any Mermaid editor; render to SVG before using it outside Markdown.
     subgraph MAIN["Main study · 30 randomly sampled titles per domain"]
-        DIRECT["direct_core<br/>4×4 PG/BI<br/>RQ1: model combinations<br/>RQ3: paired reconstruction routes"]
-        LOCAL["indirect_local<br/>2×4×2 PG/BB/BI"]
-        AQUEDUCT["aqueduct_v4_extension<br/>20 additional conditions"]
-        INDIRECT(["Combined indirect analysis<br/>3×4×3 PG/BB/BI<br/>RQ2: model-role choices"])
+        DIRECT["direct_core<br/>4×4 PG/TG<br/>RQ1: model combinations<br/>RQ3: paired reconstruction routes"]
+        LOCAL["indirect_local<br/>2×4×2 PG/ID/TG"]
+        V4_INDEPENDENT["aqueduct_v4_independent<br/>split part 1 · 8 conditions<br/>V4 PG · D32/O120 TG"]
+        V4_COMPLETION["aqueduct_v4_completion<br/>split part 2 · 12 conditions<br/>V4 TG · both completed sources"]
+        AQUEDUCT["aqueduct_v4_extension<br/>alternative to the split pair<br/>same 20 additional conditions"]
+        INDIRECT(["Combined indirect analysis<br/>3×4×3 PG/ID/TG<br/>RQ2: model-role choices"])
     end
 
     subgraph SUPPLEMENTS["Complete style comparison and direct supplements"]
@@ -34,8 +37,12 @@ flowchart TB
     end
 
     LOCAL -->|matching source job| AQUEDUCT
+    LOCAL -->|local_indirect source| V4_COMPLETION
+    V4_INDEPENDENT -->|v4_independent source| V4_COMPLETION
     LOCAL --> INDIRECT
     AQUEDUCT --> INDIRECT
+    V4_INDEPENDENT --> INDIRECT
+    V4_COMPLETION --> INDIRECT
     RATINGS --> DATASET
     DIRECT -. style comparison .-> PHOTO
     DIRECT -. style comparison .-> SKETCH

@@ -1,4 +1,4 @@
-schema_version: 8
+schema_version: 11
 configuration_kind: effective
 run:
   name: rating_q25

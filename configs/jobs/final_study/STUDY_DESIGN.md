@@ -3,7 +3,12 @@
 This file records the exact executable protocol. Scientific justification and
 interpretation belong in the thesis.
 
-## Study revision and scope (`final_v3`)
+The model roles are Prompt generation (PG), Image generation (IG), Image
+description (ID) and Title guessing (TG). The analysis columns `pg`, `bb` and
+`bi` identify PG, ID and TG respectively. Job and run identifiers use these
+same technical keys. Figure labels use the reader-facing role names.
+
+## Study revision and scope (`final_v7`)
 
 The study compares direct image, description-mediated and prompt-based title
 reconstruction. Prompt and image verification are independently executable and
@@ -11,18 +16,35 @@ importable stages. The software supports configurable models and predefined
 reconstruction routes, not arbitrary workflow composition. Run snapshots record
 the settings actually used, and reused outputs retain their source identity.
 
-The preferred common-style recommendation is unrestricted generation: no added
-explicit rendering-style instruction, rather than the highest or lowest
-observed accuracy. It is not style-neutral. Complete the full four-style report,
-report contrary evidence and obtain supervisor confirmation before affected
-main jobs or SQ1 start. Existing direct/indirect artifacts are a practical reuse
-advantage. Descriptive style centrality is not an automatic selection rule.
+Revision `final_v7` retains the completed fixed 360-pair manual audit (90 titles
+from each of four PG roots), with prompt-use labels `0/n/e` and no separate
+`prompt_requests_text` field. The unperformed manual style-adherence and
+development prompt-prefix assessments are excluded from the final scope.
+The four-style reconstruction comparison remains. It compares the specified
+style instructions, without claiming independently verified visual adherence.
+Experiment configurations, inference settings, matrices, automated
+verification policies, reconstruction metrics and main-study analysis methods
+remain unchanged. In particular, the saved literal prompt-title check continues
+to gate the primary outcome. Existing snapshots and reports retain their original
+revision identifiers. This assessment-scope revision was made after the style
+report and does not change its recorded results.
+
+Unrestricted generation is the common reference. It adds no rendering-style
+instruction, leaving the choice of visual clues within the end-to-end task.
+The choice is not based on the highest or lowest observed accuracy, and
+unrestricted does not mean style-neutral. The complete style report supported
+retaining this reference on 2026-09-10. Some dependent jobs had already started
+with unrestricted before that report. Existing artifacts provide a practical
+reuse advantage, not the scientific selection criterion. Descriptive centrality
+is not an automatic selection rule. All reused inputs must match the reference
+style. The operational 8+12 Aqueduct alternative below preserves the same
+experimental conditions.
 
 ## Four-style comparison
 
 The unrestricted `direct_core` job and the `direct_photorealistic`,
 `direct_comic` and `direct_sketch` jobs form the style comparison. Every job
-uses `final_titles_v1` (30 titles per domain), the complete 4 x 4 PG/BI matrix,
+uses `final_titles_v1` (30 titles per domain), the complete 4 x 4 PG/TG matrix,
 prompt seeds `1000` and `1001`, and image seeds `8566257` and `2875613`.
 Each style therefore has 1,440 generated images and 5,760 direct predictions.
 The unrestricted diagonal entries also create the ratings, descriptions and
@@ -39,6 +61,25 @@ verification with Strict Exact Match is primary. This complete direct
 comparison supports a documented style choice but does not establish a
 universal optimum or an indirect-route style effect.
 
+The complete report `style_report_20260910_082753` uses these source jobs:
+
+| Style | Source Job ID |
+| --- | --- |
+| Unrestricted | `20260903T230744Z_final-direct-core_faa7afcb` |
+| Photorealistic | `20260903T230758Z_final-direct-photorealistic_0488e791` |
+| Sketch | `20260906T115545Z_final-direct-sketch_d64119f3` |
+| Comic | `20260908T101720Z_final-direct-comic_9e7afc81` |
+
+All four contain 5,760 direct predictions and complete persisted check decisions.
+Primary overall accuracy is 11.39%, 11.35%, 11.74% and 12.08%, respectively.
+Title-aware/Strict Exact sensitivity, also including the prompt check, is
+13.45%, 13.16%, 12.93% and 13.85%. Paired primary differences from unrestricted
+are -0.03 pp [-0.90, +0.85], +0.35 pp [-1.56, +2.41] and
++0.69 pp [-1.18, +2.43], with pointwise 95% intervals.
+These intervals do not establish equivalence. All metrics, including the
+prompt gate, remain unchanged. Completeness of stored decisions does not
+establish the correctness of those decisions or adherence to the requested style.
+
 For the candidate-distribution figure, `RATING_JOB` identifies the complete
 four-model candidate-rating job. Each candidate contributes its equally weighted
 Q25/G3/Q38/G4 mean only when all four ratings are available. Histograms use a
@@ -51,7 +92,7 @@ is preserved in [`../../../artifacts/candidate_illustratability/`](../../../arti
 with all 3,600 valid ratings, no missing ratings, raw responses, snapshots and
 the executed distribution report. Its README reproduces the figure using the
 dedicated distribution notebook without model calls. The notebook defaults to
-the supplied job under `current/jobs/`; `current/report/` contains the executed
+the supplied job in its Job-ID directory; `report/` contains the executed
 analysis, tables, figures and manifest. The documented source identifiers and
 raw responses accompany the stored ratings and selected title sets.
 
@@ -62,7 +103,10 @@ a defect, and no balanced/normal score distribution or automatic
 filtering threshold is required. A strong concentration near low scores prompts
 discussion of how informative the planned comparisons can be, not automatic
 title exclusion. Ratings are model judgements, not reconstruction probabilities.
-Record the dataset rationale with the report. Any change needs an explicit
+The observed candidate distributions supported retaining the random sample,
+not replacing it with a visually promising subset. The review informed that
+retention, without claiming a preregistered threshold or that the sample had
+never existed before the rating analysis. Any change needs an explicit
 protocol revision before new main runs: filtering changes the target population
 and must not serve merely to increase accuracy.
 The high-illustratability supplement remains distinct from the random main study.
@@ -74,18 +118,18 @@ Commands are in [`../../../EXPERIMENTS.md`](../../../EXPERIMENTS.md).
 
 ## Roles and routes
 
-- PG: title and domain to visual prompt.
-- BG: visual prompt to image.
+- PG (Prompt generation): title and domain to visual prompt.
+- IG (Image generation): visual prompt to image.
 - Prompt verifier: deterministic normalized search for the reference title in
   the generated prompt.
 - Strict image verifier: blind Q38 check rejecting any unambiguously readable
   meaningful writing.
 - Title-aware image verifier: Q38 receives the reference title and rejects only
   readable writing that communicates that title; unrelated text is allowed.
-- BI: image to title on the direct route.
-- BB: image to neutral description; BI reconstructs the title from that
+- TG (Title guessing): image plus domain to title on the direct route.
+- ID (Image description): image to neutral description; TG reconstructs the title from that
   description on the indirect route.
-- Prompt reconstruction: original generated prompt plus domain to title, without
+- Prompt-based TG: original generated prompt plus domain to title, without
   an image, reference title, candidate list or verification metadata.
 
 ## Shared protocol
@@ -119,16 +163,16 @@ Dataset sources and limitations are in
 
 ## Models
 
-| ID | Model | Deployment | Roles |
+| Model label | Model | Deployment | Roles |
 | --- | --- | --- | --- |
-| Q25 | Qwen2.5-VL-32B-Instruct F16 | local | PG, BB, BI |
-| G3 | Gemma 3 27B IT F16 | local | PG, BB, BI |
-| Q38 | Qwen3.8-27B BF16 | local | PG, BB, BI, verifier |
-| G4 | Gemma 4 31B IT BF16 | local | PG, BB, BI |
-| D32 | DeepSeek-R1-Distill-Qwen-32B F16 | local | PG, BI |
-| O120 | GPT-OSS 120B MXFP4 | local | PG, BI |
-| V4 | DeepSeek-V4-Flash 284B | Aqueduct | PG, BI |
-| BG | Stable Diffusion 3.5 Large BF16 | local | image generation |
+| Q25 | Qwen2.5-VL-32B-Instruct F16 | local | PG, ID, TG |
+| G3 | Gemma 3 27B IT F16 | local | PG, ID, TG |
+| Q38 | Qwen3.8-27B BF16 | local | PG, ID, TG, verifier |
+| G4 | Gemma 4 31B IT BF16 | local | PG, ID, TG |
+| D32 | DeepSeek-R1-Distill-Qwen-32B F16 | local | PG, TG |
+| O120 | GPT-OSS 120B MXFP4 | local | PG, TG |
+| V4 | DeepSeek-V4-Flash 284B | Aqueduct | PG, TG |
+| IG | Stable Diffusion 3.5 Large BF16 | local | image generation |
 
 V4 is an externally hosted larger configuration, not an equal-size or
 equal-compute comparison.
@@ -140,6 +184,8 @@ equal-compute comparison.
 | `direct_core.yaml` | 16 | 1,440 | direct Qwen/Gemma 4 x 4 |
 | `indirect_local.yaml` | 16 | 720 | local indirect 2 x 4 x 2 |
 | `aqueduct_v4_extension.yaml` | 20 additions | 360 | complete indirect 3 x 4 x 3 |
+| `aqueduct_v4_independent.yaml` | 8 additions | 360 | alternative part 1: V4 PG, four ID models, D32/O120 TG |
+| `aqueduct_v4_completion.yaml` | 12 additions | 0 | alternative part 2: V4 TG on descriptions from both sources |
 | `direct_sketch.yaml` | 16 | 1,440 | paired direct style supplement |
 | `direct_comic.yaml` | 16 | 1,440 | paired broad comic-style supplement |
 | `direct_photorealistic.yaml` | 16 | 1,440 | paired photorealistic condition |
@@ -151,22 +197,34 @@ equal-compute comparison.
 additional reconstruction job. It must complete before the illustratability datasets
 and jobs can be generated.
 
-The Aqueduct job imports the exact completed `indirect_local` job. It must be
+Choose either the single Aqueduct extension or the two split jobs, never both
+as additive study conditions. The split runs ten reconstruction jobs rather
+than nine, but still contributes exactly 20 conditions to the local matrix of
+16. It preserves existing experiment configurations and upstream artifact reuse.
+The independent eight-condition job can run on a separate model deployment
+while Local Indirect runs on another. It still needs local image generation,
+image verification, description and D32/O120 guessing, not only Aqueduct.
+The completion job executes only V4 guessing. It imports `image_description`,
+`verification_prompt` and `verification_image`, with required prompts and images,
+from both completed sources via `local_indirect` and `v4_independent`.
+Source directories on the execution host must include their image files.
+
+The single Aqueduct job imports the exact completed `indirect_local` job. It must be
 bound explicitly with `--source-job local_indirect=runs/JOB_DIRECTORY` when
 started. If the optional plan view is used, it needs the same binding. No
 automatic newest-job or dataset-fingerprint check is used.
 
 The thinking job imports the exact completed `direct_core` job with
 `--source-job direct_base=runs/JOB_DIRECTORY`. It computes only the 12 cells in
-which Q38 or G4 occupies PG or BI; the four Q25/G3-only cells come from the
+which Q38 or G4 occupies PG or TG; the four Q25/G3-only cells come from the
 thinking-off direct job during analysis.
 
 The prompt job imports the exact completed unrestricted `direct_core` job via
-`--source-job direct_base=runs/JOB_DIRECTORY`, after style confirmation. Every
+`--source-job direct_base=runs/JOB_DIRECTORY`, under the unrestricted reference. Every
 cell imports prompt/image verification and direct predictions. The four diagonal
 cells additionally import `title_guessing_from_description` and its descriptions.
 No new image, description or indirect calls are made. If a different style is
-confirmed, revise this binding/design explicitly before starting SQ1; do not
+subsequently selected, revisit this binding/design explicitly before final inclusion; do not
 combine different-style direct and indirect inputs.
 
 ## Prompts
@@ -185,10 +243,10 @@ message is required.
 - Strict image verifier: `prompts/verification/json_v3.yaml`.
 - Title-aware image verifier:
   `prompts/verification/title_aware_json_v1.yaml`.
-- BB: `prompts/image_description/plain_v1.yaml`.
-- Direct BI: `prompts/title_guessing/plain_v3.yaml`.
-- Indirect BI: `prompts/title_guessing/description_plain_v3.yaml`.
-- Prompt BI: `prompts/title_guessing/prompt_plain_v1.yaml`.
+- ID: `prompts/image_description/plain_v1.yaml`.
+- Direct TG: `prompts/title_guessing/plain_v3.yaml`.
+- Description-based TG: `prompts/title_guessing/description_plain_v3.yaml`.
+- Prompt-based TG: `prompts/title_guessing/prompt_plain_v1.yaml`.
 - Illustratability: `prompts/illustratability/rating_v2.yaml`.
 
 The unrestricted PG prompt requests one concise concrete scene and prohibits
@@ -224,16 +282,16 @@ repeat penalty 1, presence penalty 0 and frequency penalty 0.
 
 | Scope | Reasoning | Output ceiling | Timeout |
 | --- | --- | ---: | ---: |
-| Q25/G3/Q38/G4 PG, rating and BB | none; explicitly off for Q38/G4 | 512 | backend profile |
-| Q25/G3/Q38/G4 direct/indirect/prompt BI | none; explicitly off for Q38/G4 | 128 | backend profile |
-| D32 PG and BI | native DeepSeek | 16,384 | 7,200 s |
-| O120 PG and BI | Harmony medium | 16,384 | 7,200 s |
-| V4 PG and BI | Aqueduct high | 32,000 | 3,600 s |
+| Q25/G3/Q38/G4 PG, rating and ID | none; explicitly off for Q38/G4 | 512 | backend profile |
+| Q25/G3/Q38/G4 direct/description/prompt TG | none; explicitly off for Q38/G4 | 128 | backend profile |
+| D32 PG and TG | native DeepSeek | 16,384 | 7,200 s |
+| O120 PG and TG | Harmony medium | 16,384 | 7,200 s |
+| V4 PG and TG | Aqueduct high | 32,000 | 3,600 s |
 | both fixed Q38 image verifiers | off; temperature 0, top-p 1 | 512 | 1,800 s |
 
 The primary, style and illustratability matrices keep Q38/G4 thinking off. In
 the separate thinking supplement, Q38 and G4 use native thinking whenever they
-occupy PG or BI; Q25 and G3 are unchanged and both Q38 image verifiers remain
+occupy PG or TG; Q25 and G3 are unchanged and both Q38 image verifiers remain
 thinking-off.
 Q38 uses the `deepseek` reasoning format and G4 uses `auto`, with no explicit
 thinking budget, a 16,384-token output ceiling and a 7,200-second timeout.
@@ -281,9 +339,14 @@ invalid responses, timeouts and exhausted retries score 0 and remain in that
 denominator. Each cause is also reported separately.
 
 The supporting `prediction_only_strict_accuracy` is exact matches divided by
-available predictions, regardless of verification. Conditional accepted-subset
-tables are labelled by image-verification policy and never replace the primary
-denominator. An empty denominator is reported as `n/a`. Count-based tables cover
+available predictions, regardless of verification. The existing count-based
+`verifier_accepted_strict_accuracy` divides primary successes by blind-strict
+image passes on image-dependent routes, not by the intersection of prompt and
+image passes. The prompt gate remains required in its numerator. For the prompt
+route, the denominator instead counts prompt-check passes. This diagnostic is
+distinct from the common-valid-input comparison below, which requires both
+gates on the shared image inputs. Neither replaces the primary denominator.
+An empty denominator is reported as `n/a`. Count-based tables cover
 all configured main and supplementary matrices, overall, by condition and by
 domain, with planned, produced and accepted counts. Prediction coverage,
 policy-specific acceptance, explicit rejections, missing verifier decisions,
@@ -336,9 +399,14 @@ diagnostic, not calibrated confidence and not a cross-model ranking.
 
 `notebooks/final_study.ipynb` takes `DIRECT_JOB`, `INDIRECT_JOB`, `AQUEDUCT_JOB`,
 `THINKING_JOB`, `ILLUSTRATABLE_JOB`, `PROMPT_BASELINE_JOB` and `STYLE_REPORT_DIR`.
-All six completed jobs and the validated style export are required. It reports:
+Use either `AQUEDUCT_JOB` or both `AQUEDUCT_INDEPENDENT_JOB` and
+`AQUEDUCT_COMPLETION_JOB`, leaving the unused alternative unset.
+Six completed reconstruction jobs, or seven with the split, and the validated
+style export are required. The analysis checks exact condition coverage,
+compatible settings and matching source artifacts before joining the indirect
+inputs. It reports:
 
-- direct 4 x 4 accuracy and predeclared PG, BI and same-minus-mixed contrasts;
+- direct 4 x 4 accuracy and predeclared PG, TG and same-minus-mixed contrasts;
 - complete indirect 3 x 4 x 3 accuracy and local/hosted role contrasts;
 - paired direct versus description-mediated routes on the four diagonal direct
   conditions;
@@ -346,7 +414,7 @@ All six completed jobs and the validated style export are required. It reports:
 - a compact imported four-style overview and descriptive centrality summary;
   complete matrices and effects remain in the sole full style report;
 - native-minus-off matrices and paired effects for all 16 cells, the 12 changed
-  cells and the PG-only, BI-only and both-role groups (four cells each);
+  cells and the PG-only, TG-only and both-role groups (four cells each);
 - domain subgroups for songs, movies and bands;
 - title-length distributions, domain-wise distributions of the four-model mean
   illustratability rating, and exploratory model-specific PG associations;
@@ -360,7 +428,7 @@ reported separately. Model-specific correlations and candidate selection are
 unchanged.
 
 Thinking role groups contain different model pairs and do not identify a
-within-pair PG-by-BI thinking interaction. Accuracy heatmaps share a 0--100%
+within-pair PG-by-TG thinking interaction. Accuracy heatmaps share a 0--100%
 scale; difference heatmaps share a symmetric -100 to +100 pp scale. Effect plots
 display estimates and the calculated pointwise intervals. Each figure is
 displayed inline and exported as a 300-dpi PNG and vector PDF, with fixed
@@ -373,12 +441,12 @@ estimators are implemented in `analysis/statistics.py`.
 
 RQ1 compares selected direct Qwen/Gemma configurations through three
 aspects: earlier/later configurations within each family, families within each
-release cohort, and same-model versus crossed PG/BI assignments within the four
-planned model-pair comparisons. PG and BI differences are reported separately.
+release cohort, and same-model versus crossed PG/TG assignments within the four
+planned model-pair comparisons. PG and TG differences are reported separately.
 The pairing contrasts describe interaction on end-to-end accuracy, not a
 mechanism of semantic preservation. Full-matrix relation-group means remain
 descriptive. The analysis does not include a pooled same-family contrast.
-RQ2 compares PG, BB and BI choices on the indirect route. RQ3 compares both
+RQ2 compares PG, ID and TG choices on the indirect route. RQ3 compares both
 routes on identical images. These three primary research questions address
 model configuration and reconstruction route.
 
@@ -395,9 +463,9 @@ supplementary jobs describes experimental conditions, not question priority.
 ## SQ1: prompt reconstruction and three-way comparison
 
 SQ1 is an explicitly added secondary comparison, not a retrospectively
-predeclared original experiment. It uses Q25/Q38/G3/G4 in all 4x4 PG/BI cells,
+predeclared original experiment. It uses Q25/Q38/G3/G4 in all 4x4 PG/TG cells,
 the same 90 titles, prompt seeds `1000`, `1001`, thinking off and the matching
-direct BI parameters (including seed `3003`). Its 180 prompt predictions per
+direct TG parameters (including seed `3003`). Its 180 prompt predictions per
 cell total 2,880 new model calls. Prompt generation and all image-related work
 are inherited. The 720 prompt predictions in the four diagonals are a subset
 of these 2,880, compared with 1,440 existing direct and 1,440 existing indirect
@@ -435,14 +503,113 @@ the complete four-style evidence, method IDs, file hashes and provenance;
 `STYLE_REPORT_DIR` imports only a validated compact summary into the final report.
 Missing or inconsistent exports fail explicitly.
 
+For the style notebook only, `ANALYSIS_METADATA_ONLY=1` permits an analysis copy
+without local image files. It still requires complete job/run databases and
+snapshots, including WAL contents when present, and retains all saved predictions
+and decisions. The manifest records the omitted local image-file check.
+The default `0` checks image-file existence. This option does not rerun verification,
+remove its gates or provide manual image assessment. Final-study analysis and
+execution-time inheritance retain their normal image-file requirements.
+
+An interim thesis analysis may run the existing independent Core and SQ1
+functions on complete metadata copies with `require_image_files=False`,
+recording that choice and the exact source jobs. This skips only local pixel-file
+existence checks, not saved decisions, coverage or paired-source checks. It is
+not a complete execution of the final notebook and does not establish visual
+inspection of omitted images. Outstanding experiment groups remain unreported.
+
 ## Protocol validation and stability
 
-The two image-verification policies are assessed on the same complete 168-image
-development census; prompt decisions are deterministic and require no model.
-Sketch and comic manipulations are each checked in all 48 generated prompt
-prefixes and a fixed 24-image sample. The procedure is recorded in
-[`../../../manual_evaluation/README.md`](../../../manual_evaluation/README.md).
-Development accuracy is not a study result and does not tune this protocol.
+The completed single-assessor audit describes prompt-title usage and tests
+application of the two existing image policies. Its CSV contains 360 prompt/image pairs
+from unrestricted Direct Core job
+`20260903T230744Z_final-direct-core_faa7afcb`: all 90 main-study titles
+(30 per domain) from each of the four PG roots Q25/Q38/G3/G4, using prompt seed
+`1000` and image seed `8566257`. These are the first configured seeds, not a
+numerical-minimum rule. Each source image appears once, without TG-condition
+duplicates. The mechanical selection is fixed before human labels and is
+independent of stored verifier decisions and reconstruction outcomes. This
+assessment protocol was defined after generation and the style report, not
+preregistered as part of their execution.
+
+The single portable CSV contains these columns, in order:
+
+```text
+run_id,image_id,title,prompt_text,prompt_title_use,flag_strict,flag_title_aware,notes
+```
+
+The exact source job above and its run-local image IDs identify the original
+images and stored prompts without depending on a localhost URL. The full stored
+prompt is included for contextual review. Human fields were prepared blank.
+Stored verifier decisions are
+excluded from the CSV and read directly from the source job's SQLite databases.
+
+`prompt_title_use` concerns the complete reference-title expression, ignoring
+case, spacing and typography but not inferring it from partial words, synonyms
+or symbols. Use `0` when that expression is absent, `n` when every
+occurrence is normal descriptive language, and `e` when any occurrence
+names the title, entity or answer, or specifies it as writing to display.
+An explicit occurrence takes precedence when both uses appear. This contextual
+judgement describes lexical matches, not the technical reliability of phrase
+detection or which rule should be preferred. A separate label for requests to render any readable writing
+is not collected. This does not imply that such requests are absent or correct.
+These contextual labels do not change the literal-title gate.
+
+`flag_strict` and `flag_title_aware` use `1` for rejection and `0` for allowance
+under the existing image policies. Strict includes readable words, brands,
+captions, watermarks and meaningful numbers. A single character counts only as
+a clear label, logo or identifier. Illegible marks and pseudo-text do not qualify.
+Title-aware rejection requires the complete
+reference title as readable writing. Individual title words or a partial title
+alone do not qualify, and depicted objects cannot supply missing written words.
+Ambiguous readability follows their existing
+pass rule and receives `0`. Blank human fields mean unreviewed or otherwise
+unresolved, not a negative label. Other unresolved cases retain a blank and a
+note until clarified. Each of the three human fields requires an explicit label
+before final summarization (1,080 labels). Michael Hagmann completed the audit
+on 2026-09-11. He viewed images alongside saved verifier decisions and title
+predictions on the website and discussed selected cases with AI assistance.
+The assessment was neither blinded nor wholly unassisted. The Mastodon prompt
+category was corrected from `0` to `n` with his explicit confirmation before
+aggregation. The single assessor's labels are a descriptive reference, not
+infallible ground truth or inter-rater agreement.
+
+The analysis separates contextual prompt categories from image-policy agreement.
+For each image policy, it reports agreement, false accepts, false rejections,
+and missing or invalid decisions. Missing and invalid decisions never count
+as agreement and remain separately visible in the full denominator.
+The audit does not replace persisted decisions, relabel generated outputs
+or alter reconstruction scores.
+
+This is a bounded audit of the unrestricted four-PG baseline at one seed pair,
+not validation of other styles, indirect-only PG models or remaining seeds.
+All 1,080 labels and all saved decisions are complete and valid. Strict agrees
+in 343/360 cases (95.3%), with five false accepts and twelve false rejections.
+Title-aware agrees in 355/360 cases (98.6%), with no observed false accepts and
+five false rejections. The assessor rejects 56 Strict images but only six
+Title-aware images. The different criteria and low Title-aware rejection count
+must accompany interpretation of overall agreement. No inter-rater reliability
+or general text-recognition performance is claimed.
+
+Prompt categories are 344 absent, eleven normal descriptive uses and five
+explicit references. The saved lexical check passes all absent cases and flags
+all sixteen occurrences. These context counts are not a prompt-verifier
+confusion matrix and do not define a new gate or a policy preference.
+The labels are in
+[`verifier_assessment.csv`](../../../manual_evaluation/verifier_assessment.csv).
+[`evaluate_verifier.py`](../../../scripts/evaluate_verifier.py) reproduces the
+counts directly from those labels and the source job, without image files or
+model calls. Agreement is `(both accept + both reject) / 360`.
+The [assessment README](../../../manual_evaluation/README.md) provides the
+source-job identity, label key and calculation command.
+
+The operational prompt check remains deterministic and requires no model.
+Contextual human judgement does not replace that check. The style comparison
+does not include a separate manual visual-adherence score or an assessment of
+development prompt prefixes. Consequently it measures reconstruction under
+the requested style instructions, not an effect conditional on verified
+compliance with a rendered style. Development accuracy is not a study result
+and does not tune this protocol.
 
 In a fixed-protocol study job, isolated terminal model failures remain
 zero-valued observations and do not trigger parameter changes. A method change

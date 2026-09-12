@@ -1,69 +1,28 @@
-# Manual validation protocol
+# Manual verifier assessment
 
-Use [`manual_checks_template.xlsx`](manual_checks_template.xlsx) with the
-completed development-validation jobs. Work on a copy and keep the blank
-template in Git.
+[`verifier_assessment.csv`](verifier_assessment.csv) was manually assessed by
+Michael Hagmann on 11 September 2026. It covers 360 prompt/image pairs from
+`final_direct_core`, job `20260903T230744Z_final-direct-core_faa7afcb`:
+90 titles from each of four PG models, at prompt/image seeds `1000/8566257`.
+`run_id` + `image_id` identifies each source image. Public job download: not yet published.
+Saved model decisions were visible, and selected cases were discussed with AI assistance.
 
-## Image verifiers: 168 images
+| Label | Meaning |
+| --- | --- |
+| `prompt_title_use` | `0`: complete title absent, `n`: normal descriptive use, `e`: explicit reference or instruction to write the complete title. |
+| `flag_strict` | `1`: readable meaningful writing, `0`: allowed. |
+| `flag_title_aware` | `1`: complete title readable as writing, `0`: allowed. Partial titles alone do not qualify. |
 
-This is the complete unrestricted development-image census: seven PG models,
-six titles and four seed combinations.
+Blank means unreviewed, not `0`. Keep IDs, titles and prompt texts unchanged.
+The [study protocol](../configs/jobs/final_study/STUDY_DESIGN.md#protocol-validation-and-stability)
+defines the full rubric and scope.
 
-1. Open each image listed in `Verifier_168`.
-2. Without seeing either stored verifier decision, enter
-   `manual_strict_accept` using the exact rule in
-   `prompts/verification/json_v3.yaml` and `manual_title_aware_accept` using
-   `prompts/verification/title_aware_json_v1.yaml`.
-3. Classify text as `none`, `ambiguous_or_pseudo` or `clear_meaningful`.
-4. Finish both manual labels before entering `strict_verifier_accept` and
-   `title_aware_verifier_accept` as `yes`, `no` or `invalid`.
-5. Review agreement, false accepts, false rejects and invalid decisions for
-   each policy in `Summary`.
+[`evaluate_verifier.py`](../scripts/evaluate_verifier.py) compares these labels
+with the job's saved decisions. Agreement is `(both accept + both reject) / 360`.
+Prompt categories are counted separately. Run from the repository root:
 
-The strict policy rejects any unambiguously readable meaningful writing. The
-title-aware policy rejects only readable writing that communicates the supplied
-reference title; unrelated writing is allowed. Invalid verifier responses are
-incorrect decisions and are also counted separately. Reconstruction accuracy
-must not influence these labels.
+```bash
+python scripts/evaluate_verifier.py --job <completed-Core-job-directory>
+```
 
-## Sketch: prompt and image checks
-
-First inspect all 48 root PG outputs from the Sketch development-validation
-job. Every prompt must start with the literal prefix in
-`prompts/prompt_generation/visual_single_sketch_v2.yaml`. Record any exception
-in the archived evaluation notes.
-
-Then complete `Style_24`: two deterministic images per PG model/domain cell.
-Enter:
-
-- `style_adherent`: follows the sparse black-on-white freehand-outline rule;
-- `manual_accept`: passes the independent text verifier rule;
-- a note only when useful.
-
-Style adherence is separate from title correctness. The sketch condition is
-interpretable as fixed-style only when this manipulation check supports
-adherence.
-
-## Comic: prompt and image checks
-
-Inspect all 48 root PG outputs from the Comic development-validation job. Every
-prompt must start with the literal prefix in
-`prompts/prompt_generation/visual_single_comic_v1.yaml`. Record any exception
-in the archived evaluation notes.
-
-Then complete `Comic_24`: two deterministic images per PG model/domain cell.
-Enter:
-
-- `style_adherent`: recognizably follows the broad comic-or-cartoon rule;
-- `manual_accept`: passes the independent text verifier rule;
-- a note only when useful.
-
-The concrete comic execution is intentionally unrestricted. The check concerns
-the requested comic/cartoon style and readable-text leakage, not title accuracy.
-
-## Archive
-
-Keep the filled workbook, both prefix-check notes, relevant development job
-directories, executed notebook HTML/PNGs and code revision together. No Python
-summarization script is required; the workbook contains fixed rows, dropdowns
-and formulas.
+The script only prints results. It does not change labels, jobs or scoring rules.

@@ -13,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 
 from semantic_roundtrip import evaluation
 from semantic_roundtrip.analysis.loader import load_job
@@ -20,7 +21,7 @@ from semantic_roundtrip.analysis.statistics import (
     aggregate_titles,
     paired_stratified_bootstrap,
 )
-from semantic_roundtrip.config_resolution import load_effective_config
+from semantic_roundtrip.config_resolution import get_stage_config, load_effective_config
 from semantic_roundtrip.evaluation import (
     EXACT_MATCH_METHOD,
     NORMALIZED_EXACT_METHOD,
@@ -28,12 +29,15 @@ from semantic_roundtrip.evaluation import (
     STRICT_IMAGE_VERIFICATION_METHOD,
     TITLE_AWARE_IMAGE_VERIFICATION_METHOD,
 )
+from semantic_roundtrip.inheritance.files import native_path
+from semantic_roundtrip.inheritance.source import resolve_stage_provenance
 from semantic_roundtrip.job import JOB_SNAPSHOT_FILENAME, load_job_snapshot
 from semantic_roundtrip.persistence.job.database import (
     read_job_entries,
     read_job_record,
 )
 from semantic_roundtrip.persistence.run.config_snapshot import EFFECTIVE_CONFIG_FILENAME
+from semantic_roundtrip.persistence.run.schema import connect_run_database
 
 QG = ["q25", "g3", "q38", "g4"]
 LOCAL = ["d32", "o120"]
@@ -410,12 +414,371 @@ def load_direct_supplement(path):
     return job, observations, titles[titles.route.eq("direct")]
 
 
-def load_style_jobs(paths):
+def load_indirect_study(
+    local_path, *, aqueduct_path=None, independent_path=None, completion_path=None
+):
+    """Validate and load exactly 16+20 or 16+8+12 indirect study conditions.
+
+    All jobs, observations and diagnostics are retained. Source matching uses
+    frozen aliases/entry names and Run IDs, so relocated complete copies work.
+    This bounded check does not select jobs, filter conditions or change scores.
+    """
+    split = bool(independent_path) or bool(completion_path)
+    if bool(aqueduct_path) == split or (
+        split and not all((independent_path, completion_path))
+    ):
+        raise ValueError(
+            "Set AQUEDUCT_JOB alone, or both AQUEDUCT_INDEPENDENT_JOB and "
+            "AQUEDUCT_COMPLETION_JOB; the two modes are mutually exclusive."
+        )
+    paths = {"Indirect": local_path}
+    if split:
+        paths.update(
+            {
+                "Aqueduct independent": independent_path,
+                "Aqueduct completion": completion_path,
+            }
+        )
+    else:
+        paths["Aqueduct"] = aqueduct_path
+    names = {
+        "Indirect": "final_indirect_local",
+        "Aqueduct": "final_aqueduct_v4_extension",
+        "Aqueduct independent": "final_aqueduct_v4_independent",
+        "Aqueduct completion": "final_aqueduct_v4_completion",
+    }
+
+    def condition(pg, bb, bi):
+        return f"indirect_pg_{pg}_bb_{bb}_bi_{bi}"
+
+    local_cells = {condition(pg, bb, bi) for pg in LOCAL for bb in QG for bi in LOCAL}
+    independent_cells = {condition("v4", bb, bi) for bb in QG for bi in LOCAL}
+    completion_cells = {condition(pg, bb, "v4") for pg in TEXT for bb in QG}
+    expected = {
+        "Indirect": local_cells,
+        "Aqueduct": independent_cells | completion_cells,
+        "Aqueduct independent": independent_cells,
+        "Aqueduct completion": completion_cells,
+    }
+    models = {
+        "q25": "qwen2.5-vl-32b-instruct-f16",
+        "g3": "gemma-3-27b-it-f16",
+        "q38": "qwen3.8-27b-bf16",
+        "g4": "gemma-4-31b-it-bf16",
+        "d32": "deepseek-r1-distill-qwen-32b-f16",
+        "o120": "gpt-oss-120b-mxfp4",
+        "v4": "deepseek-v4-flash-284b",
+    }
+    jobs, runs, frames, job_ids = {}, {}, [], set()
+    roster = None
+    signatures, shared_assets = {}, {}
+    for label, path in paths.items():
+        directory = Path(path).expanduser().resolve()
+        record = read_job_record(directory / "job_state.sqlite")
+        snapshot = load_job_snapshot(directory / JOB_SNAPSHOT_FILENAME)
+        if (
+            record.status != "completed"
+            or record.name != names[label]
+            or snapshot.job.name != names[label]
+        ):
+            raise ValueError(
+                f"{label}: requires the matching completed {names[label]} job."
+            )
+        if record.job_id in job_ids:
+            raise ValueError("Indirect study contains duplicate Job IDs.")
+        job_ids.add(record.job_id)
+        if (
+            len(snapshot.entries) != len(expected[label])
+            or {entry.name for entry in snapshot.entries} != expected[label]
+        ):
+            raise ValueError(
+                f"{label}: incomplete, duplicate or unexpected condition matrix."
+            )
+        job = load_job(directory)
+        frame = annotate(job.observations)
+        if set(frame.condition) != expected[label] or set(frame.route) != {
+            "description"
+        }:
+            raise ValueError(
+                f"{label}: unexpected conditions or reconstruction routes."
+            )
+        keys = [
+            "condition",
+            "dataset_id",
+            "domain",
+            "item_key",
+            "prompt_seed",
+            "image_seed",
+        ]
+        if frame.duplicated(keys).any() or len(frame) != 360 * len(expected[label]):
+            raise ValueError(
+                f"{label}: incomplete or duplicate planned observation grid."
+            )
+        for configured in snapshot.entries:
+            rows = frame[frame.condition.eq(configured.name)]
+            if rows.run_id.nunique() != 1 or len(rows) != 360:
+                raise ValueError(f"{configured.name}: requires one complete child run.")
+            run_id = rows.run_id.iloc[0]
+            if run_id in {run["id"] for run in runs.values()}:
+                raise ValueError("Indirect study contains duplicate Run IDs.")
+            run_directory = Path(rows.run_directory.iloc[0])
+            config = load_effective_config(run_directory / EFFECTIVE_CONFIG_FILENAME)
+            if config.run.name != configured.name:
+                raise ValueError("Indirect study child and condition names differ.")
+            current_roster = sorted(
+                (item.id, item.domain, item.title) for item in config.dataset.items
+            )
+            domain_counts = (
+                pd.Series([item.domain for item in config.dataset.items])
+                .value_counts()
+                .to_dict()
+            )
+            if config.dataset.dataset_id != "final_titles_v1" or domain_counts != {
+                "songs": 30,
+                "movies": 30,
+                "bands": 30,
+            }:
+                raise ValueError(
+                    "Indirect study requires the ninety-title main dataset."
+                )
+            if roster is not None and current_roster != roster:
+                raise ValueError("Indirect study title/domain rosters differ.")
+            roster = current_roster
+            if config.experiment.model_dump() != {
+                "prompt_seeds": [1000, 1001],
+                "image_seeds": [8566257, 2875613],
+                "retry_limit": 1,
+            }:
+                raise ValueError(
+                    "Indirect study prompt/image seeds or retry policy differ."
+                )
+            for column, role in (
+                ("prompt_model", "pg"),
+                ("description_model", "bb"),
+                ("prediction_model", "bi"),
+            ):
+                if not rows[column].eq(rows[role].map(models)).all():
+                    raise ValueError(
+                        f"{configured.name}: unexpected {column} identity."
+                    )
+            if not rows.image_model.eq("stable-diffusion-3.5-large-bf16").all():
+                raise ValueError("Indirect study image generator differs.")
+            if not rows.verifier_model.eq(models["q38"]).all():
+                raise ValueError("Indirect study image verifier differs.")
+            for column in (
+                "prompt_verification_configured",
+                "strict_image_verification_configured",
+                "title_aware_image_verification_configured",
+            ):
+                if not rows[column].all():
+                    raise ValueError(
+                        "Indirect study requires all three verification checks."
+                    )
+            for stage in (
+                "illustratability_rating",
+                "prompt_generation",
+                "image_generation",
+                "verification_prompt",
+                "verification_image",
+                "image_description",
+                "title_guessing_from_description",
+            ):
+                defining = resolve_stage_provenance(config, run_directory, stage)
+                if defining is None:
+                    if (
+                        stage == "illustratability_rating"
+                        and config.inherit is not None
+                    ):
+                        continue
+                    raise ValueError(f"{configured.name}: missing {stage} provenance.")
+                source_config, source_directory = defining
+                stage_config = get_stage_config(source_config, stage)
+                if stage == "verification_prompt":
+                    signature = stage_config.model_dump(mode="json")
+                    model = "deterministic"
+                    assets = {}
+                else:
+                    backend = source_config.backends[stage_config.backend]
+                    settings = {
+                        key: value
+                        for key, value in backend.settings.items()
+                        if key
+                        not in {"endpoint", "base_url", "api_key_env", "workflow_path"}
+                    }
+                    model = settings.get("model_id")
+                    role = {
+                        "illustratability_rating": "pg",
+                        "prompt_generation": "pg",
+                        "image_description": "bb",
+                        "title_guessing_from_description": "bi",
+                    }.get(stage)
+                    expected_model = (
+                        models[rows[role].iloc[0]]
+                        if role
+                        else models["q38"]
+                        if stage == "verification_image"
+                        else "stable-diffusion-3.5-large-bf16"
+                    )
+                    if model != expected_model:
+                        raise ValueError(
+                            f"{configured.name}: {stage} snapshot model differs."
+                        )
+                    signature = {
+                        "adapter": backend.adapter,
+                        "settings": settings,
+                        "parameters": stage_config.parameters,
+                    }
+                    manifest = json.loads(
+                        native_path(source_directory / "manifest.json").read_text(
+                            encoding="utf-8"
+                        )
+                    )
+                    assets = {}
+                    for kind in ("prompts", "workflows"):
+                        for key, relative in (
+                            manifest["artifacts"].get(kind, {}).items()
+                        ):
+                            if key == stage or (
+                                stage == "verification_image"
+                                and key.startswith("verification_image_")
+                            ):
+                                asset = (source_directory / relative).resolve()
+                                asset.relative_to(source_directory.resolve())
+                                assets[key] = yaml.safe_load(
+                                    native_path(asset).read_text(encoding="utf-8")
+                                )
+                    if not assets:
+                        raise ValueError(
+                            f"{configured.name}: missing frozen {stage} assets."
+                        )
+                    if stage == "verification_image":
+                        signature["policies"] = sorted(assets)
+                fingerprint = json.dumps(signature, sort_keys=True, default=str)
+                key = (stage, model)
+                if key in signatures and signatures[key] != fingerprint:
+                    raise ValueError(f"Indirect study {stage}/{model} settings differ.")
+                signatures[key] = fingerprint
+                asset_fingerprint = json.dumps(assets, sort_keys=True)
+                if stage in shared_assets and shared_assets[stage] != asset_fingerprint:
+                    raise ValueError(
+                        f"Indirect study {stage} prompt/workflow assets differ."
+                    )
+                shared_assets[stage] = asset_fingerprint
+            runs[configured.name] = {
+                "id": run_id,
+                "config": config,
+                "entry": configured,
+                "rows": rows,
+                "label": label,
+            }
+            connection = connect_run_database(
+                run_directory / "pipeline_state.sqlite", read_only=True
+            )
+            try:
+                descriptions = connection.execute(
+                    "SELECT * FROM image_descriptions"
+                ).fetchall()
+            finally:
+                connection.close()
+            image_keys = rows.set_index("image_id")[
+                ["dataset_id", "domain", "item_key", "prompt_seed", "image_seed"]
+            ]
+            runs[configured.name]["description_origins"] = {
+                tuple(image_keys.loc[item["image_id"]]): (
+                    item["origin_run_id"] or run_id,
+                    item["origin_description_id"] or item["description_id"],
+                )
+                for item in descriptions
+            }
+        jobs[label] = job
+        frames.append(frame)
+    # Check every immediate source, including roots and the internal reuse chain.
+    pairing_keys = ["dataset_id", "domain", "item_key", "prompt_seed", "image_seed"]
+    copied = [
+        "expected_title",
+        "prompt_text",
+        "origin_prompt_run_id",
+        "origin_prompt_id",
+        "origin_image_run_id",
+        "origin_image_id",
+        "prompt_verification_passed",
+        "prompt_verification_method",
+        "strict_image_verification_passed",
+        "strict_image_verification_method",
+        "title_aware_image_verification_passed",
+        "title_aware_image_verification_method",
+    ]
+    for name, run in runs.items():
+        row = run["rows"].iloc[0]
+        pg, bb, bi = row.pg, row.bb, row.bi
+        source = (
+            condition(pg, bb, "d32")
+            if bi != "d32"
+            else condition(pg, "q25", "d32")
+            if bb != "q25"
+            else None
+        )
+        inherited = run["config"].inherit
+        entry_inherit = run["entry"].inherit
+        if source is None:
+            if inherited is not None or entry_inherit is not None:
+                raise ValueError(f"{name}: expected an independent source run.")
+            continue
+        stages = {"verification_prompt", "verification_image"}
+        if bi != "d32":
+            stages.add("image_description")
+        source_run = runs[source]
+        alias = None
+        if pg in LOCAL and bi == "v4":
+            alias = "local_indirect"
+        elif split and pg == "v4" and bi == "v4":
+            alias = "v4_independent"
+        kind = "from_job_entry" if alias else "from_entry"
+        if (
+            inherited is None
+            or entry_inherit is None
+            or inherited.source_kind != kind
+            or inherited.source_run_id != source_run["id"]
+            or inherited.source_entry != source
+            or inherited.source_job != alias
+            or set(inherited.stages) != stages
+            or set(entry_inherit.stages) != stages
+        ):
+            raise ValueError(
+                f"{name}: source binding does not match the supplied {source} run."
+            )
+        reference = entry_inherit.from_job_entry
+        if (
+            alias
+            and (
+                reference is None or reference.job != alias or reference.entry != source
+            )
+        ) or (not alias and entry_inherit.from_entry != source):
+            raise ValueError(f"{name}: frozen source alias/entry differs.")
+        columns = [*pairing_keys, *copied]
+        if "image_description" in stages:
+            columns.append("image_description")
+            if run["description_origins"] != source_run["description_origins"]:
+                raise ValueError(f"{name}: inherited description origins differ.")
+        left = run["rows"][columns].sort_values(pairing_keys).reset_index(drop=True)
+        right = (
+            source_run["rows"][columns].sort_values(pairing_keys).reset_index(drop=True)
+        )
+        try:
+            pd.testing.assert_frame_equal(left, right, check_dtype=False)
+        except AssertionError as error:
+            raise ValueError(
+                f"{name}: inherited prompt/image/description origins or values differ."
+            ) from error
+    return jobs, pd.concat(frames, ignore_index=True), paths
+
+
+def load_style_jobs(paths, *, require_image_files=True):
     """Load four complete direct 4x4 style jobs on the shared title/seed grid."""
     jobs, observations, titles = {}, {}, {}
     entries = [f"direct_pg_{pg}_bi_{bi}" for pg in QG for bi in QG]
     for style, path in paths.items():
-        job = load_job(path, entries=entries)
+        job = load_job(path, entries=entries, require_image_files=require_image_files)
         frame = annotate(job.observations)
         frame = frame[frame.route.eq("direct")].assign(style=style)
         if set(frame.prompt_seed) != {1000, 1001} or set(frame.image_seed) != {

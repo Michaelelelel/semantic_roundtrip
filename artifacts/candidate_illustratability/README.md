@@ -7,28 +7,29 @@ No images or title reconstructions are involved.
 
 ## Published inputs and outputs
 
-Use the completed rating job in [`current/jobs/`](current/jobs/) with the
+Use the completed [rating job](20260902T162529Z_candidate-illustratability_a1cfe5f2/) with the
 application, distribution notebook and stage inheritance. Its report is in
-[`current/report/`](current/report/). Use `current/jobs/` as the website discovery
-root; each Job/Run ID must occur only once within that root.
+[`report/`](report/). Use `artifacts/candidate_illustratability/` as the website
+discovery root; each Job/Run ID must occur only once within that root.
+The stored outputs were generated on 2 September 2026 and converted to the
+current storage format on 6 September 2026 without changing the outputs.
 
 The supplied 90-title supplementary dataset and six development titles are in
 `configs/datasets/`. The selector uses the stored four-model ratings, not new
-model calls or reconstruction outcomes. `current/validation.json` records
-checks of the rating data, title selection and report. Raw responses, recorded
-settings, source identifiers and timestamps remain attached to the results.
+model calls or reconstruction outcomes. Raw responses, recorded settings,
+source identifiers and timestamps remain attached to the results.
 
 ## Inspect the evidence
 
-- [Rating job](current/jobs/20260902T162529Z_candidate-illustratability_a1cfe5f2/): SQLite
+- [Rating job](20260902T162529Z_candidate-illustratability_a1cfe5f2/): SQLite
   databases with raw responses, resolved configurations and prompt snapshots.
-- [Distribution](current/report/candidate_pool_distribution.png) and
-  [vector PDF](current/report/candidate_pool_distribution.pdf).
-- [HTML report](current/report/candidate_distribution.html) and
-  [executed notebook](current/report/candidate_distribution.executed.ipynb).
-- [Per-title scores](current/report/candidate_pool_scores.csv): all four
+- [Distribution](report/candidate_pool_distribution.png) and
+  [vector PDF](report/candidate_pool_distribution.pdf).
+- [HTML report](report/candidate_distribution.html) and
+  [executed notebook](report/candidate_distribution.executed.ipynb).
+- [Per-title scores](report/candidate_pool_scores.csv): all four
   model ratings and their equally weighted mean, not only the selected titles.
-- [Analysis manifest](current/report/manifest.json): source IDs, input hashes,
+- [Analysis manifest](report/manifest.json): source IDs, input hashes,
   package versions and analysis settings. Absolute paths record the author's
   execution environment; use the portable commands below on another machine.
 
@@ -70,7 +71,7 @@ New outputs go to `notebooks/results/`, leaving this archived report unchanged.
 
 ```bash
 uv sync --frozen --extra analysis
-export RATING_JOB="$PWD/artifacts/candidate_illustratability/current/jobs/20260902T162529Z_candidate-illustratability_a1cfe5f2"
+export RATING_JOB="$PWD/artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2"
 export OUTPUT_DIR="$PWD/notebooks/results/candidate_illustratability"
 
 uv run jupyter nbconvert --to notebook --execute notebooks/illustratability_distribution.ipynb \
@@ -91,7 +92,7 @@ to produce byte-identical responses across deployments, even at temperature 0.
 
 SQLite integrity checks pass for all five databases. All four child runs are
 complete, and their title rosters match the supplied eligible-candidate CSV.
-The validation record checks all 3,600 ratings, all 900 candidates and the exact
+Checks confirmed all 3,600 ratings, all 900 candidates and the exact
 90-title final and six-title development selections. The report identifies its
 input files, analysis code and software versions; it is an analysis of stored
 responses, not evidence of an additional rating run. Numerical results can be
@@ -104,9 +105,9 @@ preserves archive bytes across Windows and Linux checkouts. SQLite may
 recreate ignored temporary `-shm`/`-wal` files during read-only analysis; these
 are not part of the published evidence.
 
-From the repository root, check the published job, report and validation record:
+From the repository root, check the published job and report:
 
 ```bash
-cd artifacts/candidate_illustratability/current
+cd artifacts/candidate_illustratability
 shasum -a 256 -c SHA256SUMS
 ```

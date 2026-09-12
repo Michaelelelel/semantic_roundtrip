@@ -1,0 +1,61 @@
+---
+config:
+  theme: base
+  fontFamily: Arial, sans-serif
+  flowchart:
+    curve: linear
+    nodeSpacing: 18
+    rankSpacing: 8
+    htmlLabels: false
+    padding: 8
+    wrappingWidth: 600
+    subGraphTitleMargin:
+      top: 4
+      bottom: 12
+  themeVariables:
+    fontFamily: Arial, sans-serif
+    fontSize: 22px
+    primaryColor: '#edf3f8'
+    primaryTextColor: '#152c40'
+    primaryBorderColor: '#526b80'
+    lineColor: '#52616c'
+    clusterBkg: '#ffffff'
+    clusterBorder: '#c2ccd4'
+    edgeLabelBackground: '#ffffff'
+---
+flowchart TB
+    %% Conceptual call paths, not a Docker deployment or singleton-object diagram.
+    subgraph inference["A. Model-call interfaces"]
+        direction LR
+        chatstage["Text / vision stage<br/>PG, ID, TG,<br/>image checks, rating"]
+        chatadapter["Role-specific<br/>chat adapter"]
+        client["Shared<br/>OpenAI-compatible<br/>chat client"]
+        local["Local<br/>llama.cpp"]
+        external["External compatible<br/>endpoint"]
+        ig["IG stage"]
+        imageadapter["ComfyUI<br/>adapter"]
+        comfy["ComfyUI<br/>workflow API"]
+
+        chatstage --> chatadapter --> client
+        client -->|or| local
+        client -->|or| external
+        ig --> imageadapter
+        imageadapter ---> comfy
+    end
+
+    subgraph lifecycle["B. Runtime control, separate from inference"]
+        direction TB
+        session["Runner runtime session<br/>Activate, reuse or release the selected target"]
+        localcontrol["Local llama.cpp<br/>Load and unload models<br/>through the router API"]
+        comfycontrol["ComfyUI<br/>Workflow loads models<br/>Runner requests release"]
+        externalcontrol["External endpoint<br/>No local model management<br/>by the runner"]
+        session --> localcontrol
+        session --> comfycontrol
+        session --> externalcontrol
+    end
+
+    inference ~~~ lifecycle
+    classDef service fill:#ffffff,stroke:#526b80,color:#152c40;
+    classDef control fill:#f5f5f5,stroke:#68737b,color:#253541;
+    class local,external,comfy service;
+    class session,localcontrol,comfycontrol,externalcontrol control;
