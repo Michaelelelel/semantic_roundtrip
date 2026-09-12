@@ -14,6 +14,8 @@ services:
       - --no-models-autoload
       - --host
       - 0.0.0.0
+      - --timeout
+      - "9000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
@@ -43,6 +45,8 @@ services:
       - --no-models-autoload
       - --host
       - 0.0.0.0
+      - --timeout
+      - "9000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s

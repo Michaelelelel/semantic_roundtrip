@@ -308,14 +308,32 @@ def _parse_streaming_response(
     content_parts: list[str] = []
     request_id: str | None = None
     finish_reason: str | None = None
+    done = False
 
-    for line in raw_response.splitlines():
-        if not line.startswith("data: "):
+    # A blank line terminates an SSE event. EOF alone must not complete one.
+    normalized = raw_response.removeprefix("\ufeff").replace("\r\n", "\n")
+    blocks = normalized.replace("\r", "\n").split("\n\n")
+    for block_index, block in enumerate(blocks):
+        data_lines: list[str] = []
+        for line in block.split("\n"):
+            if not line or line.startswith(":"):
+                continue
+            field, _, value = line.partition(":")
+            if field == "data":
+                data_lines.append(value.removeprefix(" "))
+        if not data_lines:
             continue
+        if block_index == len(blocks) - 1:
+            raise ValueError("unterminated streaming event")
+        if done:
+            raise ValueError("streaming data follows [DONE]")
 
-        event_text = line.removeprefix("data: ")
+        event_text = "\n".join(data_lines)
         if event_text == "[DONE]":
-            break
+            if finish_reason is None:
+                raise ValueError("stream ended without a terminal choice")
+            done = True
+            continue
 
         event = json.loads(event_text)
         if not isinstance(event, dict):
@@ -335,7 +353,11 @@ def _parse_streaming_response(
 
         raw_request_id = event.get("id")
         if raw_request_id is not None:
-            request_id = str(raw_request_id)
+            if not isinstance(raw_request_id, str):
+                raise TypeError("streaming request ID is not text")
+            if request_id is not None and request_id != raw_request_id:
+                raise ValueError("streaming request ID changed")
+            request_id = raw_request_id
 
         choices = event.get("choices")
         if not isinstance(choices, list):
@@ -345,9 +367,22 @@ def _parse_streaming_response(
             # that deliberately contains no choice.
             continue
 
-        choice = choices[0]
-        if not isinstance(choice, dict):
-            raise TypeError("streaming choice is not an object")
+        first_choices = []
+        for candidate in choices:
+            if not isinstance(candidate, dict):
+                raise TypeError("streaming choice is not an object")
+            index = candidate.get("index")
+            if type(index) is not int or index < 0:
+                raise TypeError("streaming choice index is not a non-negative integer")
+            if index == 0:
+                first_choices.append(candidate)
+        if not first_choices:
+            continue
+        if len(first_choices) != 1:
+            raise ValueError("duplicate streaming choice zero")
+        if finish_reason is not None:
+            raise ValueError("streaming choice zero follows its terminal event")
+        choice = first_choices[0]
         delta = choice.get("delta")
         if not isinstance(delta, dict):
             raise TypeError("streaming delta is not an object")
@@ -362,7 +397,25 @@ def _parse_streaming_response(
         if raw_finish_reason is not None:
             if not isinstance(raw_finish_reason, str):
                 raise TypeError("streaming finish reason is not text")
+            if raw_finish_reason == "length":
+                raise AdapterError(
+                    f"{error_subject} response was truncated because "
+                    "the token limit was reached.",
+                    raw_response,
+                )
+            if raw_finish_reason != "stop":
+                raise AdapterError(
+                    f"{error_subject} stream ended with unsupported finish reason "
+                    f"'{raw_finish_reason}'.",
+                    raw_response,
+                )
             finish_reason = raw_finish_reason
+
+    if not done:
+        raise AdapterError(
+            f"{error_subject} stream ended without [DONE].",
+            raw_response,
+        )
 
     return ChatCompletion(
         content="".join(content_parts),

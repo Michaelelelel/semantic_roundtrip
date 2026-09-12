@@ -167,6 +167,11 @@ Services start without preloading models. The runner loads/unloads models by
 stage. Once services are healthy, continue with
 [the thesis experiments](EXPERIMENTS.md).
 
+The local llama.cpp routers and model workers use a 9,000-second transport
+timeout, above the longest configured client timeout of 7,200 seconds. Backend
+profiles retain their shorter request timeouts and token limits. Apply changes
+to model-service startup options only while the shared stack is idle.
+
 ## Run storage and reproducibility
 
 The application uses experiment/snapshot format 11, Run DB 12, Job
@@ -284,6 +289,14 @@ sudo docker compose --env-file .env \
 ### Aqueduct smoke
 
 Needs the API key loaded from `.env` in [shell setup](RUNNING.md#once-per-terminal-or-tmux-window).
+
+The V4 prompt smoke and final Independent root use streaming for rating and PG
+to avoid gateway idle timeouts when chunks arrive regularly. TG is unchanged.
+For a rating/PG-only check, use `run start --config
+configs/experiments/final_study/smoke/aqueduct_v4_prompt_smoke.yaml` instead of
+the full job below. Success requires one rating, one prompt and zero failed
+tasks, not just exit code zero. Console output may wait for the complete response.
+Existing runs retain their snapshot's transport settings when resumed.
 
 ```bash
 sudo --preserve-env=AQUEDUCT_API_KEY docker compose --env-file .env \
