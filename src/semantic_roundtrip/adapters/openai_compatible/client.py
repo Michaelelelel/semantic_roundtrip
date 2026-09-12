@@ -380,12 +380,19 @@ def _parse_streaming_response(
             continue
         if len(first_choices) != 1:
             raise ValueError("duplicate streaming choice zero")
-        if finish_reason is not None:
-            raise ValueError("streaming choice zero follows its terminal event")
         choice = first_choices[0]
         delta = choice.get("delta")
         if not isinstance(delta, dict):
             raise TypeError("streaming delta is not an object")
+        if finish_reason is not None:
+            # Aqueduct may attach usage to an empty choice after the stop event.
+            if (
+                isinstance(event.get("usage"), dict)
+                and not delta
+                and choice.get("finish_reason") is None
+            ):
+                continue
+            raise ValueError("streaming choice zero follows its terminal event")
 
         content = delta.get("content")
         if content is not None:

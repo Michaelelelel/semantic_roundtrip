@@ -303,8 +303,9 @@ This does not extend token budgets or control the external Aqueduct gateway.
 
 The final V4-PG root and its one-title prompt smoke request streaming for rating
 and PG. This transport repair follows observed 600-second gateway timeouts.
-The client requires a terminal `stop` and `[DONE]` before accepting content and
-preserves the raw stream. Prompts, sampling, budgets, retries and scoring are
+The client requires a terminal `stop` and `[DONE]` before accepting content,
+allowing a subsequent token-usage trailer with an empty delta. Fully received
+UTF-8 response bodies are retained. Prompts, sampling, budgets, retries and scoring are
 unchanged. V4 TG remains non-streaming with its existing logprob request.
 Older runs retain their actual settings and errors. Streaming does not solve
 an upstream service that sends no data before the gateway deadline.
