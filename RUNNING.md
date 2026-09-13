@@ -290,14 +290,6 @@ sudo docker compose --env-file .env \
 
 Needs the API key loaded from `.env` in [shell setup](RUNNING.md#once-per-terminal-or-tmux-window).
 
-The V4 prompt smoke and final Independent root use streaming for rating and PG
-to avoid gateway idle timeouts when chunks arrive regularly. TG is unchanged.
-For a rating/PG-only check, use `run start --config
-configs/experiments/final_study/smoke/aqueduct_v4_prompt_smoke.yaml` instead of
-the full job below. Success requires one rating, one prompt and zero failed
-tasks, not just exit code zero. Console output may wait for the complete response.
-Existing runs retain their snapshot's transport settings when resumed.
-
 ```bash
 sudo --preserve-env=AQUEDUCT_API_KEY docker compose --env-file .env \
   -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \

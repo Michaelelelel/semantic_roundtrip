@@ -22,7 +22,6 @@ stages:
     backend: prompt_model
     prompt_profile: prompts/illustratability/rating_v2.yaml
     parameters:
-      stream: true
       temperature: 1.0
       top_p: 0.95
       max_tokens: 32000
@@ -31,7 +30,6 @@ stages:
     backend: prompt_model
     prompt_profile: prompts/prompt_generation/visual_single_v5.yaml
     parameters:
-      stream: true
       temperature: 1.0
       top_p: 0.95
       max_tokens: 32000

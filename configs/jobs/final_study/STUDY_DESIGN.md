@@ -296,19 +296,13 @@ thinking-off.
 Q38 uses the `deepseek` reasoning format and G4 uses `auto`, with no explicit
 thinking budget, a 16,384-token output ceiling and a 7,200-second timeout.
 
-These are client request timeouts, not job-duration limits. The local Docker
-deployment sets the llama.cpp router and worker transport timeouts to 9,000
-seconds so that they do not cut off the client's configured waiting period.
+These are client connection/read timeouts, not hard request or job-duration
+limits. The local Docker deployment sets the llama.cpp router and worker
+transport timeouts to 9,000 seconds, above the longest client timeout of 7,200.
 This does not extend token budgets or control the external Aqueduct gateway.
-
-The final V4-PG root and its one-title prompt smoke request streaming for rating
-and PG. This transport repair follows observed 600-second gateway timeouts.
-The client requires a terminal `stop` and `[DONE]` before accepting content,
-allowing a subsequent token-usage trailer with an empty delta. Fully received
-UTF-8 response bodies are retained. Prompts, sampling, budgets, retries and scoring are
-unchanged. V4 TG remains non-streaming with its existing logprob request.
-Older runs retain their actual settings and errors. Streaming does not solve
-an upstream service that sends no data before the gateway deadline.
+Changes to effective transport limits can affect failure rates; retain existing
+errors and record the deployed settings. Aqueduct requests are non-streaming;
+existing runs retain their saved configurations.
 
 Local reasoning models use a 32,768-token context with context shifting off.
 Reasoning is model-specific; the study does not claim equal test-time compute.
