@@ -8,13 +8,27 @@ description (ID) and Title guessing (TG). The analysis columns `pg`, `bb` and
 `bi` identify PG, ID and TG respectively. Job and run identifiers use these
 same technical keys. Figure labels use the reader-facing role names.
 
-## Study revision and scope (`final_v7`)
+## Study revision and scope (`final_v8`)
 
 The study compares direct image, description-mediated and prompt-based title
 reconstruction. Prompt and image verification are independently executable and
 importable stages. The software supports configurable models and predefined
 reconstruction routes, not arbitrary workflow composition. Run snapshots record
 the settings actually used, and reused outputs retain their source identity.
+
+Revision `final_v8` (2026-09-14) raises the Q38/G4 native-thinking PG/TG output
+ceiling from 16,384 to 32,768 tokens and their local runtime context capacity
+from 32,768 to 65,536. This is a post-diagnostic protocol amendment: one Q38
+case that exhausted 16,384 output tokens produced a final answer with the larger
+limits, but the answer was incorrect. It does not establish general reliability
+or improved accuracy. The shared Q38/G4 runtime presets also provide the larger
+context to non-thinking roles; their generation controls and output ceilings
+remain unchanged. No sampling, thinking-effort, separate thinking-budget, retry,
+prompt, seed, model, dataset, matrix or scoring change is introduced. Earlier
+Thinking attempts and the diagnostic remain separate from the revised condition;
+use a new job, not an edited or resumed old snapshot. Existing baseline results
+and reusable Core inputs remain unchanged. SQ3 compares configured thinking
+conditions, not an isolated thinking toggle or equal test-time compute.
 
 Revision `final_v7` retains the completed fixed 360-pair manual audit (90 titles
 from each of four PG roots), with prompt-use labels `0/n/e` and no separate
@@ -294,7 +308,7 @@ the separate thinking supplement, Q38 and G4 use native thinking whenever they
 occupy PG or TG; Q25 and G3 are unchanged and both Q38 image verifiers remain
 thinking-off.
 Q38 uses the `deepseek` reasoning format and G4 uses `auto`, with no explicit
-thinking budget, a 16,384-token output ceiling and a 7,200-second timeout.
+thinking budget, a 32,768-token output ceiling and a 7,200-second timeout.
 
 These are client connection/read timeouts, not hard request or job-duration
 limits. The local Docker deployment sets the llama.cpp router and worker
@@ -304,7 +318,9 @@ Changes to effective transport limits can affect failure rates; retain existing
 errors and record the deployed settings. Aqueduct requests are non-streaming;
 existing runs retain their saved configurations.
 
-Local reasoning models use a 32,768-token context with context shifting off.
+Local Q38/G4 presets use a 65,536-token context; Q25/G3 and D32/O120 retain
+32,768. Context shifting is off. The Q38/G4 capacity also applies to their
+non-thinking roles, including Q38 verification, without changing those requests.
 Reasoning is model-specific; the study does not claim equal test-time compute.
 A completion stopped by the token ceiling is a technical failure, even if hidden
 reasoning exists.

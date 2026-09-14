@@ -84,7 +84,7 @@ Python dependencies are locked in `uv.lock`. Container images, model revisions
 and model checksums are pinned. Each run snapshot records the configuration
 actually used; editing a configuration never changes an existing run.
 
-The current study protocol is `final_v7`, including the manual-assessment
+The current study protocol is `final_v8`, including the manual-assessment
 procedure. Existing run snapshots keep the revisions under which they were
 created. The application uses experiment/snapshot format 11, Run DB 12,
 Job YAML/snapshot 5, Job DB 4 and manifest 6. Use completed
