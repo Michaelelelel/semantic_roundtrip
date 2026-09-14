@@ -63,7 +63,7 @@ services:
 
   image_runtime:
     image: >-
-      mmartial/comfyui-nvidia-docker:ubuntu24_cuda13.1-dgx-latest@sha256:35329a99d5e3b96afdd7f24b6b2b9ce71cb45552cf60a904787c2528101310ad
+      ${COMFYUI_IMAGE:-mmartial/comfyui-nvidia-docker:ubuntu24_cuda13.1-dgx-latest@sha256:35329a99d5e3b96afdd7f24b6b2b9ce71cb45552cf60a904787c2528101310ad}
     volumes:
       - "${RUNTIME_ROOT:?RUNTIME_ROOT must be set}/comfyui/mnt:/comfy/mnt"
       - "${RUNTIME_ROOT:?RUNTIME_ROOT must be set}/comfyui/base:/basedir"
