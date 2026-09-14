@@ -9,6 +9,7 @@ settings:
   reasoning_format: deepseek
   chat_template_kwargs:
     enable_thinking: true
+    reasoning_effort: low
 
 runtime:
   controller: llama_cpp_router
