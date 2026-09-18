@@ -37,7 +37,7 @@ class PredictionTrace:
 
 @dataclass(frozen=True, slots=True)
 class RouteAccuracy:
-    """Full-denominator strict-title accuracy; image sensitivity when applicable."""
+    """Full-denominator Strict Exact Match, with separate image-policy results."""
 
     correct: int
     title_aware_correct: int | None

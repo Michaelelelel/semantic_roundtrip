@@ -8,7 +8,14 @@ import pandas as pd
 import yaml
 
 from semantic_roundtrip.analysis.loader import load_job
-from semantic_roundtrip.analysis.reporting import QG, annotate, difference, effects
+from semantic_roundtrip.analysis.reporting import (
+    METRIC,
+    QG,
+    SENSITIVITY_METRICS,
+    annotate,
+    difference,
+    effects,
+)
 from semantic_roundtrip.analysis.statistics import (
     aggregate_titles,
     paired_stratified_bootstrap,
@@ -222,7 +229,7 @@ def load_prompt_baseline(path, direct_job_path):
 def prompt_baseline_tables(observations, titles):
     """Full-grid primary/sensitivity comparisons and a labelled accepted-input diagnostic."""
     results = {}
-    metric_names = ["end_to_end_strict_accuracy", "end_to_end_normalized_accuracy"]
+    metric_names = [METRIC, *SENSITIVITY_METRICS]
     scored = titles.assign(condition_route=titles.condition + "__" + titles.route)
     diagonal = scored[scored.pg.eq(scored.bi)]
     absolute = []
@@ -287,14 +294,28 @@ def prompt_baseline_tables(observations, titles):
     results["sq1_cell_effects"] = effects(
         scored, cell_contrasts, condition_column="condition_route"
     )
+    results["sq1_sensitivity_cell_effects"] = pd.concat(
+        [
+            effects(
+                scored, cell_contrasts, condition_column="condition_route", metric=m
+            ).assign(metric=m)
+            for m in SENSITIVITY_METRICS
+        ],
+        ignore_index=True,
+    )
     results["sq1_title_scores"] = titles
     results["sq1_observations"] = observations
     results["sq1_common_valid_inputs"] = common_valid_inputs(observations)
+    results["blind_strict_sq1_common_valid_inputs"] = common_valid_inputs(
+        observations, image_policy="strict"
+    )
     return results
 
 
-def common_valid_inputs(observations):
+def common_valid_inputs(observations, *, image_policy="title_aware"):
     """Descriptive selected-subset means, not a replacement full-denominator endpoint."""
+    if image_policy not in {"title_aware", "strict"}:
+        raise ValueError("Unknown common-valid image policy.")
     rows = []
     prompts = observations[observations.route.eq("prompt")].set_index(PROMPT_KEYS)
     for scope, frame, routes in [
@@ -309,7 +330,7 @@ def common_valid_inputs(observations):
             images = scoped[scoped.route.isin(routes)]
             valid = images[
                 images.prompt_verification_passed.eq(True)
-                & images.strict_image_verification_passed.eq(True)
+                & images[f"{image_policy}_image_verification_passed"].eq(True)
             ].copy()
             valid["score"] = valid.strict_exact_match.fillna(False).astype(int)
             paired = valid.pivot(
@@ -335,6 +356,7 @@ def common_valid_inputs(observations):
                         "scope": scope,
                         "domain": domain,
                         "route": route,
+                        "image_policy": image_policy,
                         "eligible_title_conditions": len(title_means),
                         "eligible_prompts": len(prompt_means),
                         "eligible_images": len(paired),
@@ -373,9 +395,7 @@ def plot_prompt_baseline(titles, tables, output_dir):
         "SQ1: Prompt and image reconstruction, all 16 cells",
     )
     diagonal = titles[titles.pg.eq(titles.bi)]
-    means = 100 * diagonal.groupby(
-        ["pg", "route"]
-    ).end_to_end_strict_accuracy.mean().unstack().reindex(QG)
+    means = 100 * diagonal.groupby(["pg", "route"])[METRIC].mean().unstack().reindex(QG)
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), layout="constrained")
     for route, offset, marker in [
         ("prompt", -0.15, "o"),
@@ -401,7 +421,7 @@ def plot_prompt_baseline(titles, tables, output_dir):
     selected = selected[
         selected.scope.eq("four-diagonal three-route")
         & selected.domain.eq("all")
-        & selected.metric.eq("end_to_end_strict_accuracy")
+        & selected.metric.eq(METRIC)
     ].copy()
     for source, target in [
         ("effect", "estimate"),

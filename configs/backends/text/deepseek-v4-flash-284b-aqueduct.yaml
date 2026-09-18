@@ -6,6 +6,7 @@ settings:
   endpoint: https://aqueduct.ai.datalab.tuwien.ac.at/v1/chat/completions
   model_id: deepseek-v4-flash-284b
   api_key_env: AQUEDUCT_API_KEY
+  requests_per_minute: 25
   request_token_logprobs: true
   include_sampler_parameters: true
   timeout_seconds: 3600

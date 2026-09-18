@@ -10,7 +10,7 @@ from semantic_roundtrip.config import ConfigModel
 
 
 class OpenAICompatibleGenerationSettings(ConfigModel):
-    """Validated generation controls shared by every chat-based stage."""
+    """Generation controls and optional pacing shared by chat-based stages."""
 
     _sampler_field_names: ClassVar[tuple[str, ...]] = (
         "temperature",
@@ -27,6 +27,7 @@ class OpenAICompatibleGenerationSettings(ConfigModel):
         "mirostat",
     )
 
+    requests_per_minute: int | None = Field(default=None, gt=0, strict=True)
     include_sampler_parameters: bool = True
     temperature: float | None = Field(default=0.0, ge=0)
     dynatemp_range: float | None = Field(default=None, ge=0)

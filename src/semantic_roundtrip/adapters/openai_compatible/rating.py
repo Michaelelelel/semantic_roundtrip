@@ -29,6 +29,7 @@ class OpenAICompatibleIllustratabilityRater:
             model_id=settings.model_id,
             timeout_seconds=settings.timeout_seconds,
             api_key_env=settings.api_key_env,
+            requests_per_minute=settings.requests_per_minute,
             error_subject="Illustratability rating",
         )
 

@@ -4,6 +4,8 @@ import base64
 import json
 import mimetypes
 import os
+import time
+from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,6 +14,26 @@ from typing import Any, Literal
 import requests
 
 from semantic_roundtrip.adapters.errors import AdapterError
+
+# Shared by sequential stage clients using the same backend in this process.
+_REQUEST_STARTS: dict[tuple[str, str | None], deque[float]] = {}
+
+
+def _wait_for_request_slot(
+    endpoint: str, api_key_env: str | None, requests_per_minute: int | None
+) -> None:
+    if requests_per_minute is None:
+        return
+    starts = _REQUEST_STARTS.setdefault((endpoint, api_key_env), deque())
+    while True:
+        now = time.monotonic()
+        # One minute plus one second of safety, without fixed-window bursts.
+        while starts and now >= starts[0] + 61:
+            starts.popleft()
+        if len(starts) < requests_per_minute:
+            starts.append(now)
+            return
+        time.sleep(starts[0] + 61 - now)
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,6 +93,7 @@ class OpenAICompatibleChatClient:
         model_id: str,
         timeout_seconds: float,
         api_key_env: str | None = None,
+        requests_per_minute: int | None = None,
         error_subject: str = "OpenAI-compatible chat",
         session: requests.Session | None = None,
     ) -> None:
@@ -78,6 +101,7 @@ class OpenAICompatibleChatClient:
         self._model_id = model_id
         self._timeout_seconds = timeout_seconds
         self._api_key_env = api_key_env
+        self._requests_per_minute = requests_per_minute
         self._error_subject = error_subject
         self._session = session if session is not None else requests.Session()
 
@@ -142,6 +166,9 @@ class OpenAICompatibleChatClient:
                 )
             headers = {"Authorization": f"Bearer {api_key}"}
 
+        _wait_for_request_slot(
+            self._endpoint, self._api_key_env, self._requests_per_minute
+        )
         try:
             response = self._session.post(
                 self._endpoint,
