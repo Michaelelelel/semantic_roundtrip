@@ -9,6 +9,7 @@ import json
 import platform
 from datetime import UTC, datetime
 from importlib.metadata import version
+from itertools import combinations
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +19,8 @@ import yaml
 from semantic_roundtrip import evaluation
 from semantic_roundtrip.analysis.loader import load_job
 from semantic_roundtrip.analysis.statistics import (
+    PRIMARY_METRIC,
+    PRIMARY_NORMALIZED_METRIC,
     aggregate_titles,
     paired_stratified_bootstrap,
 )
@@ -53,12 +56,17 @@ DOMAINS = {
     "movies": ("#D55E00", "s"),
     "bands": ("#009E73", "^"),
 }
-METRIC = "end_to_end_strict_accuracy"
+METRIC = PRIMARY_METRIC
+SENSITIVITY_METRICS = (
+    "end_to_end_strict_accuracy",
+    PRIMARY_NORMALIZED_METRIC,
+    "end_to_end_normalized_accuracy",
+)
 TITLE_KEYS = ["dataset_id", "item_key", "domain", "title_length_group"]
 RATING_KEYS = ["pg", *TITLE_KEYS]
 INTERVAL_COLUMNS = ["estimate", "ci95_low", "ci95_high"]
 STYLE_METRICS = {
-    METRIC: (
+    "end_to_end_strict_accuracy": (
         "Strict image / strict title",
         f"{STRICT_IMAGE_VERIFICATION_METHOD}+{EXACT_MATCH_METHOD}",
         "#0072B2",
@@ -101,18 +109,111 @@ def difference(positive, negative):
     }
 
 
-def effects(frame, contrasts, condition_column="condition"):
+def effects(frame, contrasts, condition_column="condition", *, metric=METRIC):
     """Evaluate contrasts overall and per domain; report estimates and CIs in pp."""
     rows = []
     for domain, subset in [("all", frame), *frame.groupby("domain", sort=True)]:
         for comparison, weights in contrasts.items():
             result = paired_stratified_bootstrap(
-                subset, condition_weights=weights, condition_column=condition_column
+                subset,
+                condition_weights=weights,
+                condition_column=condition_column,
+                metric=metric,
             )
             rows.append({"domain": domain, "comparison": comparison, **result})
     table = pd.DataFrame(rows).rename(columns={"effect": "estimate"})
     table[INTERVAL_COLUMNS] *= 100
     return table
+
+
+def direct_refinement_tables(frame, *, metric=METRIC):
+    """Fixed exploratory Core follow-ups, pooled over the same ninety titles.
+
+    Four TG-minus-PG comparisons form one family. The six pairwise TG marginal
+    differences form a second family. Marginal means average all four PGs.
+    All values are percentages or percentage points, never rank probabilities.
+    """
+    identity = ["dataset_id", "domain", "item_key"]
+    cells = frame[["condition", "pg", "bi"]].drop_duplicates()
+    expected = {(pg, bi) for pg in QG for bi in QG}
+    roster = frame[identity].drop_duplicates()
+    if (
+        set(frame.route) != {"direct"}
+        or len(frame) != 90 * 16
+        or len(cells) != 16
+        or set(zip(cells.pg, cells.bi, strict=True)) != expected
+        or frame.duplicated([*identity, "condition"]).any()
+        or not frame.observations.eq(4).all()
+        or frame[metric].isna().any()
+        or frame.groupby(identity).condition.nunique().ne(16).any()
+        or roster.groupby("domain").size().to_dict()
+        != {"bands": 30, "movies": 30, "songs": 30}
+    ):
+        raise ValueError(
+            "Exploratory Core contrasts require the complete 90-title 4x4 grid."
+        )
+    names = {(row.pg, row.bi): row.condition for row in cells.itertuples()}
+
+    def estimate(weights, family_size=None):
+        result = paired_stratified_bootstrap(
+            frame, condition_weights=weights, metric=metric, family_size=family_size
+        )
+        result["estimate"] = result.pop("effect")
+        for key in (
+            "estimate",
+            "ci95_low",
+            "ci95_high",
+            "familywise_ci95_low",
+            "familywise_ci95_high",
+        ):
+            if key in result:
+                result[key] *= 100
+        return result
+
+    role_rows = []
+    for label, (x, y) in PAIRS.items():
+        # TG-PG = (XY+YY-XX-YX)/2 - (YX+YY-XX-XY)/2 = XY-YX.
+        role_rows.append(
+            {
+                "comparison": f"{label}: TG minus PG ({y.upper()} - {x.upper()})",
+                "model_from": x,
+                "model_to": y,
+                "metric": metric,
+                "scope": "four existing 2x2 model-pair contrasts",
+                **estimate({names[x, y]: 1, names[y, x]: -1}, family_size=4),
+            }
+        )
+    marginal_rows = []
+    tg_cells = {bi: [names[pg, bi] for pg in QG] for bi in QG}
+    for bi in QG:
+        selected = frame[frame.bi.eq(bi)]
+        marginal_rows.append(
+            {
+                "tg": bi,
+                "metric": metric,
+                "pg_cells": 4,
+                "planned_observations": int(selected.observations.sum()),
+                "correct": round((selected[metric] * selected.observations).sum()),
+                **estimate(dict.fromkeys(tg_cells[bi], 0.25)),
+            }
+        )
+    pair_rows = []
+    for x, y in combinations(QG, 2):
+        pair_rows.append(
+            {
+                "comparison": f"TG: {y.upper()} - {x.upper()}",
+                "tg_negative": x,
+                "tg_positive": y,
+                "metric": metric,
+                "scope": "TG marginal means over all four PG models",
+                **estimate(difference(tg_cells[y], tg_cells[x]), family_size=6),
+            }
+        )
+    return {
+        "exploratory_tg_minus_pg": pd.DataFrame(role_rows),
+        "exploratory_tg_marginal_means": pd.DataFrame(marginal_rows),
+        "exploratory_tg_pairwise": pd.DataFrame(pair_rows),
+    }
 
 
 def indirect_contrasts(frame):
@@ -195,6 +296,14 @@ def technical_tables(observation_sets, title_sets, job_sets):
                     lambda s: int(s.astype("boolean").fillna(False).sum()),
                 ),
                 end_to_end_correct=("end_to_end_strict_score", "sum"),
+                primary_end_to_end_correct=(
+                    "primary_end_to_end_strict_score",
+                    lambda s: s.sum(skipna=False),
+                ),
+                primary_end_to_end_normalized_correct=(
+                    "primary_end_to_end_normalized_score",
+                    lambda s: s.sum(skipna=False),
+                ),
                 end_to_end_normalized_correct=(
                     "end_to_end_normalized_score",
                     "sum",
@@ -251,6 +360,14 @@ def technical_tables(observation_sets, title_sets, job_sets):
         )
         grouped["title_aware_end_to_end_strict_accuracy"] = (
             100 * grouped.title_aware_end_to_end_correct / grouped.planned_observations
+        )
+        grouped[METRIC] = (
+            100 * grouped.primary_end_to_end_correct / grouped.planned_observations
+        )
+        grouped[PRIMARY_NORMALIZED_METRIC] = (
+            100
+            * grouped.primary_end_to_end_normalized_correct
+            / grouped.planned_observations
         )
         grouped["end_to_end_normalized_accuracy"] = (
             100 * grouped.end_to_end_normalized_correct / grouped.planned_observations
@@ -311,6 +428,7 @@ def technical_tables(observation_sets, title_sets, job_sets):
     )
     tables["verifier"] = pd.DataFrame(verifier_rows)
     supporting_metrics = [
+        PRIMARY_NORMALIZED_METRIC,
         "end_to_end_normalized_accuracy",
         "title_aware_end_to_end_normalized_accuracy",
         "prediction_only_normalized_accuracy",
@@ -398,12 +516,43 @@ def technical_tables(observation_sets, title_sets, job_sets):
     return tables
 
 
-def overall_domain_means(frame, design):
+def overall_domain_means(frame, design, *, metric=METRIC):
     conditions = frame.condition.unique()
     table = effects(
-        frame, {"Mean accuracy": dict.fromkeys(conditions, 1 / len(conditions))}
+        frame,
+        {"Mean accuracy": dict.fromkeys(conditions, 1 / len(conditions))},
+        metric=metric,
     )
     return table[table.domain != "all"].assign(design=design)
+
+
+def route_transition_counts(observations, *, score="primary_end_to_end_strict_score"):
+    """Count the four paired image outcomes on the existing same-model diagonals."""
+    transitions = (
+        observations[observations.pg.eq(observations.bi)]
+        .pivot(
+            index=["condition", "domain", "item_key", "prompt_seed", "image_seed"],
+            columns="route",
+            values=score,
+        )
+        .reset_index()
+    )
+    order = ["Both correct", "Direct only", "Description only", "Neither correct"]
+    transitions["outcome"] = np.select(
+        [
+            transitions.direct.eq(1) & transitions.description.eq(1),
+            transitions.direct.eq(1),
+            transitions.description.eq(1),
+        ],
+        order[:3],
+        default=order[3],
+    )
+    return (
+        transitions.groupby(["condition", "domain", "outcome"])
+        .size()
+        .unstack(fill_value=0)
+        .reindex(columns=order, fill_value=0)
+    )
 
 
 def load_direct_supplement(path):
@@ -417,7 +566,7 @@ def load_direct_supplement(path):
 def load_indirect_study(
     local_path, *, aqueduct_path=None, independent_path=None, completion_path=None
 ):
-    """Validate and load exactly 16+20 or 16+8+12 indirect study conditions.
+    """Load 16+20 conditions, with either frozen 12+8 or legacy 8+12 split.
 
     All jobs, observations and diagnostics are retained. Source matching uses
     frozen aliases/entry names and Run IDs, so relocated complete copies work.
@@ -451,9 +600,25 @@ def load_indirect_study(
     def condition(pg, bb, bi):
         return f"indirect_pg_{pg}_bb_{bb}_bi_{bi}"
 
+    snapshots = {
+        label: load_job_snapshot(
+            Path(path).expanduser().resolve() / JOB_SNAPSHOT_FILENAME
+        )
+        for label, path in paths.items()
+    }
     local_cells = {condition(pg, bb, bi) for pg in LOCAL for bb in QG for bi in LOCAL}
-    independent_cells = {condition("v4", bb, bi) for bb in QG for bi in LOCAL}
-    completion_cells = {condition(pg, bb, "v4") for pg in TEXT for bb in QG}
+    independent_cells = {condition("v4", bb, bi) for bb in QG for bi in TEXT}
+    completion_cells = {condition(pg, bb, "v4") for pg in LOCAL for bb in QG}
+    legacy_split = False
+    if split:
+        supplied = {entry.name for entry in snapshots["Aqueduct independent"].entries}
+        legacy_independent = {condition("v4", bb, bi) for bb in QG for bi in LOCAL}
+        if supplied == legacy_independent:
+            legacy_split = True
+            independent_cells = legacy_independent
+            completion_cells = {condition(pg, bb, "v4") for pg in TEXT for bb in QG}
+        elif supplied != independent_cells:
+            raise ValueError("Aqueduct split is neither the known 12+8 nor 8+12 matrix.")
     expected = {
         "Indirect": local_cells,
         "Aqueduct": independent_cells | completion_cells,
@@ -475,7 +640,7 @@ def load_indirect_study(
     for label, path in paths.items():
         directory = Path(path).expanduser().resolve()
         record = read_job_record(directory / "job_state.sqlite")
-        snapshot = load_job_snapshot(directory / JOB_SNAPSHOT_FILENAME)
+        snapshot = snapshots[label]
         if (
             record.status != "completed"
             or record.name != names[label]
@@ -731,7 +896,7 @@ def load_indirect_study(
         alias = None
         if pg in LOCAL and bi == "v4":
             alias = "local_indirect"
-        elif split and pg == "v4" and bi == "v4":
+        elif legacy_split and pg == "v4" and bi == "v4":
             alias = "v4_independent"
         kind = "from_job_entry" if alias else "from_entry"
         if (
@@ -943,47 +1108,7 @@ def candidate_tables(roster, raw_ratings):
         .reindex(DOMAINS)
     )
     counts["missing_means"] = counts.candidates - counts.complete_four_model_means
-    model_counts = (
-        ratings.groupby(["domain", "model"])
-        .valid.agg(
-            recorded_ratings="size",
-            valid_ratings="sum",
-        )
-        .reindex(
-            pd.MultiIndex.from_product([DOMAINS, QG], names=["domain", "model"]),
-            fill_value=0,
-        )
-    )
-    model_counts["planned_ratings"] = model_counts.index.get_level_values("domain").map(
-        counts.candidates
-    )
-    model_counts["missing_ratings"] = (
-        model_counts.planned_ratings - model_counts.recorded_ratings
-    )
-    model_counts["invalid_ratings"] = (
-        model_counts.recorded_ratings - model_counts.valid_ratings
-    )
-    return scores, counts, model_counts
-
-
-def histogram_counts(scores, bins):
-    """Export the exact displayed bins; only the final bin includes its right edge."""
-    rows = []
-    for domain in DOMAINS:
-        counts, _ = np.histogram(
-            scores.loc[scores.domain.eq(domain), "mean_score"].dropna(), bins=bins
-        )
-        rows.extend(
-            {
-                "domain": domain,
-                "bin_left": int(left),
-                "bin_right": int(right),
-                "right_inclusive": bool(right == bins[-1]),
-                "titles": int(count),
-            }
-            for left, right, count in zip(bins[:-1], bins[1:], counts, strict=True)
-        )
-    return pd.DataFrame(rows)
+    return scores, counts
 
 
 def export_tables(tables, output_dir):

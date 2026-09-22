@@ -1,193 +1,55 @@
 # Configuration guide
 
-One experiment YAML creates one self-contained run. One job YAML executes
-several experiments and may copy terminal upstream stages into later runs.
-
-The layers are:
-
-1. dataset profile;
-2. backend profile;
-3. experiment;
-4. optional job and inheritance links.
-
-Start with the checked-in mock and copy the closest example. `job start`
-validates the resolved job before creating and executing it. `job plan` is an
-optional read-only summary of expected work.
+An experiment combines dataset, backend and prompt profiles into one run.
+A job executes several experiments and can reuse upstream stages.
+Use [RUNNING](../RUNNING.md) for setup and [EXPERIMENTS](../EXPERIMENTS.md)
+for the thesis jobs and scoring rules.
 
 ## Examples
 
-- Root experiment: [`experiments/mock.yaml`](experiments/mock.yaml)
-- Partial experiment: [`examples/direct_from_verification.yaml`](examples/direct_from_verification.yaml)
-- In-job reuse: [`examples/job_with_inheritance.yaml`](examples/job_with_inheritance.yaml)
-- Existing-run reuse:
-  [`experiments/final_study/smoke/external_from_run.example.yaml`](experiments/final_study/smoke/external_from_run.example.yaml)
-- Cross-job reuse:
-  [`jobs/final_study/smoke_external_import.example.yaml`](jobs/final_study/smoke_external_import.example.yaml)
-- Complete real experiment:
-  [`experiments/final_study/direct/direct_pg_q25_bi_q25.yaml`](experiments/final_study/direct/direct_pg_q25_bi_q25.yaml)
-
-```bash
-uv run semantic-roundtrip job start \
-  --config configs/examples/job_with_inheritance.yaml
-```
+- [Mock experiment](experiments/mock.yaml) and [complete real experiment](experiments/final_study/direct/direct_pg_q25_bi_q25.yaml)
+- [Partial experiment](examples/direct_from_verification.yaml) and [in-job reuse](examples/job_with_inheritance.yaml)
+- [Existing-run reuse](experiments/final_study/smoke/external_from_run.example.yaml)
+- [Cross-job reuse](jobs/final_study/smoke_external_import.example.yaml)
 
 ## Dataset and backend profiles
 
-Both use schema version 1. Dataset item IDs must be unique.
+Both use `schema_version: 1`. A dataset has a `dataset_id` and `items`
+with `id`, `domain` and `title`. Item IDs must be unique. A [backend](backends/) selects
+`adapter`, connection `settings` and `runtime`. Keep secrets in environment
+variables. Stage request parameters belong in the experiment.
 
-```yaml
-schema_version: 1
-dataset_id: my_titles_v1
-items:
-  - id: songs_imagine
-    domain: songs
-    title: Imagine
-```
-
-A backend selects an adapter, connection settings and runtime owner. Never put
-secrets into YAML.
-
-```yaml
-schema_version: 1
-adapter: mock
-settings: {}
-runtime:
-  controller: none
-  resource_group: cpu
-```
-
-Real profiles are below `backends/`. Copy the nearest profile when adding a
-model; endpoint and runtime settings belong there, scientific request parameters
-belong in the experiment.
+OpenAI-compatible backends optionally accept positive `settings.requests_per_minute`.
+Aqueduct uses `25` starts per rolling 61-second window, including retries.
+The counter is shared by endpoint and API-key environment-variable name within
+one process only. Omitting the setting disables pacing.
 
 ## Experiment
 
-Experiment schema 11 selects a dataset, seeds, backend aliases and locally run
-stages. Prompt and image verification are independently optional. The prompt
-check is deterministic and requires no backend; image checks select a backend
-and either or both policies. The blind
-strict policy rejects any meaningful readable writing; the title-aware policy
-receives the reference title and rejects only writing that communicates that
-title. Omit both verification stages for no checks, or omit one image policy to run only
-the other. The final-study configs enable all three decisions. Checks affect
-evaluation but do not stop later stages.
+Experiment `schema_version: 11` defines seeds, backend aliases and local `stages`.
+A root experiment selects `dataset.profile`. A derived experiment inherits its
+dataset and upstream products. At least one stage runs locally. Stage `parameters`
+are sent to the adapter. The runner fixes stage order, not the YAML key order.
 
-```yaml
-schema_version: 11
+Stages include `illustratability_rating`, `prompt_generation`, `verification_prompt`,
+`image_generation`, `verification_image`, `image_description` and `title_guessing`.
+Under `title_guessing`, configure `direct`, `from_description` or `from_prompt`.
+Routes are independently optional. Prompt-only needs no images or image seeds.
 
-run:
-  name: my_direct_run
-  output_directory: runs
+Model instructions use `prompt_profile` pointing to a [versioned YAML chat profile](../prompts/).
+Profiles define `profile_id`, `version`, `output_format` and ordered `messages`.
+Roles are `system`, `user` and `assistant`. Vision stages attach the image to their
+single user message. Template variables are checked against stage inputs.
 
-dataset:
-  profile: ../datasets/mock_titles_v1.yaml
+`verification_prompt` uses `policy: reference_title_absent` without a backend.
+`verification_image` selects a backend and `policies.strict`, `policies.title_aware`
+or both, each with its own `prompt_profile`. Checks affect scoring, not execution.
 
-experiment:
-  prompt_seeds: [1000, 1001]
-  image_seeds: [41, 42]
-  retry_limit: 0
+## Jobs and inheritance
 
-backends:
-  model:
-    profile: ../backends/mock.yaml
-
-stages:
-  prompt_generation:
-    backend: model
-    prompt_profile: prompts/prompt_generation/visual_single_v5.yaml
-  image_generation:
-    backend: model
-  verification_prompt:
-    policy: reference_title_absent
-  verification_image:
-    backend: model
-    policies:
-      strict:
-        prompt_profile: prompts/verification/json_v3.yaml
-      title_aware:
-        prompt_profile: prompts/verification/title_aware_json_v1.yaml
-  title_guessing:
-    direct:
-      backend: model
-      prompt_profile: prompts/title_guessing/plain_v3.yaml
-    from_prompt:
-      backend: model
-      prompt_profile: prompts/title_guessing/prompt_plain_v1.yaml
-```
-
-Every model instruction is a versioned YAML chat profile. A profile records its
-identity, version, output format and ordered messages:
-
-```yaml
-profile_id: title_guessing_direct
-version: 3
-output_format: plain_text
-
-messages:
-  - role: user
-    content: |
-      Identify the exact title represented by this image.
-      Domain: ${domain}
-```
-
-Messages may use the `system`, `user` and `assistant` roles. Vision stages
-attach the image to their single user message. Profile variables are validated
-against the inputs available to the configured stage. All prompt-bearing stage
-fields are named `prompt_profile`; plain-text prompt files are not supported.
-
-Available local stages:
-
-```text
-illustratability_rating
-prompt_generation
-verification_prompt
-image_generation
-verification_image
-title_guessing.direct
-image_description
-title_guessing.from_description
-title_guessing.from_prompt
-```
-
-At least one must run locally. Paths inside an experiment are relative to that
-file. A root experiment defines `dataset`; a derived experiment receives its
-dataset and upstream products through inheritance. Stage `parameters` are sent
-to the adapter and should be explicit for a fixed study.
-
-The listed execution order is fixed by the runner, not the YAML key order.
-Prompt-only can configure `prompt_generation`, `verification_prompt` and
-`title_guessing.from_prompt`, omitting images, image seeds and any verifier
-backend. Its guesser receives only the stored prompt and domain. Image and
-description routes remain independently optional.
-
-## Job
-
-Job schema 5 lists experiments in execution order:
-
-```yaml
-schema_version: 5
-
-job:
-  name: my_job
-  output_directory: runs
-  continue_on_error: false
-
-experiments:
-  - name: source
-    config: ../experiments/mock.yaml
-  - name: derived
-    config: direct_from_verification.yaml
-    inherit:
-      from_entry: source
-      stages: [verification_prompt, verification_image]
-```
-
-`continue_on_error: true` lets later independent entries run after one child has
-terminal task failures. It does not hide those failures.
-
-## Inheritance
-
-An inherited stage includes all required predecessors:
+Job `schema_version: 5` lists named `experiments` with `config` paths in execution
+order. `job.continue_on_error: true` continues after terminal child-task failures.
+An entry's `inherit.stages` copies these products and their required predecessors:
 
 | Requested stage | Materialized chain |
 | --- | --- |
@@ -201,73 +63,49 @@ An inherited stage includes all required predecessors:
 | `title_guessing_from_prompt` | prompt, prompt prediction |
 | `illustratability_rating` | rating only |
 
-Use the flattened title-stage names only inside `inherit.stages`.
-Verification is an independent evaluation branch. Request each needed
-verification stage explicitly beside reconstruction when retaining its checks;
-guessing inheritance does not implicitly import verification. Prompt checks
-can be imported without images. A stage cannot be both imported and local.
+Use flattened title-stage names only inside `inherit.stages`. Import each needed
+verification stage explicitly, as guessing inheritance does not include checks.
+A stage cannot be both imported and local.
 
 Exactly one source form is allowed:
 
-- `from_entry`: an earlier entry in the same job;
-- `from_run`: a specific standalone or child run with terminal selected work;
-- `from_job_entry`: a named entry from another job.
+- `from_entry`: an earlier entry in the same job.
+- `from_run`: a specific standalone or child run.
+- `from_job_entry`: `job` alias plus `entry` name from another job.
 
-Cross-job reuse declares an alias:
-
-```yaml
-source_jobs:
-  local_source: {}
-
-experiments:
-  - name: imported
-    config: ../experiments/derived.yaml
-    inherit:
-      from_job_entry:
-        job: local_source
-        entry: source_entry
-      stages: [verification_prompt, verification_image]
-```
-
-Bind it explicitly when starting:
+Declare cross-job aliases under `source_jobs`, then bind each on the CLI.
+For example, with a completed local smoke job:
 
 ```bash
-uv run semantic-roundtrip job start --config configs/jobs/my_job.yaml \
-  --source-job local_source=runs/exact-source-job
+uv run semantic-roundtrip job start \
+  --config configs/jobs/final_study/smoke_external_import.example.yaml \
+  --source-job "local_smoke=runs/<COMPLETED_LOCAL_SMOKE_JOB_ID>"
 ```
 
-To inspect this job without creating artifacts, replace `start` with `plan` and
-keep the same `--source-job` binding.
+Replace `start` with `plan` for a read-only overview with the same bindings.
+CLI paths are relative to the working directory. YAML paths are relative to their file.
+Selected source stages and dependencies must be terminal and inactive.
+Imported successes and failures retain their provenance. Products are copied into
+the child run, which no longer depends on the source. Keep snapshots with results.
+Resume uses those saved settings rather than modified configuration files.
 
-CLI source paths are resolved from the current working directory; YAML paths
-are resolved from their containing file.
+## Thesis dataset
 
-The child copies data and files into its own run. It does not depend on the
-source afterward. Imported successes and terminal failures keep their
-provenance. The importer validates stage structure and expected rows; it does
-not repair or silently regenerate mismatches.
-Selected stages and dependencies must be terminal and inactive; unrelated work
-may continue in the source run. Bundled snapshots preserve expected counts
-and policies even when upstream failures produced no verification tasks.
+Use the supplied [90-title dataset](datasets/final_titles_v1.yaml) and its
+[item-level sources](datasets/final_titles_v1_sources.csv) for reproduction.
+It selects 30 titles per domain from the first 300 eligible ranked entries using
+seed `20260811`, without length quotas or an illustratability filter.
+The [900-candidate pool](datasets/eligible_top300_v1.yaml) and its
+[sources](datasets/eligible_top300_v1_sources.csv) support the separate rating supplement.
 
-Run DB 12 stores prompt predictions separately from image-linked predictions:
-`prompt_predictions` has an ID, unique required `prompt_id`, title, raw response,
-optional confidence and method, and origin Run/Prediction IDs. A run defines one
-model assignment, so each prompt has at most one prediction per route.
-The application uses Job DB 4 and manifest format 6, alongside experiment
-schema 11 and job schema 5. Stored inputs must match these formats.
+Songs and bands use [ListenBrainz all-time rankings](https://listenbrainz.readthedocs.io/en/latest/users/api/statistics.html)
+with MusicBrainz metadata. Movies use [IMDb datasets](https://developer.imdb.com/non-commercial-datasets/), ranked by `numVotes`.
+Eligibility requires Latin-script titles and release/formation by 2018, excludes
+duplicates, development titles, adult movies and labelled song variants, and
+limits the selected songs to one per primary artist. Bands must be `Group` entities.
 
-## Checklist
-
-- Use stable, descriptive run and entry names.
-- Keep paths relative to the YAML that contains them.
-- Put secrets only in environment variables.
-- Give every derived run all required upstream stages.
-- Reuse only artifacts produced under the intended protocol.
-- Optionally inspect source bindings, counts and model roles with `job plan`.
-- Keep the generated run and job snapshots with the results.
-
-Shared DGX setup and operation are in [`../RUNNING.md`](../RUNNING.md).
-Use [`../EXPERIMENTS.md`](../EXPERIMENTS.md) for the main, four-style and
-supplementary experiment sequence. The executable thesis protocol is in
-[`jobs/final_study/STUDY_DESIGN.md`](jobs/final_study/STUDY_DESIGN.md).
+The [dataset builder](../scripts/datasets/build_dataset.py) needs the original source
+snapshot for byte-identical reproduction. New downloads can change the selection.
+For comparison, set `--source-directory` and separate `--output`, `--report`,
+`--candidate-output` and `--candidate-report` paths rather than overwriting V1.
+Changes to sources, selection rules, seed or sample size require a new dataset version.

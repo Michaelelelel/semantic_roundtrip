@@ -7,7 +7,8 @@ from shutil import copy2
 
 import pandas as pd
 
-from semantic_roundtrip.analysis.reporting import METRIC, QG, STYLE_METRICS
+from semantic_roundtrip.analysis.reporting import QG, STYLE_METRICS
+from semantic_roundtrip.analysis.statistics import paired_stratified_bootstrap
 from semantic_roundtrip.evaluation import (
     EXACT_MATCH_METHOD,
     NORMALIZED_EXACT_METHOD,
@@ -18,7 +19,8 @@ from semantic_roundtrip.evaluation import (
 from semantic_roundtrip.persistence.job.database import read_job_record
 from semantic_roundtrip.persistence.job.schema import job_database_path
 
-STYLE_REPORT_VERSION = 1
+STYLE_REPORT_VERSION = 2
+STYLE_PRIMARY_METRIC = "title_aware_end_to_end_strict_accuracy"
 STYLE_NAMES = {"Unrestricted", "Photorealistic", "Sketch", "Comic"}
 STYLE_METHODS = {
     "strict_title_match": EXACT_MATCH_METHOD,
@@ -41,7 +43,7 @@ STYLE_ANALYSIS_METHODS = {
     "centrality_ties": "exact_full_grid_quarter_score_sum_v1",
 }
 STYLE_PRIMARY_DEFINITION = (
-    "passed prompt verification + passed blind-strict image verification + "
+    "passed prompt verification + passed title-aware image verification + "
     "Strict Exact Match / all planned image observations"
 )
 SUMMARY_STEMS = ["style_accuracy_overall_domains"]
@@ -54,6 +56,10 @@ SUMMARY_ARTIFACTS = (
     "manifest.json",
     *(f"{stem}.{suffix}" for stem in SUMMARY_STEMS for suffix in ("png", "pdf")),
     *(f"style_effects_{name}.csv" for name in ("photorealistic", "sketch", "comic")),
+    *(
+        f"sensitivity_style_effects_{name}.csv"
+        for name in ("photorealistic", "sketch", "comic")
+    ),
 )
 
 
@@ -66,7 +72,7 @@ def _validate_analysis(analysis):
         analysis.get("purpose") != "complete_style_comparison"
         or analysis.get("bootstrap") != STYLE_BOOTSTRAP
         or analysis.get("style_analysis_methods") != STYLE_ANALYSIS_METHODS
-        or analysis.get("primary_metric") != METRIC
+        or analysis.get("primary_metric") != STYLE_PRIMARY_METRIC
         or analysis.get("primary_definition") != STYLE_PRIMARY_DEFINITION
         or analysis.get("seed_observations_per_title") != 4
     ):
@@ -152,6 +158,50 @@ def style_centrality(title_scores):
     return result
 
 
+def qwen_pg_style_followup(title_scores):
+    """Exploratory Q38-minus-Q25 difference in each style effect, not adherence.
+
+    Each title/style/PG value equally averages the four TG assignments. The
+    three style-minus-Unrestricted interactions form one comparison family.
+    The original four seed scores and every planned title remain included.
+    """
+    validate_style_grid(title_scores)
+    metric = STYLE_PRIMARY_METRIC
+    selected = title_scores[title_scores.pg.isin(["q25", "q38"])]
+    if selected[metric].isna().any() or not selected[metric].between(0, 1).all():
+        raise ValueError("The style follow-up requires complete primary title scores.")
+    identity = ["dataset_id", "domain", "item_key", "style", "pg"]
+    marginal = selected.groupby(identity, as_index=False)[metric].mean()
+    marginal["condition"] = marginal["style"] + "/" + marginal["pg"]
+    deltas, interactions = [], []
+    for style in ["Photorealistic", "Sketch", "Comic"]:
+        for pg in ["q25", "q38"]:
+            result = paired_stratified_bootstrap(
+                marginal,
+                condition_weights={f"{style}/{pg}": 1, f"Unrestricted/{pg}": -1},
+                metric=metric,
+            )
+            deltas.append({"style": style, "pg": pg, "metric": metric, **result})
+        result = paired_stratified_bootstrap(
+            marginal,
+            condition_weights={
+                f"{style}/q38": 1,
+                "Unrestricted/q38": -1,
+                f"{style}/q25": -1,
+                "Unrestricted/q25": 1,
+            },
+            metric=metric,
+            family_size=3,
+        )
+        interactions.append(
+            {"style": style, "comparison": "Q38 - Q25 PG style effect", "metric": metric, **result}
+        )
+    return {
+        "exploratory_qwen_pg_style_deltas": pd.DataFrame(deltas),
+        "exploratory_qwen_pg_style_interactions": pd.DataFrame(interactions),
+    }
+
+
 def export_style_summary(output_dir):
     """Freeze completed exports after write_manifest; originals and methods stay auditable."""
     output_dir = Path(output_dir).expanduser().resolve()
@@ -183,7 +233,7 @@ def export_style_summary(output_dir):
     contract = {
         "schema_version": STYLE_REPORT_VERSION,
         "methods": STYLE_METHODS,
-        "primary_metric": METRIC,
+        "primary_metric": STYLE_PRIMARY_METRIC,
         "primary_definition": STYLE_PRIMARY_DEFINITION,
         "bootstrap": STYLE_BOOTSTRAP,
         "analysis_methods": STYLE_ANALYSIS_METHODS,
@@ -212,7 +262,7 @@ def load_style_summary(report_dir, direct_job_path, output_dir):
     if (
         contract.get("schema_version") != STYLE_REPORT_VERSION
         or contract.get("methods") != STYLE_METHODS
-        or contract.get("primary_metric") != METRIC
+        or contract.get("primary_metric") != STYLE_PRIMARY_METRIC
         or contract.get("primary_definition") != STYLE_PRIMARY_DEFINITION
         or contract.get("bootstrap") != STYLE_BOOTSTRAP
         or contract.get("analysis_methods") != STYLE_ANALYSIS_METHODS

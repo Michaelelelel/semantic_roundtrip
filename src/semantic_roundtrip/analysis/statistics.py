@@ -14,6 +14,8 @@ from semantic_roundtrip.evaluation import (
 
 BOOTSTRAP_REPETITIONS = 10_000
 BOOTSTRAP_SEED = 20260829
+PRIMARY_METRIC = "primary_end_to_end_strict_accuracy"
+PRIMARY_NORMALIZED_METRIC = "primary_end_to_end_normalized_accuracy"
 
 
 def score_observations(observations: pd.DataFrame) -> pd.DataFrame:
@@ -84,6 +86,12 @@ def score_observations(observations: pd.DataFrame) -> pd.DataFrame:
         ),
         dtype="Int64",
     )
+    # final_v11: preserve both historical policy fields. The primary endpoint
+    # uses title-aware checks on image routes and no image gate on prompt-only.
+    for matching in ("strict", "normalized"):
+        result[f"primary_end_to_end_{matching}_score"] = result[
+            f"title_aware_end_to_end_{matching}_score"
+        ].where(image_route, result[f"end_to_end_{matching}_score"])
     return result
 
 
@@ -142,6 +150,14 @@ def aggregate_titles(
             "title_aware_end_to_end_normalized_score",
             "mean",
         ),
+        primary_end_to_end_strict_accuracy=(
+            "primary_end_to_end_strict_score",
+            lambda values: values.mean(skipna=False),
+        ),
+        primary_end_to_end_normalized_accuracy=(
+            "primary_end_to_end_normalized_score",
+            lambda values: values.mean(skipna=False),
+        ),
     ).reset_index()
     wrong = result[result["observations"] != expected_observations]
     if not wrong.empty:
@@ -179,17 +195,30 @@ def paired_stratified_bootstrap(
     title_scores: pd.DataFrame,
     *,
     condition_weights: Mapping[str, float],
-    metric: str = "end_to_end_strict_accuracy",
+    metric: str = PRIMARY_METRIC,
     condition_column: str = "condition",
     repetitions: int = BOOTSTRAP_REPETITIONS,
     seed: int = BOOTSTRAP_SEED,
     strata: tuple[str, ...] = ("domain",),
+    family_size: int | None = None,
 ) -> dict[str, float | int]:
-    """Estimate one paired title contrast and its stratified percentile interval."""
+    """Paired percentile interval, optionally with approximate Bonferroni bounds.
+
+    ``family_size`` is fixed before examining the new contrast results. Its
+    bounds use the same draws at .025/m and 1-.025/m. Coverage is approximate
+    because the underlying percentile intervals are approximate. The default
+    preserves the original result fields and pointwise interval.
+    """
     if not condition_weights:
         raise ValueError("At least one condition weight is required.")
     if repetitions < 1:
         raise ValueError("Bootstrap repetitions must be positive.")
+    if family_size is not None and (
+        isinstance(family_size, bool)
+        or not isinstance(family_size, int)
+        or family_size < 1
+    ):
+        raise ValueError("The comparison family size must be a positive integer.")
     identity = ["dataset_id", "item_key", *strata]
     selected = title_scores[title_scores[condition_column].isin(condition_weights)]
     pivot = selected.pivot(
@@ -210,12 +239,22 @@ def paired_stratified_bootstrap(
     sampled = _stratified_samples(groups, rng, repetitions)
     samples = contrast["value"].to_numpy(dtype=float)[sampled].mean(axis=1)
     low, high = np.quantile(samples, [0.025, 0.975])
-    return {
+    result = {
         "titles": len(contrast),
         "effect": estimate,
         "ci95_low": float(low),
         "ci95_high": float(high),
     }
+    if family_size is not None:
+        tail = 0.025 / family_size
+        family_low, family_high = np.quantile(samples, [tail, 1 - tail])
+        result.update(
+            familywise_ci95_low=float(family_low),
+            familywise_ci95_high=float(family_high),
+            family_size=family_size,
+            familywise_tail_probability=tail,
+        )
+    return result
 
 
 def _spearman(x: pd.Series, y: pd.Series) -> float:
@@ -229,7 +268,7 @@ def illustratability_spearman(
     outcomes: pd.DataFrame,
     *,
     model_column: str = "pg",
-    outcome_column: str = "end_to_end_strict_accuracy",
+    outcome_column: str = PRIMARY_METRIC,
     repetitions: int = BOOTSTRAP_REPETITIONS,
     seed: int = BOOTSTRAP_SEED,
 ) -> pd.DataFrame:

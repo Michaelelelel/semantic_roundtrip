@@ -16,8 +16,8 @@ flowchart TB
     subgraph MAIN["Main study · 30 randomly sampled titles per domain"]
         DIRECT["direct_core<br/>4×4 PG/TG<br/>RQ1: model combinations<br/>RQ3: paired reconstruction routes"]
         LOCAL["indirect_local<br/>2×4×2 PG/ID/TG"]
-        V4_INDEPENDENT["aqueduct_v4_independent<br/>split part 1 · 8 conditions<br/>V4 PG · D32/O120 TG"]
-        V4_COMPLETION["aqueduct_v4_completion<br/>split part 2 · 12 conditions<br/>V4 TG · both completed sources"]
+        V4_INDEPENDENT["aqueduct_v4_independent<br/>12 conditions · 1×4×3<br/>V4 PG · D32/O120/V4 TG"]
+        V4_COMPLETION["aqueduct_v4_completion<br/>8 conditions · 2×4×1<br/>V4 TG · Local Indirect source only"]
         AQUEDUCT["aqueduct_v4_extension<br/>alternative to the split pair<br/>same 20 additional conditions"]
         INDIRECT(["Combined indirect analysis<br/>3×4×3 PG/ID/TG<br/>RQ2: model-role choices"])
     end
@@ -38,7 +38,6 @@ flowchart TB
 
     LOCAL -->|matching source job| AQUEDUCT
     LOCAL -->|local_indirect source| V4_COMPLETION
-    V4_INDEPENDENT -->|v4_independent source| V4_COMPLETION
     LOCAL --> INDIRECT
     AQUEDUCT --> INDIRECT
     V4_INDEPENDENT --> INDIRECT

@@ -1,2 +1,5 @@
-# Archived evidence is checksummed byte-for-byte; never normalize line endings.
+# Preserve saved artifact bytes across checkouts.
 /artifacts/candidate_illustratability/** -text
+
+# Shell scripts must also work after a Windows checkout.
+*.sh text eol=lf

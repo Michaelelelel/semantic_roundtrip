@@ -31,8 +31,8 @@ def save_figure(fig, path, title):
     plt.close(fig)
 
 
-def heatmap(ax, frame, models, title, baseline=None):
-    values = (100 * frame.groupby(["pg", "bi"])[METRIC].mean().unstack()).reindex(
+def heatmap(ax, frame, models, title, baseline=None, *, metric=METRIC):
+    values = (100 * frame.groupby(["pg", "bi"])[metric].mean().unstack()).reindex(
         index=models, columns=models
     )
     labels = [m.upper() + ("*" if m == "v4" else "") for m in models]
@@ -40,7 +40,7 @@ def heatmap(ax, frame, models, title, baseline=None):
         cmap = sns.color_palette("blend:#f7fbff,#6baed6", as_cmap=True)
     else:
         reference = (
-            100 * baseline.groupby(["pg", "bi"])[METRIC].mean().unstack()
+            100 * baseline.groupby(["pg", "bi"])[metric].mean().unstack()
         ).reindex(index=models, columns=models)
         values = values - reference
         cmap = "vlag"
@@ -131,20 +131,26 @@ def correlation_label(row):
     return f"ρ={rho}, 95% CI {interval}"
 
 
-def rating_analysis(ratings, frame, name, title):
+def rating_analysis(ratings, frame, name, title, *, metric=METRIC, plot=True):
     ratings = ratings.reindex(columns=["entry_name", *TITLE_KEYS, "score"]).copy()
     ratings["pg"] = ratings.entry_name.astype("string").str.extract(
         "_pg_([^_]+)_", expand=False
     )
-    outcomes = frame.groupby(RATING_KEYS, as_index=False)[METRIC].mean()
+    outcomes = frame.groupby(RATING_KEYS, as_index=False)[metric].mean()
     models = [m for m in QG + TEXT if m in outcomes.pg.values]
-    table = illustratability_spearman(ratings, outcomes).set_index("pg").reindex(models)
+    table = (
+        illustratability_spearman(ratings, outcomes, outcome_column=metric)
+        .set_index("pg")
+        .reindex(models)
+    )
     table["titles"] = table.titles.astype("Int64").fillna(0)
     table["missing_ratings"] = outcomes.groupby("pg").size() - table.titles
     pairs = outcomes.merge(ratings[[*RATING_KEYS, "score"]], on=RATING_KEYS).dropna(
         subset=["score"]
     )
-    pairs["accuracy_percent"] = 100 * pairs[METRIC]
+    pairs["accuracy_percent"] = 100 * pairs[metric]
+    if not plot:
+        return table.reset_index(), pairs
     fig, axes = plt.subplots(
         1,
         len(models),
@@ -180,15 +186,25 @@ def rating_analysis(ratings, frame, name, title):
     return (table.reset_index(), pairs)
 
 
-def paired_style_analysis(positive, negative, label, reference_label, slug, output_dir):
+def paired_style_analysis(
+    positive,
+    negative,
+    label,
+    reference_label,
+    slug,
+    output_dir,
+    *,
+    metric=METRIC,
+    plot=True,
+):
     comparison = f"{label} - {reference_label}"
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4.8), layout="constrained")
-    image = heatmap(axes[0], negative, QG, reference_label)
-    heatmap(axes[1], positive, QG, label)
-    delta = heatmap(axes[2], positive, QG, comparison, baseline=negative)
-    fig.colorbar(image, ax=list(axes[:2]), label="End-to-end Strict Exact Match (%)")
-    fig.colorbar(delta, ax=axes[2], label="Difference (pp)")
-    save_figure(fig, output_dir / f"direct_{slug}_matrices", f"SQ2: {comparison}")
+    if plot:
+        fig, ax = plt.subplots(figsize=(5.4, 4.8), layout="constrained")
+        delta = heatmap(
+            ax, positive, QG, comparison, baseline=negative, metric=metric
+        )
+        fig.colorbar(delta, ax=ax, label="Difference (pp)")
+        save_figure(fig, output_dir / f"direct_{slug}_matrices", f"SQ2: {comparison}")
     reference_scores = negative.assign(
         condition_style=lambda f: "reference__" + f.condition.astype(str)
     )
@@ -212,7 +228,11 @@ def paired_style_analysis(positive, negative, label, reference_label, slug, outp
                     reference_scores[role] == model, "condition_style"
                 ].unique(),
             )
-    table = effects(combined, contrasts, condition_column="condition_style")
+    table = effects(
+        combined, contrasts, condition_column="condition_style", metric=metric
+    )
+    if not plot:
+        return table
     plotted = table[table.domain == "all"].copy()
     plotted["comparison"] = plotted.comparison.str.split(":").str[0]
     fig, ax = plt.subplots(figsize=(9, 6), layout="constrained")

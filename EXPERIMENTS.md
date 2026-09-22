@@ -2,6 +2,11 @@
 
 This guide specifies the pipeline roles, evaluated models, experimental matrix, and reproduction commands for the *Semantic Roundtrip* benchmark.
 
+Use Bash from the repository root after completing [setup](RUNNING.md).
+Replace example paths and Job IDs with the exact completed sources.
+The thesis explains the scientific rationale. Exact settings are stored in
+the versioned [configurations](configs/README.md) and each job's snapshots.
+
 ## Pipeline roles
 
 - **Prompt Generation (PG):** Model converts source title and domain into a visual prompt.
@@ -24,13 +29,17 @@ This guide specifies the pipeline roles, evaluated models, experimental matrix, 
 
 ## Experimental design and verification
 
-The main study evaluates 90 popular titles (30 songs, 30 movies, 30 bands) sampled from ListenBrainz and IMDb. Each condition uses 2 prompt seeds (`1000`, `1001`) crossed with 2 image seeds (`8566257`, `2875613`), producing 4 observations per title (360 attempts per 90-title matrix cell).
+The main study evaluates 90 popular titles (30 songs, 30 movies, 30 bands) sampled from ListenBrainz and IMDb. Image-dependent conditions use 2 prompt seeds (`1000`, `1001`) crossed with 2 image seeds (`8566257`, `2875613`), producing 4 observations per title (360 per matrix cell). Prompt-only reconstruction uses 2 observations per title (180 per cell).
 
 Reconstruction is evaluated under automated verification gates:
-- **Prompt check:** Deterministic check rejecting prompts containing the source title.
+
+- **Prompt check:** Deterministic check for the normalized reference-title expression in the prompt.
 - **Title-aware image check (Primary):** Multimodal verifier (Q38) checks whether the complete reference title is legibly written in the image.
-- **Blind-strict image check (Sensitivity):** Verifier rejects any readable text.
-- **Scoring:** Strict Exact Match requiring the prompt check and the title-aware image check to pass. Technical failures count as zero.
+- **Blind-strict image check (Alternative):** Verifier rejects any meaningful readable text.
+- **Scoring:** Strict Exact Match requires the prompt check and, for image-dependent routes, the title-aware image check to pass. Prompt-only reconstruction has no image gate. Missing predictions, failed or missing checks and terminal technical failures count as zero in the full planned denominator.
+
+Checks affect scoring, not whether later stages execute. Normalized Exact Match
+and blind-strict results are reported separately on the same stored answers.
 
 ## Study jobs and research questions
 
@@ -72,7 +81,7 @@ baseline dependencies; independent jobs do not need to run in the illustrated
 order.
 
 `job start` validates, creates a snapshot and runs in the foreground. Save its
-printed Job ID. Use [resume](RUNNING.md#monitor-and-resume), not another start,
+printed Job ID. Use [resume](RUNNING.md#pause-and-resume), not another start,
 for an interrupted job. `job plan` is an optional read-only overview: replace
 `start` with `plan` and keep the same config/source arguments.
 
@@ -94,6 +103,7 @@ from the other DGX into this host's `RUN_ROOT`. No source is chosen automaticall
 ## Main experiments
 
 ### 1. Direct core (4x4)
+
 Executes the 16 direct multimodal Qwen and Gemma model assignments (RQ1), the paired indirect baselines (RQ3), and domain contrasts (SQ4).
 
 ```bash
@@ -105,7 +115,8 @@ sudo docker compose --env-file .env \
 ```
 
 ### 2. Local indirect (2x4x2)
-Executes the local description route using Qwen and Gemma models across prompt generation, image description, and title guessing (RQ2).
+
+Uses D32 and O120 for prompt generation and title guessing, with the four Qwen/Gemma models providing image descriptions (RQ2).
 
 ```bash
 sudo docker compose --env-file .env \
@@ -116,7 +127,9 @@ sudo docker compose --env-file .env \
 ```
 
 ### 3. Aqueduct extension (API text models)
-Completes the full 3x4x3 description route matrix by incorporating hosted text models (DeepSeek and OpenAI).
+
+Completes the 3x4x3 description-route matrix by adding hosted DeepSeek V4 through Aqueduct. D32 and O120 remain local models.
+Load `AQUEDUCT_API_KEY` from `.env` as shown in [setup](RUNNING.md#3-build-and-start-runtime-services).
 
 **Option A — Single combined job (20 conditions):**
 Requires completed `indirect_local` as a source for existing images and descriptions.
@@ -131,7 +144,9 @@ sudo --preserve-env=AQUEDUCT_API_KEY docker compose --env-file .env \
 ```
 
 **Option B — Split execution (Independent + Completion):**
+
 - *Part 1 (Independent, 12 conditions):* V4 prompt generation, local image generation/verification, and D32/O120/V4 guessing:
+
 ```bash
 sudo --preserve-env=AQUEDUCT_API_KEY docker compose --env-file .env \
   -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
@@ -139,7 +154,9 @@ sudo --preserve-env=AQUEDUCT_API_KEY docker compose --env-file .env \
   semantic-roundtrip job start \
   --config configs/jobs/final_study/aqueduct_v4_independent.yaml
 ```
+
 - *Part 2 (Completion, 8 conditions, CPU-only):* V4 title guessing on descriptions from `indirect_local`:
+
 ```bash
 sudo --preserve-env=AQUEDUCT_API_KEY docker compose --env-file .env \
   -f compose.yaml --profile runner \
@@ -149,11 +166,17 @@ sudo --preserve-env=AQUEDUCT_API_KEY docker compose --env-file .env \
   --source-job "local_indirect=runs/<COMPLETED_LOCAL_INDIRECT_JOB_ID>"
 ```
 
+The split jobs can run independently once Local Indirect is complete.
+Completion needs its full source directory, including images, but no GPU service.
+Concurrent processes must respect their available API-key quotas. The backend
+limiter is shared within one process, not between runners.
+
 ## Visual style and supplementary experiments
 
 Direct Core serves as the unrestricted style baseline. Photorealistic, Sketch, and Comic evaluate the same 4x4 matrix under explicit style constraints (SQ2).
 
 ### Photorealistic (4x4)
+
 ```bash
 sudo docker compose --env-file .env \
   -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
@@ -163,6 +186,7 @@ sudo docker compose --env-file .env \
 ```
 
 ### Sketch (4x4)
+
 ```bash
 sudo docker compose --env-file .env \
   -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
@@ -172,6 +196,7 @@ sudo docker compose --env-file .env \
 ```
 
 ### Comic (4x4)
+
 ```bash
 sudo docker compose --env-file .env \
   -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
@@ -181,6 +206,7 @@ sudo docker compose --env-file .env \
 ```
 
 ### Native thinking comparison (SQ3)
+
 Evaluates reasoning modes (Q38 with low reasoning effort, G4 native thinking). Reuses unchanged Q25/G3 cells from Direct Core:
 
 ```bash
@@ -192,10 +218,16 @@ sudo docker compose --env-file .env \
   --source-job "direct_base=runs/<COMPLETED_DIRECT_CORE_JOB_ID>"
 ```
 
+<a id="illustratable-dataset"></a>
+
 ### High-illustratability dataset (SQ5)
+
 Evaluates direct reconstruction on 90 titles selected by model-based illustratability ratings.
+Use the supplied dataset to reproduce the thesis. The optional steps below
+regenerate it from ratings and require a runner rebuild before reconstruction.
 
 1. **(Optional) Re-run candidate ratings (900 titles):**
+
 ```bash
 sudo docker compose --env-file .env \
   -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
@@ -205,6 +237,7 @@ sudo docker compose --env-file .env \
 ```
 
 2. **(Optional) Generate dataset from completed ratings:**
+
 ```bash
 sudo docker compose --env-file .env \
   -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
@@ -212,9 +245,14 @@ sudo docker compose --env-file .env \
   -v "$PWD/configs/datasets:/app/configs/datasets" \
   runner python scripts/datasets/select_illustratable.py \
   --job "runs/<COMPLETED_RATING_JOB_ID>"
+
+sudo docker compose --env-file .env \
+  -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
+  --profile runner --profile status build runner
 ```
 
 3. **Run 4x4 high-illustratability reconstruction:**
+
 ```bash
 sudo docker compose --env-file .env \
   -f compose.yaml -f compose.dgx.yaml -f compose.status.yaml \
@@ -224,6 +262,7 @@ sudo docker compose --env-file .env \
 ```
 
 ### Prompt-only reconstruction (SQ1)
+
 Evaluates title guessing directly from the generated visual prompt without an image. Reuses prompts and checks from Direct Core:
 
 ```bash
@@ -237,9 +276,23 @@ sudo docker compose --env-file .env \
 
 ## Analysis and report generation
 
-Analysis runs locally or on an analysis machine with Python 3.12+ and `uv`.
+Analysis reads completed job artifacts without making model calls. Use Python
+3.14 and install the analysis dependencies before opening either notebook:
+
+```bash
+uv sync --frozen --extra analysis
+```
+
+Set the paths, open each notebook in a fresh kernel and run all cells.
+Use matching source jobs. For the main and style analyses, keep executed
+notebooks, tables, figures and manifests with the source archives.
+
+For a partial main analysis, run setup and only the sections whose inputs are
+available. The notebook lists their dependencies. Use a separate output directory.
+The final technical tables and full-report export require all sections.
 
 ### 1. Style comparison analysis
+
 Generates the four-style comparison figures and metrics:
 
 ```bash
@@ -253,25 +306,63 @@ uv run jupyter notebook notebooks/style_decision.ipynb
 ```
 
 ### 2. Main thesis analysis
+
 Generates all primary (RQ1–RQ3) and secondary (SQ1–SQ5) figures and tables:
+
+Choose exactly one Aqueduct input mode. For the two split jobs:
+
+```bash
+unset AQUEDUCT_JOB
+export AQUEDUCT_INDEPENDENT_JOB=/path/to/aqueduct-independent-job
+export AQUEDUCT_COMPLETION_JOB=/path/to/aqueduct-completion-job
+```
+
+For the single extension instead:
+
+```bash
+unset AQUEDUCT_INDEPENDENT_JOB AQUEDUCT_COMPLETION_JOB
+export AQUEDUCT_JOB=/path/to/aqueduct-extension-job
+```
+
+Then set the remaining inputs. `STYLE_REPORT_DIR` must contain the completed
+style report from the preceding step:
 
 ```bash
 export DIRECT_JOB=/path/to/direct-core-job
 export INDIRECT_JOB=/path/to/local-indirect-job
-export AQUEDUCT_JOB=/path/to/aqueduct-extension-job   # or AQUEDUCT_INDEPENDENT_JOB + AQUEDUCT_COMPLETION_JOB
 export THINKING_JOB=/path/to/thinking-job
 export ILLUSTRATABLE_JOB=/path/to/illustratable-job
 export PROMPT_BASELINE_JOB=/path/to/prompt-only-job
 export STYLE_REPORT_DIR="$PWD/notebooks/results/style"
 export OUTPUT_DIR="$PWD/notebooks/results/final"
 
-uv sync --extra analysis
 uv run jupyter notebook notebooks/final_study.ipynb
 ```
 
+Retain the full style report and any separately executed follow-up reports.
+The final notebook's compact style summary is not a replacement for them.
+
 ### 3. Manual verifier assessment
-Evaluates agreement between automated verifiers and the 360-item manual audit:
+
+Evaluates the 360-item manual audit against its original Core job
+`20260903T230744Z_final-direct-core_faa7afcb`. These labels do not apply to a
+newly generated Core job. Use the matching archived source:
 
 ```bash
-uv run python scripts/evaluate_verifier.py --job /path/to/direct-core-job
+uv run python scripts/evaluate_verifier.py \
+  --job /path/to/20260903T230744Z_final-direct-core_faa7afcb
+```
+
+### 4. Candidate-rating distribution
+
+The [included rating job](artifacts/candidate_illustratability/20260902T162529Z_candidate-illustratability_a1cfe5f2/)
+contains all 3,600 ratings for 900 candidates. Its stored format was converted
+after execution without changing model outputs. The notebook uses this job by
+default and saves one PDF. The [saved distribution](artifacts/candidate_illustratability/report/candidate_pool_distribution.pdf)
+can be viewed without running it.
+
+```bash
+unset RATING_JOB
+export OUTPUT_DIR="$PWD/notebooks/results/illustratability_distribution"
+uv run jupyter notebook notebooks/illustratability_distribution.ipynb
 ```
