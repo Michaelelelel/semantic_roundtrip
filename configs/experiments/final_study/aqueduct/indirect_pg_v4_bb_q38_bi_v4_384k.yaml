@@ -21,5 +21,5 @@ stages:
       parameters:
         temperature: 1.0
         top_p: 0.95
-        max_tokens: 393216
+        max_tokens: 384000
         seed: 3003
