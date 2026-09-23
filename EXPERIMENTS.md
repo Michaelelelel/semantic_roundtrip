@@ -50,6 +50,7 @@ and blind-strict results are reported separately on the same stored answers.
 | Main, split part 1 | `aqueduct_v4_independent.yaml` | 12 additions: V4 PG x 4 ID x D32/O120/V4 TG (RQ2, SQ4) | idle local model stack; API key |
 | Main, split part 2 | `aqueduct_v4_completion.yaml` | 8 additions: D32/O120 PG x 4 ID x V4 TG (RQ2, SQ4) | exact completed local-indirect job; API key; no local GPU |
 | Main, single-job alternative | `aqueduct_v4_extension.yaml` | the same 20 additions completing 3 x 4 x 3 (RQ2, SQ4) | exact completed local-indirect job; API key |
+| Exploratory follow-up | `aqueduct_v4_384k_{d32,o120,v4}.yaml` | V4 TG at 384K on the same 12 description conditions | completed source descriptions and checks; one API key per runner; no local GPU |
 | Supplement | `direct_sketch.yaml` | 4 x 4 sketch (SQ2) | services ready |
 | Supplement | `direct_comic.yaml` | 4 x 4 comic (SQ2) | services ready |
 | Supplement | `direct_photorealistic.yaml` | 4 x 4 photorealistic (SQ2) | services ready |
@@ -170,6 +171,37 @@ The split jobs can run independently once Local Indirect is complete.
 Completion needs its full source directory, including images, but no GPU service.
 Concurrent processes must respect their available API-key quotas. The backend
 limiter is shared within one process, not between runners.
+
+### 4. V4 title-guessing follow-up (384K output)
+
+Three API-only jobs repeat V4 title guessing on the same descriptions, with
+1,440 predictions each. Only `max_tokens` changes to 393216 (384 x 1024).
+Other request settings, including high effort and the 3,600-second timeout,
+stay unchanged. Keep these results separate from the original 32,000-token
+matrix and its notebook inputs.
+
+| Job config | Source alias | Source job |
+| --- | --- | --- |
+| `aqueduct_v4_384k_d32.yaml` | `completion` | `aqueduct_v4_completion` |
+| `aqueduct_v4_384k_o120.yaml` | `completion` | `aqueduct_v4_completion` |
+| `aqueduct_v4_384k_v4.yaml` | `independent` | `aqueduct_v4_independent` |
+
+Rebuild the runner after updating configs. Load the key as in [setup](RUNNING.md).
+Example for D32, replacing the config and source binding for the other groups:
+
+```bash
+sudo --preserve-env=AQUEDUCT_API_KEY docker compose --env-file .env \
+  -f compose.yaml --profile runner \
+  run --rm --no-deps -e AQUEDUCT_API_KEY runner \
+  semantic-roundtrip job start \
+  --config configs/jobs/final_study/aqueduct_v4_384k_d32.yaml \
+  --source-job "completion=runs/<AQUEDUCT_COMPLETION_JOB_ID>"
+```
+
+Use one available key per concurrent process, including any original job still
+running. Source descriptions, checks and their dependencies must be terminal
+and inactive. Full source directories, including images, are required.
+Aqueduct's support for the requested output limit is not yet verified.
 
 ## Visual style and supplementary experiments
 

@@ -1,0 +1,25 @@
+schema_version: 11
+run:
+  name: indirect_pg_o120_bb_g4_bi_v4_384k
+  output_directory: runs
+experiment:
+  prompt_seeds:
+  - 1000
+  - 1001
+  image_seeds:
+  - 8566257
+  - 2875613
+  retry_limit: 1
+backends:
+  interpretation_model:
+    profile: ../../../backends/text/deepseek-v4-flash-284b-aqueduct.yaml
+stages:
+  title_guessing:
+    from_description:
+      backend: interpretation_model
+      prompt_profile: prompts/title_guessing/description_plain_v3.yaml
+      parameters:
+        temperature: 1.0
+        top_p: 0.95
+        max_tokens: 393216
+        seed: 3003
