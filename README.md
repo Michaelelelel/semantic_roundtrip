@@ -26,7 +26,7 @@ Use `uv run semantic-roundtrip --help` for the full CLI reference.
 - [Datasets and sources](configs/README.md#thesis-dataset): supplied title sets and their origins.
 - [`manual_evaluation/README.md`](manual_evaluation/README.md): manual audit protocol for prompt and image verification.
 - [`artifacts/candidate_illustratability/`](artifacts/candidate_illustratability/): saved candidate ratings and their distribution plot.
-- [`notebooks/`](notebooks/): Jupyter notebooks generating the thesis figures and tables (`final_study.ipynb`, `style_decision.ipynb`, `illustratability_distribution.ipynb`).
+- [`notebooks/`](notebooks/): study analysis and report generation (`final_study.ipynb`, `style_decision.ipynb`, `illustratability_distribution.ipynb`).
 
 ## Repository map
 

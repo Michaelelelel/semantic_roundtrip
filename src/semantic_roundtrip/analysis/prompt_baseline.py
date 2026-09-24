@@ -52,7 +52,7 @@ def _same_rows(left, right, keys, columns, label):
         raise ValueError(f"{label}: source/observation mismatch.") from error
 
 
-def load_prompt_baseline(path, direct_job_path):
+def load_prompt_baseline(path, direct_job_path, *, require_image_files=True):
     """Require the full unrestricted source and its four existing indirect diagonals."""
     for directory in (path, direct_job_path):
         if (
@@ -64,8 +64,8 @@ def load_prompt_baseline(path, direct_job_path):
             raise ValueError(
                 "SQ1 analysis requires completed source and supplement jobs."
             )
-    source = load_job(direct_job_path)
-    job = load_job(path)
+    source = load_job(direct_job_path, require_image_files=require_image_files)
+    job = load_job(path, require_image_files=require_image_files)
     original = annotate(source.observations)
     observations = annotate(job.observations)
     if set(original.job_name) != {"final_direct_core"}:

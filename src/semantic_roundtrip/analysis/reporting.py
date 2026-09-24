@@ -7,6 +7,7 @@ assemble the specified study contrasts, summaries and reproducibility exports.
 import hashlib
 import json
 import platform
+import re
 from datetime import UTC, datetime
 from importlib.metadata import version
 from itertools import combinations
@@ -32,7 +33,7 @@ from semantic_roundtrip.evaluation import (
     STRICT_IMAGE_VERIFICATION_METHOD,
     TITLE_AWARE_IMAGE_VERIFICATION_METHOD,
 )
-from semantic_roundtrip.inheritance.files import native_path
+from semantic_roundtrip.inheritance.files import native_path, walk_artifact_paths
 from semantic_roundtrip.inheritance.source import resolve_stage_provenance
 from semantic_roundtrip.job import JOB_SNAPSHOT_FILENAME, load_job_snapshot
 from semantic_roundtrip.persistence.job.database import (
@@ -273,6 +274,101 @@ def accuracy_rates(
     )
 
 
+def _terminal_failure_counts(errors, job_sets):
+    """Count failed tasks once by their final error, not failed attempts.
+
+    Imported copies are matched by the final error's origin, preferring the
+    original local record. Classes describe recorded failures, not root causes.
+    """
+    columns = [
+        "study",
+        "condition",
+        "run_id",
+        "stage",
+        "model",
+        "failure_class",
+        "failed_tasks",
+    ]
+    if errors.empty:
+        return pd.DataFrame(columns=columns)
+    failed = errors[errors.task_status.eq("failed") & errors.task_id.notna()].copy()
+    if failed.empty:
+        return pd.DataFrame(columns=columns)
+    failed = failed.sort_values("error_id", kind="stable").drop_duplicates(
+        ["run_id", "task_id"], keep="last"
+    )
+    failed["origin_order"] = failed.execution_origin.map(
+        {"local": 0, "imported": 1}
+    ).fillna(2)
+    failed = failed.sort_values("origin_order", kind="stable").drop_duplicates(
+        "provenance_error_key"
+    )
+
+    models = {}
+    stage_columns = {
+        "prompt_generation": ("prompt_model", None),
+        "image_generation": ("image_model", None),
+        "image_description": ("description_model", None),
+        "verification_image": ("verifier_model", None),
+        "title_guessing_direct": ("prediction_model", "direct"),
+        "title_guessing_from_description": ("prediction_model", "description"),
+        "title_guessing_from_prompt": ("prediction_model", "prompt"),
+    }
+    for _, job in job_sets:
+        for stage, (column, route) in stage_columns.items():
+            frame = job.observations
+            if column not in frame or "run_id" not in frame:
+                continue
+            if route is not None:
+                frame = frame[frame.route.eq(route)]
+            for run_id, model in (
+                frame[["run_id", column]]
+                .dropna()
+                .drop_duplicates()
+                .itertuples(index=False, name=None)
+            ):
+                models[(run_id, stage)] = model
+        if not job.ratings.empty:
+            for run_id, model in (
+                job.ratings[["run_id", "rating_model"]]
+                .dropna()
+                .drop_duplicates()
+                .itertuples(index=False, name=None)
+            ):
+                models[(run_id, "illustratability_rating")] = model
+
+    def classify(message):
+        message = str(message)
+        if "token limit was reached" in message.lower():
+            return "TOKEN_LIMIT"
+        http = re.search(r"\bHTTP\s+(\d{3})\b", message)
+        if http:
+            return f"HTTP {http.group(1)}"
+        if "ConnectTimeout" in message or "connect timeout=" in message:
+            return "CONNECT_TIMEOUT"
+        if (
+            "ReadTimeout" in message
+            or "read timeout=" in message
+            or "Read timed out" in message
+        ):
+            return "READ_TIMEOUT"
+        return "OTHER"
+
+    failed["failure_class"] = failed.message.map(classify)
+    failed["model"] = [
+        "deterministic"
+        if row.stage == "verification_prompt"
+        else models.get((row.run_id, row.stage))
+        for row in failed.itertuples()
+    ]
+    return (
+        failed.groupby(columns[:-1], dropna=False, sort=True)
+        .size()
+        .rename("failed_tasks")
+        .reset_index()
+    )
+
+
 def technical_tables(observation_sets, title_sets, job_sets):
     """Supporting metrics/counts plus provenance-deduplicated errors and timings."""
     tables = {}
@@ -464,7 +560,9 @@ def technical_tables(observation_sets, title_sets, job_sets):
     for study, job in job_sets:
         errors.append(job.errors.assign(study=study))
         timings.append(job.timings.assign(study=study))
-    errors = pd.concat(errors, ignore_index=True).reindex(
+    errors = pd.concat(errors, ignore_index=True)
+    tables["terminal_failed_tasks"] = _terminal_failure_counts(errors, job_sets)
+    errors = errors.reindex(
         columns=[
             "study",
             "provenance_error_key",
@@ -555,16 +653,21 @@ def route_transition_counts(observations, *, score="primary_end_to_end_strict_sc
     )
 
 
-def load_direct_supplement(path):
+def load_direct_supplement(path, *, require_image_files=True):
     """Load a complete direct supplement, averaging its four seed observations."""
-    job = load_job(path)
+    job = load_job(path, require_image_files=require_image_files)
     observations = annotate(job.observations)
     titles = aggregate_titles(observations, condition_columns=["pg", "bb", "bi"])
     return job, observations, titles[titles.route.eq("direct")]
 
 
 def load_indirect_study(
-    local_path, *, aqueduct_path=None, independent_path=None, completion_path=None
+    local_path,
+    *,
+    aqueduct_path=None,
+    independent_path=None,
+    completion_path=None,
+    require_image_files=True,
 ):
     """Load 16+20 conditions, with either frozen 12+8 or legacy 8+12 split.
 
@@ -618,7 +721,9 @@ def load_indirect_study(
             independent_cells = legacy_independent
             completion_cells = {condition(pg, bb, "v4") for pg in TEXT for bb in QG}
         elif supplied != independent_cells:
-            raise ValueError("Aqueduct split is neither the known 12+8 nor 8+12 matrix.")
+            raise ValueError(
+                "Aqueduct split is neither the known 12+8 nor 8+12 matrix."
+            )
     expected = {
         "Indirect": local_cells,
         "Aqueduct": independent_cells | completion_cells,
@@ -659,7 +764,7 @@ def load_indirect_study(
             raise ValueError(
                 f"{label}: incomplete, duplicate or unexpected condition matrix."
             )
-        job = load_job(directory)
+        job = load_job(directory, require_image_files=require_image_files)
         frame = annotate(job.observations)
         if set(frame.condition) != expected[label] or set(frame.route) != {
             "description"
@@ -1122,7 +1227,8 @@ def write_manifest(notebook, job_paths, output_dir, *, analysis):
     notebook, output_dir = Path(notebook).resolve(), Path(output_dir).resolve()
 
     def digest(path):
-        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+        with native_path(path).open("rb") as stream:
+            return hashlib.file_digest(stream, "sha256").hexdigest()
 
     sources = []
     for label, path in job_paths.items():
@@ -1138,6 +1244,18 @@ def write_manifest(notebook, job_paths, output_dir, *, analysis):
                     run.run_directory / "pipeline_state.sqlite",
                 ]
             )
+            inputs.extend(
+                path
+                for path in walk_artifact_paths(run.run_directory)
+                if path.suffix in {".yaml", ".yml", ".json"}
+                and native_path(path).is_file()
+            )
+        inputs.extend(
+            Path(str(path) + "-wal")
+            for path in list(inputs)
+            if path.suffix == ".sqlite" and native_path(str(path) + "-wal").is_file()
+        )
+        inputs = sorted(set(inputs))
         sources.append(
             {
                 "label": label,

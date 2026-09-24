@@ -174,6 +174,9 @@ limiter is shared within one process, not between runners.
 
 ### 4. V4 title-guessing follow-up (384,000 output tokens)
 
+These incomplete diagnostics are excluded from the thesis results. The configs
+are retained for reproduction, not required to complete the main study.
+
 Three API-only jobs repeat V4 title guessing on the same descriptions, with
 1,440 predictions each. Only `max_tokens` changes to 384000, leaving 9,216
 tokens for input within Aqueduct's 393,216-token context.
@@ -187,8 +190,7 @@ matrix and its notebook inputs.
 | `aqueduct_v4_384k_o120.yaml` | `completion` | `aqueduct_v4_completion` |
 | `aqueduct_v4_384k_v4.yaml` | `independent` | `aqueduct_v4_independent` |
 
-Pause existing 393,216-output follow-ups, rebuild the runner and start new jobs.
-`resume` retains the old frozen limit. Load the key as in [setup](RUNNING.md).
+`resume` retains the frozen limit. Load the key as in [setup](RUNNING.md).
 Example for D32, replacing the config and source binding for the other groups:
 
 ```bash
@@ -200,10 +202,10 @@ sudo --preserve-env=AQUEDUCT_API_KEY docker compose --env-file .env \
   --source-job "completion=runs/<AQUEDUCT_COMPLETION_JOB_ID>"
 ```
 
-Use one available key per concurrent process, including any original job still
-running. Source descriptions, checks and their dependencies must be terminal
-and inactive. Full source directories, including images, are required.
-Aqueduct's support for the requested output limit is not yet verified.
+Use one available key per concurrent process. Source descriptions, checks and
+their dependencies must be terminal and inactive. Full source directories,
+including images, are required.
+The attempted runs do not establish a completed higher-limit comparison.
 
 ## Visual style and supplementary experiments
 
@@ -341,7 +343,7 @@ uv run jupyter notebook notebooks/style_decision.ipynb
 
 ### 2. Main thesis analysis
 
-Generates all primary (RQ1–RQ3) and secondary (SQ1–SQ5) figures and tables:
+Computes the primary (RQ1–RQ3) and secondary (SQ1–SQ5) results:
 
 Choose exactly one Aqueduct input mode. For the two split jobs:
 

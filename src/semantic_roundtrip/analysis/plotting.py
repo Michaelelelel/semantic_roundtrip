@@ -31,7 +31,7 @@ def save_figure(fig, path, title):
     plt.close(fig)
 
 
-def heatmap(ax, frame, models, title, baseline=None, *, metric=METRIC):
+def heatmap(ax, frame, models, title, baseline=None, *, metric=METRIC, limits=None):
     values = (100 * frame.groupby(["pg", "bi"])[metric].mean().unstack()).reindex(
         index=models, columns=models
     )
@@ -44,14 +44,20 @@ def heatmap(ax, frame, models, title, baseline=None, *, metric=METRIC):
         ).reindex(index=models, columns=models)
         values = values - reference
         cmap = "vlag"
+    if limits is None:
+        if baseline is None:
+            limits = (0, max(50, 10 * np.ceil(values.max().max() / 10)))
+        else:
+            bound = max(5, 5 * np.ceil(values.abs().max().max() / 5))
+            limits = (-bound, bound)
     ax.set_facecolor("#dddddd")
     sns.heatmap(
         values,
         ax=ax,
         annot=True,
         fmt=".1f" if baseline is None else "+.1f",
-        vmin=0 if baseline is None else -100,
-        vmax=100,
+        vmin=limits[0],
+        vmax=limits[1],
         cmap=cmap,
         cbar=False,
         square=True,
@@ -66,8 +72,12 @@ def heatmap(ax, frame, models, title, baseline=None, *, metric=METRIC):
 
 def bb_heatmaps(frame, models, name, title):
     fig, axes = plt.subplots(2, 2, figsize=(9, 7), layout="constrained")
+    maximum = 100 * frame.groupby(["pg", "bb", "bi"])[METRIC].mean().max()
+    limits = (0, max(50, 10 * np.ceil(maximum / 10)))
     for bb, ax in zip(QG, axes.flat):
-        image = heatmap(ax, frame[frame.bb == bb], models, f"ID = {bb.upper()}")
+        image = heatmap(
+            ax, frame[frame.bb == bb], models, f"ID = {bb.upper()}", limits=limits
+        )
     fig.colorbar(image, ax=list(axes.flat), label="End-to-end Strict Exact Match (%)")
     save_figure(fig, name, title)
 
